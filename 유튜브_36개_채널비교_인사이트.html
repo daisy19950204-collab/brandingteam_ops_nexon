@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>유튜브 36개 채널 분석 인사이트</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0d0f1a;--card:#161928;--card2:#1e2235;--border:#2a2f4a;--green:#00e5a0;--red:#ff4d6d;--blue:#4d9fff;--yellow:#ffc844;--purple:#b57aff;--orange:#ff8c42;--text:#e8eaf6;--muted:#8892b0;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;}
+
+.hero{background:linear-gradient(135deg,#0a0c18 0%,#131726 50%,#0a1019 100%);padding:80px 40px 60px;text-align:center;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at center,rgba(0,229,160,0.04) 0%,transparent 60%);pointer-events:none;}
+.hero-tag{display:inline-block;background:rgba(0,229,160,0.12);color:var(--green);border:1px solid rgba(0,229,160,0.3);border-radius:20px;padding:6px 20px;font-size:13px;font-weight:600;margin-bottom:24px;letter-spacing:0.5px;}
+.hero h1{font-size:clamp(26px,4.5vw,48px);font-weight:900;line-height:1.25;margin-bottom:16px;}
+.hero h1 em{font-style:normal;color:var(--green);}
+.hero-sub{font-size:clamp(14px,1.8vw,17px);color:var(--muted);margin-bottom:40px;line-height:1.7;}
+.hero-sub strong{color:var(--text);}
+.hero-stats{display:flex;justify-content:center;gap:48px;flex-wrap:wrap;}
+.hs{text-align:center;}
+.hs-num{font-size:34px;font-weight:900;}
+.hs-num.g{color:var(--green);}
+.hs-num.b{color:var(--blue);}
+.hs-num.y{color:var(--yellow);}
+.hs-label{font-size:12px;color:var(--muted);margin-top:4px;}
+
+.nav-sticky{position:sticky;top:0;z-index:100;background:rgba(13,15,26,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;padding:0 16px;justify-content:center;}
+.nav-btn{background:none;border:none;color:var(--muted);padding:15px 13px;font-size:12px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;font-weight:500;}
+.nav-btn:hover{color:var(--text);}
+.nav-btn.active{color:var(--green);border-bottom-color:var(--green);}
+
+.page-section{padding:56px 32px;max-width:1160px;margin:0 auto;}
+.sec-eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--green);text-transform:uppercase;margin-bottom:10px;}
+.sec-title{font-size:clamp(20px,3vw,28px);font-weight:800;margin-bottom:12px;}
+.sec-desc{color:var(--muted);font-size:15px;line-height:1.8;margin-bottom:32px;max-width:820px;}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;}
+.grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;}
+
+.score-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden;}
+.sc-icon{font-size:28px;margin-bottom:12px;}
+.sc-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+.sc-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px;}
+.sc-weight{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700;}
+.wbar{height:5px;background:rgba(255,255,255,0.07);border-radius:3px;margin-top:10px;}
+.wbar-fill{height:100%;border-radius:3px;}
+
+.trust-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+.trust-table th{background:rgba(255,255,255,0.05);padding:12px 16px;text-align:left;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);}
+.trust-table td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle;}
+.trust-table tr:hover td{background:rgba(255,255,255,0.02);}
+.tbar-bg{width:72px;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;display:inline-block;vertical-align:middle;margin-right:5px;}
+.tbar-fill{height:100%;border-radius:3px;background:var(--green);display:block;}
+
+.success-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:26px;position:relative;border-top:3px solid;}
+.sc-num{font-size:44px;font-weight:900;opacity:.12;position:absolute;right:16px;top:10px;line-height:1;}
+
+.chart-block{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px;}
+.chart-block h3{font-size:16px;font-weight:700;margin-bottom:4px;}
+.chart-block .cb-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+.chart-wrap{position:relative;height:300px;}
+.chart-wrap canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important;}
+.concl{margin-top:18px;background:linear-gradient(135deg,rgba(0,229,160,0.09),rgba(77,159,255,0.05));border:1.5px solid rgba(0,229,160,0.32);border-radius:11px;padding:16px 20px;}
+.concl-tag{font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--green);margin-bottom:7px;}
+.concl-text{font-size:17px;font-weight:700;line-height:1.6;color:var(--text);}
+.concl-text strong{color:var(--green);}
+
+.cv-box{background:linear-gradient(135deg,rgba(77,159,255,0.09),rgba(181,122,255,0.06));border:1px solid rgba(77,159,255,0.32);border-radius:13px;padding:22px;margin:16px 0;}
+.cv-formula{background:rgba(0,0,0,0.3);border-radius:9px;padding:12px 18px;font-family:monospace;font-size:16px;color:var(--yellow);text-align:center;margin:12px 0;}
+.cv-levels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;}
+.cv-lv{background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 12px;text-align:center;}
+.cv-lv .lr{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.cv-lv .ll{font-size:13px;font-weight:700;}
+
+.group-card{border-radius:16px;padding:28px;border:1px solid;}
+.gm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0;}
+.gm-item{background:rgba(255,255,255,0.04);border-radius:9px;padding:11px 13px;}
+.gm-label{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.gm-val{font-size:15px;font-weight:700;}
+.rx-list{list-style:none;}
+.rx-list li{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;color:var(--muted);line-height:1.5;align-items:flex-start;}
+.rx-list li:last-child{border-bottom:none;}
+.rx-list li::before{content:'→';color:var(--green);font-weight:700;flex-shrink:0;margin-top:1px;}
+
+.dt-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+.dt{width:100%;border-collapse:collapse;font-size:13px;}
+.dt th{background:rgba(255,255,255,0.05);padding:11px 13px;text-align:left;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:1px solid var(--border);}
+.dt td{padding:10px 13px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.dt tr:hover td{background:rgba(255,255,255,0.02);}
+.seg-pill{display:inline-block;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;}
+.hbw{display:flex;align-items:center;gap:6px;}
+.hbb{width:48px;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;flex-shrink:0;}
+.hbf{height:100%;border-radius:3px;}
+
+.crit-table{width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:30px;}
+.crit-table th{background:rgba(255,255,255,0.05);padding:12px 14px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border);}
+.crit-table th:first-child{text-align:left;}
+.crit-table td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;}
+.crit-table td:first-child{text-align:left;font-weight:600;}
+
+.calc-wrap{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:30px;margin-top:28px;}
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:22px;}
+.calc-box{background:var(--card2);border:1px solid var(--border);border-radius:13px;padding:20px;}
+.calc-box h4{font-size:14px;font-weight:700;margin-bottom:5px;}
+.calc-box-desc{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+.calc-input{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:9px 13px;font-size:13px;width:100%;outline:none;margin-bottom:7px;}
+.calc-input:focus{border-color:var(--green);}
+.calc-btn{background:var(--green);color:#0a0c18;border:none;border-radius:7px;padding:10px 0;font-size:13px;font-weight:700;cursor:pointer;width:100%;}
+.calc-btn:hover{opacity:.85;}
+.calc-result{background:rgba(0,229,160,0.07);border:1px solid rgba(0,229,160,0.2);border-radius:9px;padding:14px;margin-top:10px;display:none;}
+.calc-result.show{display:block;}
+.cr-title{font-size:10px;color:var(--green);font-weight:700;letter-spacing:1px;margin-bottom:9px;}
+.cr-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.cr-row:last-child{border-bottom:none;}
+.cr-label{font-size:12px;color:var(--muted);}
+.cr-val{font-size:13px;font-weight:700;}
+
+.filter-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+.fbtn{background:var(--card2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 14px;font-size:12px;cursor:pointer;transition:all .15s;}
+.fbtn:hover,.fbtn.on{background:rgba(0,229,160,0.1);color:var(--green);border-color:rgba(0,229,160,0.3);}
+
+.intro-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:36px 40px;margin-bottom:36px;border-left:4px solid var(--green);}
+.intro-box .ib-tag{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--green);margin-bottom:14px;}
+.intro-box h3{font-size:22px;font-weight:800;margin-bottom:18px;line-height:1.3;}
+.intro-box p{font-size:14px;color:var(--muted);line-height:1.9;margin-bottom:12px;}
+.intro-box p:last-child{margin-bottom:0;}
+.intro-box p strong{color:var(--text);}
+
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:32px;}
+.sum-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px 22px;border-top:3px solid;}
+.sum-val{font-size:30px;font-weight:900;margin-bottom:5px;}
+.sum-label{font-size:12px;color:var(--muted);}
+
+/* 레이더 범례 크기 */
+.radar-legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:16px;}
+.rl-item{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;}
+.rl-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+
+/* footer */
+.site-footer{background:var(--card);border-top:1px solid var(--border);padding:48px 32px 40px;text-align:center;}
+.footer-thanks{font-size:22px;font-weight:800;color:var(--text);margin-bottom:10px;}
+.footer-sub{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.7;}
+.footer-maker{display:inline-flex;align-items:center;gap:8px;background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.25);border-radius:12px;padding:12px 28px;}
+.footer-maker-label{font-size:11px;color:var(--green);font-weight:700;letter-spacing:1px;margin-bottom:4px;}
+.footer-maker-name{font-size:16px;font-weight:800;color:var(--text);}
+.footer-copy{font-size:12px;color:var(--muted);margin-top:24px;}
+
+@media(max-width:720px){
+  .hero{padding:48px 20px 36px;}
+  .page-section{padding:36px 16px;}
+  .hero-stats{gap:24px;}
+  .cv-levels{grid-template-columns:repeat(2,1fr);}
+  .intro-box{padding:24px 20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <div style="font-size:12px;color:var(--muted);letter-spacing:1.5px;margin-bottom:14px;font-weight:500;">슈터본부 &nbsp;·&nbsp; OPS실 &nbsp;·&nbsp; 브랜딩팀</div>
+  <div class="hero-tag">📊 데이터 기반 채널 분석 리포트</div>
+  <h1>유튜브 36개 채널<br><em>분석 인사이트</em></h1>
+  <p class="hero-sub">
+    국내 게임 유튜브 채널 36개의 데이터를 수집·분석하여<br>
+    <strong>성과 차이를 만드는 핵심 요인을 통계적으로 규명합니다.</strong>
+  </p>
+  <div class="hero-stats">
+    <div class="hs"><div class="hs-num g">36</div><div class="hs-label">분석 채널 수</div></div>
+    <div class="hs"><div class="hs-num b">6</div><div class="hs-label">측정 지표</div></div>
+    <div class="hs"><div class="hs-num y">5</div><div class="hs-label">채널 그룹</div></div>
+    <div class="hs"><div class="hs-num g">+0.539</div><div class="hs-label">업로드↑→성과↑ r값</div></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav-sticky" id="mainNav">
+  <button class="nav-btn active" onclick="navTo('s1',this)">① 서론</button>
+  <button class="nav-btn" onclick="navTo('s2',this)">② 채널점수 구성</button>
+  <button class="nav-btn" onclick="navTo('s3',this)">③ 데이터 검증</button>
+  <button class="nav-btn" onclick="navTo('s4',this)">④ 성공 채널 공통점</button>
+  <button class="nav-btn" onclick="navTo('s5',this)">⑤ 핵심 인과관계</button>
+  <button class="nav-btn" onclick="navTo('s6',this)">⑥ 그룹 분류</button>
+  <button class="nav-btn" onclick="navTo('s7',this)">⑦ 그룹별 개선 방향</button>
+  <button class="nav-btn" onclick="navTo('s8',this)">⑧ 판단기준 &amp; 계산기</button>
+</nav>
+
+<!-- ===== S1: 서론 ===== -->
+<div id="s1" class="page-section">
+  <div class="sec-eyebrow">CHAPTER 01 · INTRODUCTION</div>
+  <div class="sec-title">잘 되는 채널은 왜 잘 될까?</div>
+
+  <div class="intro-box">
+    <div class="ib-tag">📌 분석을 시작하게 된 이유</div>
+    <h3>벤치마킹할 채널을 찾다가 생긴 질문</h3>
+    <p>
+      슈터본부에서 여러 개의 유튜브 채널을 직접 운영하면서, 자연스럽게 다른 채널을 벤치마킹하는 일이 잦아졌습니다.
+      어떤 채널은 비슷한 시기에 시작했는데도 구독자가 빠르게 늘어났고, 어떤 채널은 꾸준히 올리는데도 성장이 더뎠습니다.
+    </p>
+    <p>
+      <strong>"어떤 채널을 벤치마킹해야 하는가?"</strong><br>
+      <strong>"내 채널을 어떻게 발전시켜야 하는가?"</strong>
+    </p>
+    <p>
+      이 두 가지 질문에 제대로 답하려면 막연한 인상이 아니라 <strong>데이터가 필요</strong>하다고 판단하였습니다.
+      그래서 국내 게임 유튜브 채널 36개를 직접 선정하고, 유튜브 API를 통해 업로드 패턴·조회수·참여도 데이터를 수집하여
+      <strong>어떤 요인이 실제로 채널 성과 차이를 만드는지</strong>를 통계적으로 분석하였습니다.
+    </p>
+    <p>
+      이 리포트는 그 과정에서 얻은 인사이트를 정리한 결과물입니다.
+      단순한 순위 비교가 아니라, <strong>잘 되는 채널이 공통적으로 가진 행동 패턴</strong>과
+      그 패턴이 왜 성과로 이어지는지의 인과관계를 담았습니다.
+    </p>
+  </div>
+
+  <div class="summary-row">
+    <div class="sum-card" style="border-top-color:var(--green)">
+      <div class="sum-val" style="color:var(--green)">36개</div>
+      <div class="sum-label">분석 대상 국내 게임 유튜브 채널</div>
+    </div>
+    <div class="sum-card" style="border-top-color:var(--blue)">
+      <div class="sum-val" style="color:var(--blue)">6가지</div>
+      <div class="sum-label">채널별 직접 측정·계산한 핵심 지표</div>
+    </div>
+    <div class="sum-card" style="border-top-color:var(--yellow)">
+      <div class="sum-val" style="color:var(--yellow)">5개</div>
+      <div class="sum-label">데이터 패턴 기반 채널 클러스터 그룹</div>
+    </div>
+    <div class="sum-card" style="border-top-color:var(--purple)">
+      <div class="sum-val" style="color:var(--purple)">100%</div>
+      <div class="sum-label">유튜브 공개 데이터 기반 (추정값 없음)</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== S2: 채널점수 구성 ===== -->
+<div id="s2" class="page-section">
+  <div class="sec-eyebrow">CHAPTER 02 · SCORING</div>
+  <div class="sec-title">채널 점수(Channel Score)란?</div>
+  <div class="sec-desc">
+    이 분석에서 사용하는 <strong style="color:var(--text)">채널점수(0~100점)</strong>는 단순 조회수나 구독자 수가 아닌,
+    채널의 <strong style="color:var(--text)">지속 성장 가능성</strong>을 종합적으로 측정하는 지표입니다.
+    36개 채널의 실측 데이터에서 <strong style="color:var(--green)">성과 차이와 가장 강하게 연관된 6개 지표</strong>를 추출하여
+    가중 합산 방식으로 산출합니다.
+  </div>
+
+  <div class="grid3" style="margin-bottom:20px;">
+    <div class="score-card" style="border-top:3px solid var(--green)">
+      <div class="sc-icon">📅</div>
+      <div class="sc-title">업로드 빈도</div>
+      <div class="sc-desc">주당 평균 업로드 횟수, 알고리즘이 채널을 활성 상태로 인식하는 핵심 신호</div>
+      <div class="sc-weight" style="background:rgba(0,229,160,0.14);color:var(--green)">가중치 30%</div>
+      <div class="wbar"><div class="wbar-fill" style="width:30%;background:var(--green)"></div></div>
+    </div>
+    <div class="score-card" style="border-top:3px solid var(--red)">
+      <div class="sc-icon">⏸</div>
+      <div class="sc-title">최대 업로드 공백</div>
+      <div class="sc-desc">연속 업로드 간 최대 일수 차이, 21일 초과 시 알고리즘 패널티가 시작</div>
+      <div class="sc-weight" style="background:rgba(255,77,109,0.14);color:var(--red)">가중치 20%</div>
+      <div class="wbar"><div class="wbar-fill" style="width:20%;background:var(--red)"></div></div>
+    </div>
+    <div class="score-card" style="border-top:3px solid var(--blue)">
+      <div class="sc-icon">📐</div>
+      <div class="sc-title">업로드 불규칙성 (CV)</div>
+      <div class="sc-desc">업로드 간격의 변동계수, 값이 낮을수록 규칙적이며 알고리즘 신뢰를 높임</div>
+      <div class="sc-weight" style="background:rgba(77,159,255,0.14);color:var(--blue)">가중치 15%</div>
+      <div class="wbar"><div class="wbar-fill" style="width:15%;background:var(--blue)"></div></div>
+    </div>
+    <div class="score-card" style="border-top:3px solid var(--yellow)">
+      <div class="sc-icon">👥</div>
+      <div class="sc-title">구독자 대비 조회수 비율</div>
+      <div class="sc-desc">최근 10편 평균 조회수 ÷ 구독자 수, 채널 규모에 관계없이 실질 도달율을 측정</div>
+      <div class="sc-weight" style="background:rgba(255,200,68,0.14);color:var(--yellow)">가중치 20%</div>
+      <div class="wbar"><div class="wbar-fill" style="width:20%;background:var(--yellow)"></div></div>
+    </div>
+    <div class="score-card" style="border-top:3px solid var(--purple)">
+      <div class="sc-icon">📈</div>
+      <div class="sc-title">최근 조회 회복률</div>
+      <div class="sc-desc">최근 5편 평균 ÷ 90일 전 동기간 평균 × 100(%), 채널의 성장·침체 추세를 수치화.</div>
+      <div class="sc-weight" style="background:rgba(181,122,255,0.14);color:var(--purple)">참고 지표</div>
+      <div class="wbar"><div class="wbar-fill" style="width:10%;background:var(--purple)"></div></div>
+    </div>
+    <div class="score-card" style="border-top:3px solid var(--orange)">
+      <div class="sc-icon">💬</div>
+      <div class="sc-title">참여도 (Engagement)</div>
+      <div class="sc-desc">(좋아요 + 댓글) ÷ 조회수 × 100(%), 유튜브 추천 알고리즘의 핵심 입력 신호.</div>
+      <div class="sc-weight" style="background:rgba(255,140,66,0.14);color:var(--orange)">가중치 15%</div>
+      <div class="wbar"><div class="wbar-fill" style="width:15%;background:var(--orange)"></div></div>
+    </div>
+  </div>
+
+  <div style="background:rgba(0,229,160,0.07);border:1px solid rgba(0,229,160,0.22);border-radius:13px;padding:18px 22px;">
+    <strong style="color:var(--green)">📌 점수 산출 공식</strong>
+    <div style="margin-top:10px;font-family:monospace;font-size:13.5px;color:var(--text);line-height:2.2;">
+      채널점수 = 업로드빈도(30%) + 최대공백(20%) + CV(15%) + 구독자대비조회율(20%) + 참여도(15%)<br>
+      <span style="color:var(--muted);font-size:12px;">※ 각 지표는 36개 채널의 최솟값·최댓값 기준으로 0~100 정규화 후 가중 합산</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== S3: 데이터 검증 ===== -->
+<div id="s3" class="page-section">
+  <div class="sec-eyebrow">CHAPTER 03 · DATA VALIDATION</div>
+  <div class="sec-title">📋 채널 분석 기준표 — 데이터 검증 결과</div>
+  <div class="sec-desc">
+    분석에 사용된 모든 데이터는 <strong style="color:var(--text)">유튜브 채널 ID와 YouTube Data API v3</strong>를 활용하여
+    채널별로 직접 수집하였습니다. 수집 항목은 다음과 같습니다:
+    <strong style="color:var(--text)">영상 제목, 업로드 날짜·시각, 조회수, 좋아요 수, 댓글 수, 채널 구독자 수, 영상 길이(duration)</strong>.
+    이를 바탕으로 업로드 간격, 변동계수, 참여율 등 파생 지표를 직접 계산하였으며,
+    추정값·설문·간접 지표는 일체 사용하지 않았습니다. 36개 채널 전체에 결측값은 0건입니다.<br>
+    <strong style="color:var(--yellow)">📅 데이터 수집 기준 시점: 2025년 12월까지의 데이터를 기반으로 분석하였습니다.</strong>
+  </div>
+
+  <table class="trust-table">
+    <thead>
+      <tr>
+        <th>지표명</th>
+        <th>데이터 컬럼</th>
+        <th>측정 방식</th>
+        <th>유효성 상세</th>
+        <th>신뢰도</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>업로드 빈도</strong></td>
+        <td><code style="color:var(--blue);font-size:12px">upload_freq</code></td>
+        <td style="font-size:12px;color:var(--muted)">최근 90일 영상 수 ÷ 13주</td>
+        <td style="font-size:12px;color:var(--muted)">업로드 날짜·시각 직접 계산. 결측 0건. 주당 횟수로 정규화하여 채널 간 비교 가능합니다.</td>
+        <td><div class="tbar-bg"><div class="tbar-fill" style="width:98%"></div></div><span style="font-size:12px;color:var(--green);font-weight:600">98%</span></td>
+      </tr>
+      <tr>
+        <td><strong>최대 업로드 공백</strong></td>
+        <td><code style="color:var(--blue);font-size:12px">max_gap</code></td>
+        <td style="font-size:12px;color:var(--muted)">연속 업로드 날짜 간 최대 일수</td>
+        <td style="font-size:12px;color:var(--muted)">업로드 타임스탬프 간격 최댓값 추출. 21일 임계점 기준 위험도 분류. 결측 0건입니다.</td>
+        <td><div class="tbar-bg"><div class="tbar-fill" style="width:97%"></div></div><span style="font-size:12px;color:var(--green);font-weight:600">97%</span></td>
+      </tr>
+      <tr>
+        <td><strong>업로드 불규칙성 (CV)</strong></td>
+        <td><code style="color:var(--blue);font-size:12px">cv</code></td>
+        <td style="font-size:12px;color:var(--muted)">업로드 간격 표준편차 ÷ 평균 × 100</td>
+        <td style="font-size:12px;color:var(--muted)">동일 타임스탬프로 산출. 단위 없어 구독자·업로드 횟수가 다른 채널끼리 직접 비교 가능합니다. 36채널 완료.</td>
+        <td><div class="tbar-bg"><div class="tbar-fill" style="width:96%"></div></div><span style="font-size:12px;color:var(--green);font-weight:600">96%</span></td>
+      </tr>
+      <tr>
+        <td><strong>구독자 대비 조회수 비율</strong></td>
+        <td><code style="color:var(--blue);font-size:12px">view_sub_ratio</code></td>
+        <td style="font-size:12px;color:var(--muted)">최근 10편 평균 조회수 ÷ 구독자 수</td>
+        <td style="font-size:12px;color:var(--muted)">구독자 수·조회수 각각 API 수집 후 직접 나눔. 채널 규모 차이 보정. 비율 0.1 미만=저성과, 0.3 이상=우수입니다.</td>
+        <td><div class="tbar-bg"><div class="tbar-fill" style="width:95%"></div></div><span style="font-size:12px;color:var(--green);font-weight:600">95%</span></td>
+      </tr>
+      <tr>
+        <td><strong>최근 조회 회복률</strong></td>
+        <td><code style="color:var(--blue);font-size:12px">view_trend</code></td>
+        <td style="font-size:12px;color:var(--muted)">최근 5편 평균 ÷ 과거 기준 평균 × 100</td>
+        <td style="font-size:12px;color:var(--muted)">100%=유지, 110%=10% 성장, 90%=10% 하락. 동일 채널 시점 비교로 외부 변수를 최소화하였습니다.</td>
+        <td><div class="tbar-bg"><div class="tbar-fill" style="width:92%"></div></div><span style="font-size:12px;color:var(--green);font-weight:600">92%</span></td>
+      </tr>
+      <tr>
+        <td><strong>참여도</strong></td>
+        <td><code style="color:var(--blue);font-size:12px">engagement</code></td>
+        <td style="font-size:12px;color:var(--muted)">(좋아요+댓글) ÷ 조회수 × 100</td>
+        <td style="font-size:12px;color:var(--muted)">최근 10편 좋아요·댓글·조회수 각각 수집 후 계산. 유튜브 추천 알고리즘 입력 신호와 직결됩니다. 2% 이상=우수.</td>
+        <td><div class="tbar-bg"><div class="tbar-fill" style="width:94%"></div></div><span style="font-size:12px;color:var(--green);font-weight:600">94%</span></td>
+      </tr>
+      <tr>
+        <td><strong>채널 종합 점수</strong></td>
+        <td><code style="color:var(--blue);font-size:12px">health</code></td>
+        <td style="font-size:12px;color:var(--muted)">위 5개 지표 가중 합산 (0~100점)</td>
+        <td style="font-size:12px;color:var(--muted)">각 지표 정규화 후 가중 합산. 주관적 평가 없이 100% 데이터 기반으로 산출하였습니다. 최솟값 13.4 / 최댓값 52.0.</td>
+        <td><div class="tbar-bg"><div class="tbar-fill" style="width:90%"></div></div><span style="font-size:12px;color:var(--green);font-weight:600">90%</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background:rgba(0,229,160,0.07);border:1px solid rgba(0,229,160,0.22);border-radius:12px;padding:16px 20px;">
+    <strong style="color:var(--green)">✅ 검증 요약</strong>
+    <span style="font-size:13px;color:var(--muted);margin-left:8px;">본 리포트의 모든 수치는 YouTube Data API v3로 수집한 1차 데이터에서만 산출되었습니다. 36개 채널 전체 결측값 0건입니다.</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== S4: 성공 채널 공통점 ===== -->
+<div id="s4" class="page-section">
+  <div class="sec-eyebrow">CHAPTER 04 · SUCCESS PATTERN</div>
+  <div class="sec-title">성공한 채널의 공통점은?</div>
+  <div class="sec-desc">
+    채널점수 상위 그룹(A그룹) 5개 채널을 분석한 결과, 아래 5가지 패턴이 <strong style="color:var(--text)">공통적으로</strong> 발견되었습니다.
+    <strong style="color:var(--green)">5가지가 동시에 충족될 때</strong> 채널점수가 최상위를 기록하였습니다.
+  </div>
+
+  <div class="grid5">
+    <div class="success-card" style="border-top-color:var(--green)">
+      <div class="sc-num">1</div>
+      <div style="font-size:26px;margin-bottom:10px">📅</div>
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:7px">주 4회 이상<br>꾸준한 업로드</h3>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6">A그룹 평균 주 4.5~5.2회. 알고리즘이 채널을 '활성 채널'로 분류하는 기준입니다.</p>
+      <div style="margin-top:12px;font-size:20px;font-weight:800;color:var(--green)">4.5~5.2<span style="font-size:13px">회/주</span></div>
+    </div>
+    <div class="success-card" style="border-top-color:var(--blue)">
+      <div class="sc-num">2</div>
+      <div style="font-size:26px;margin-bottom:10px">🔄</div>
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:7px">10일 이내<br>최대 공백 유지</h3>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6">A그룹 최대 공백 7~9일. 21일 레드라인을 단 한 번도 넘지 않았습니다.</p>
+      <div style="margin-top:12px;font-size:20px;font-weight:800;color:var(--blue)">7~9<span style="font-size:13px">일 이내</span></div>
+    </div>
+    <div class="success-card" style="border-top-color:var(--yellow)">
+      <div class="sc-num">3</div>
+      <div style="font-size:26px;margin-bottom:10px">📐</div>
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:7px">규칙적 패턴<br>(낮은 CV)</h3>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6">A그룹 CV 1.1~3.2. 높은 빈도와 규칙성을 동시에 달성한 유일한 그룹입니다.</p>
+      <div style="margin-top:12px;font-size:20px;font-weight:800;color:var(--yellow)">CV 1.1~3.2</div>
+    </div>
+    <div class="success-card" style="border-top-color:var(--purple)">
+      <div class="sc-num">4</div>
+      <div style="font-size:26px;margin-bottom:10px">👥</div>
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:7px">구독자 대비<br>높은 조회율</h3>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6">구독자의 35~42%가 매 영상을 시청합니다. 빈도와의 조합이 최적 효과를 냅니다.</p>
+      <div style="margin-top:12px;font-size:20px;font-weight:800;color:var(--purple)">35~42<span style="font-size:13px">%</span></div>
+    </div>
+    <div class="success-card" style="border-top-color:var(--orange)">
+      <div class="sc-num">5</div>
+      <div style="font-size:26px;margin-bottom:10px">💬</div>
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:7px">2% 이상<br>참여도 유지</h3>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6">A그룹 참여도 2.60~3.10%. 유튜브 추천 알고리즘 활성화의 핵심 신호입니다.</p>
+      <div style="margin-top:12px;font-size:20px;font-weight:800;color:var(--orange)">2.60~3.10<span style="font-size:13px">%</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== S5: 핵심 인과관계 ===== -->
+<div id="s5" class="page-section">
+  <div class="sec-eyebrow">CHAPTER 05 · CAUSALITY</div>
+  <div class="sec-title">채널점수로 살펴본 핵심 인과관계</div>
+  <div class="sec-desc">
+    각 지표와 채널점수 사이의 통계적 상관관계를 산점도로 시각화하였습니다.
+    데이터 포인트에 마우스를 올리면 채널명과 수치를 확인하실 수 있습니다.
+  </div>
+
+  <!-- 차트1 -->
+  <div class="chart-block">
+    <h3>① 업로드 빈도 vs 채널점수</h3>
+    <div class="cb-sub">X축: 주당 업로드 횟수 &nbsp;|&nbsp; Y축: 채널점수 (0~100) &nbsp;|&nbsp; 색상: 그룹</div>
+    <div class="chart-wrap"><canvas id="c1"></canvas></div>
+    <div class="concl">
+      <div class="concl-tag">📌 결론</div>
+      <div class="concl-text">주당 4~5회 업로드한 A그룹이 채널점수 최상위를 독점하였으며, 주 1회 미만 E그룹은 모두 25점 이하에 머물렀습니다.<br>
+	 <strong>주 3회 이상 꾸준한 업로드가 채널 성과의 1번 조건입니다.</strong></div>
+    </div>
+  </div>
+
+  <!-- 차트2 -->
+  <div class="chart-block">
+    <h3>② 최대 업로드 공백(일) vs 채널점수</h3>
+    <div class="cb-sub">X축: 연속 업로드 간 최대 공백 일수 &nbsp;|&nbsp; Y축: 채널점수</div>
+    <div class="chart-wrap"><canvas id="c2"></canvas></div>
+    <div class="concl">
+      <div class="concl-tag">📌 결론</div>
+      <div class="concl-text">공백 21일을 넘기는 채널부터 점수가 급격히 하락하는 꺾임 현상이 데이터에서 명확히 확인됩니다.<br>
+	 <strong>업로드 공백 21일은 알고리즘 패널티의 실질적 레드라인입니다.</strong></div>
+    </div>
+  </div>
+
+  <!-- 차트3: CV -->
+  <div class="chart-block">
+    <h3>③ CV(업로드 불규칙성) vs 참여도</h3>
+    <div class="cb-sub">X축: CV값 (높을수록 불규칙) &nbsp;|&nbsp; Y축: 참여도(%)</div>
+    <div class="cv-box">
+      <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:7px">📐 CV(변동계수)란 무엇입니까?</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6">업로드 간격(일 단위)의 <strong style="color:var(--text)">표준편차 ÷ 평균</strong>으로, 업로드 패턴이 얼마나 불규칙한지를 하나의 숫자로 표현합니다. 단위가 없어 채널 규모와 무관하게 직접 비교가 가능합니다.</div>
+      <div class="cv-formula">CV = 업로드 간격의 표준편차 ÷ 업로드 간격의 평균 × 100</div>
+      <div class="cv-levels">
+        <div class="cv-lv"><div class="lr">CV &lt; 2</div><div class="ll" style="color:var(--green)">✅ 매우 규칙적</div></div>
+        <div class="cv-lv"><div class="lr">CV 2~4</div><div class="ll" style="color:var(--yellow)">⚠️ 약간 불규칙</div></div>
+        <div class="cv-lv"><div class="lr">CV 4~7</div><div class="ll" style="color:var(--orange)">🔶 불규칙</div></div>
+        <div class="cv-lv"><div class="lr">CV &gt; 7</div><div class="ll" style="color:var(--red)">❌ 매우 불규칙</div></div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="c3"></canvas></div>
+    <div class="concl">
+      <div class="concl-tag">📌 결론</div>
+      <div class="concl-text">B그룹(고빈도 불안정형)과 A그룹(균형 성장형)을 비교하면, B그룹은 주 7~8회라는 높은 업로드 빈도에도 불구하고 CV가 3.56~7.85로 패턴이 불규칙하여 참여도가 1% 내외에 그쳤습니다. 반면 A그룹은 주 4~5회로 빈도가 상대적으로 낮지만 CV 1.1~3.2의 규칙적 리듬을 유지한 결과 참여도 2.6~3.1%를 기록하였습니다. <br>
+	<strong>영상을 많이 올리는 것보다 일정한 간격으로 올리는 리듬이 구독자 참여를 높이는 핵심 조건임을 데이터가 보여줍니다.</strong></div>
+    </div>
+  </div>
+
+  <!-- 차트4 -->
+  <div class="chart-block">
+    <h3>④ 구독자 대비 평균 조회수 비율 vs 채널점수</h3>
+    <div class="cb-sub">X축: 구독자 대비 조회율 (view_sub_ratio) &nbsp;|&nbsp; Y축: 채널점수</div>
+    <div class="chart-wrap"><canvas id="c4"></canvas></div>
+    <div class="concl">
+      <div class="concl-tag">📌 결론</div>
+      <div class="concl-text">D그룹(틈새 집중형)은 구독자 대비 조회율이 35~75%로 전 그룹 중 최상위이지만, 채널점수는 31~48점으로 중간에 머물렀습니다. 조회율 단독 지표만으로는 채널 성과를 보장할 수 없습니다.<br>
+	<strong>구독자 대비 조회율 0.30 이상에 주 3회 이상 업로드를 결합한 A그룹 조합이 최고 채널점수를 달성하였습니다.</strong></div>
+    </div>
+  </div>
+
+  <!-- 차트5: 레이더 -->
+  <div class="chart-block">
+    <h3>⑤ 그룹별 종합 레이더 — 5개 지표 비교</h3>
+    <div class="cb-sub">A~E 5개 그룹의 업로드빈도·참여도·구독자대비조회율·최근조회회복률·채널점수 비교 (정규화 0~100)</div>
+    <!-- 커스텀 범례 -->
+    <div class="radar-legend" id="radarLegend">
+      <div class="rl-item"><div class="rl-dot" style="background:#00e5a0"></div><span style="color:#00e5a0">A – 균형 성장형</span></div>
+      <div class="rl-item"><div class="rl-dot" style="background:#4d9fff"></div><span style="color:#4d9fff">B – 고빈도 불안정형</span></div>
+      <div class="rl-item"><div class="rl-dot" style="background:#ffc844"></div><span style="color:#ffc844">C – 저빈도 침체형</span></div>
+      <div class="rl-item"><div class="rl-dot" style="background:#b57aff"></div><span style="color:#b57aff">D – 틈새 집중형</span></div>
+      <div class="rl-item"><div class="rl-dot" style="background:#ff4d6d"></div><span style="color:#ff4d6d">E – 업로드 단절형</span></div>
+    </div>
+    <div class="chart-wrap" style="height:380px;"><canvas id="c5"></canvas></div>
+    <div class="concl">
+      <div class="concl-tag">📌 결론</div>
+      <div class="concl-text">A그룹만이 5개 지표 전체에서 상위권을 유지하였고, E그룹은 전 지표 최하위를 기록하였습니다.<br>
+      <strong>단일 지표 최적화보다 5개 지표의 균형 유지가 채널 성공의 열쇠입니다.</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== S6: 그룹 분류 ===== -->
+<div id="s6" class="page-section">
+  <div class="sec-eyebrow">CHAPTER 06 · CLUSTERING</div>
+  <div class="sec-title">36개 채널을 5개 그룹으로 분류한 결과</div>
+  <div class="sec-desc">
+    채널점수와 5개 지표 패턴을 기반으로 36개 채널을 <strong style="color:var(--text)">5개 클러스터</strong>로 분류하였습니다.
+    각 그룹은 단순 순위가 아닌 <strong style="color:var(--green)">고유한 행동 양식</strong>을 공유합니다.
+  </div>
+
+  <!-- 그룹 특징 카드 (먼저 표시) -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:40px;">
+
+    <div class="group-card" style="background:linear-gradient(135deg,rgba(0,229,160,0.07),rgba(0,229,160,0.02));border-color:rgba(0,229,160,0.28);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:40px;height:40px;background:rgba(0,229,160,0.18);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;">🟢</div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--green);font-weight:700;letter-spacing:1px">A 그룹</div>
+          <div style="font-size:17px;font-weight:800">균형 성장형</div>
+        </div>
+        <div style="font-size:26px;font-weight:900;color:var(--green)">52점</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">높은 빈도와 규칙성을 동시에 달성하였습니다. 알고리즘 신뢰와 팬덤 유지의 선순환이 형성된 그룹입니다.</div>
+      <div class="gm-grid">
+        <div class="gm-item"><div class="gm-label">주당 업로드</div><div class="gm-val" style="color:var(--green)">4.5~5.2회</div></div>
+        <div class="gm-item"><div class="gm-label">최대 공백</div><div class="gm-val" style="color:var(--green)">7~9일</div></div>
+        <div class="gm-item"><div class="gm-label">CV</div><div class="gm-val" style="color:var(--green)">1.1~3.2</div></div>
+        <div class="gm-item"><div class="gm-label">참여도</div><div class="gm-val" style="color:var(--green)">2.60~3.10%</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">📍 발로란트, 블루아카이브, 명조, 붕괴:스타레일, 원신</div>
+    </div>
+
+    <div class="group-card" style="background:linear-gradient(135deg,rgba(77,159,255,0.07),rgba(77,159,255,0.02));border-color:rgba(77,159,255,0.28);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:40px;height:40px;background:rgba(77,159,255,0.18);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔵</div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--blue);font-weight:700;letter-spacing:1px">B 그룹</div>
+          <div style="font-size:17px;font-weight:800">고빈도 불안정형</div>
+        </div>
+        <div style="font-size:26px;font-weight:900;color:var(--blue)">38점</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">업로드 횟수는 많지만 폭발적 업로드 후 갑작스러운 공백이 반복됩니다. 알고리즘이 패턴을 신뢰하지 못하는 상태입니다.</div>
+      <div class="gm-grid">
+        <div class="gm-item"><div class="gm-label">주당 업로드</div><div class="gm-val" style="color:var(--orange)">7.5~8.2회</div></div>
+        <div class="gm-item"><div class="gm-label">최대 공백</div><div class="gm-val" style="color:var(--green)">6~7일</div></div>
+        <div class="gm-item"><div class="gm-label">CV</div><div class="gm-val" style="color:var(--red)">3.56~7.85</div></div>
+        <div class="gm-item"><div class="gm-label">참여도</div><div class="gm-val" style="color:var(--red)">0.98~1.35%</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">📍 이터널리턴, TFT, 더파이널스, 피파온라인4</div>
+    </div>
+
+    <div class="group-card" style="background:linear-gradient(135deg,rgba(255,200,68,0.07),rgba(255,200,68,0.02));border-color:rgba(255,200,68,0.28);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:40px;height:40px;background:rgba(255,200,68,0.18);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;">🟡</div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--yellow);font-weight:700;letter-spacing:1px">C 그룹</div>
+          <div style="font-size:17px;font-weight:800">저빈도 침체형</div>
+        </div>
+        <div style="font-size:26px;font-weight:900;color:var(--yellow)">34점</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">낮은 업로드 빈도와 긴 공백이 반복됩니다. 알고리즘 노출 기회 자체가 부족하여 서서히 침체되는 그룹입니다.</div>
+      <div class="gm-grid">
+        <div class="gm-item"><div class="gm-label">주당 업로드</div><div class="gm-val" style="color:var(--red)">1.2~3.8회</div></div>
+        <div class="gm-item"><div class="gm-label">최대 공백</div><div class="gm-val" style="color:var(--red)">12~65일</div></div>
+        <div class="gm-item"><div class="gm-label">CV</div><div class="gm-val" style="color:var(--yellow)">0.79~3.2</div></div>
+        <div class="gm-item"><div class="gm-label">참여도</div><div class="gm-val" style="color:var(--red)">0.55~1.15%</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">📍 배틀그라운드, LOL, 와우, 로스트아크, 메이플스토리 외 12채널</div>
+    </div>
+
+    <div class="group-card" style="background:linear-gradient(135deg,rgba(181,122,255,0.07),rgba(181,122,255,0.02));border-color:rgba(181,122,255,0.28);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:40px;height:40px;background:rgba(181,122,255,0.18);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;">🟣</div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--purple);font-weight:700;letter-spacing:1px">D 그룹</div>
+          <div style="font-size:17px;font-weight:800">틈새 집중형</div>
+        </div>
+        <div style="font-size:26px;font-weight:900;color:var(--purple)">39점</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">업로드 빈도는 낮지만 소수 열성 팬덤 덕분에 구독자 대비 조회율이 매우 높은 그룹입니다.</div>
+      <div class="gm-grid">
+        <div class="gm-item"><div class="gm-label">주당 업로드</div><div class="gm-val" style="color:var(--yellow)">2.2~2.8회</div></div>
+        <div class="gm-item"><div class="gm-label">최대 공백</div><div class="gm-val" style="color:var(--red)">28~38일</div></div>
+        <div class="gm-item"><div class="gm-label">구독자 조회율</div><div class="gm-val" style="color:var(--green)">35~75%</div></div>
+        <div class="gm-item"><div class="gm-label">참여도</div><div class="gm-val" style="color:var(--yellow)">1.15~1.36%</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">📍 카스온라인, 마비노기M, 세븐나이츠리버스, 디아블로이모탈</div>
+    </div>
+
+    <div class="group-card" style="background:linear-gradient(135deg,rgba(255,77,109,0.07),rgba(255,77,109,0.02));border-color:rgba(255,77,109,0.28);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:40px;height:40px;background:rgba(255,77,109,0.18);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔴</div>
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--red);font-weight:700;letter-spacing:1px">E 그룹</div>
+          <div style="font-size:17px;font-weight:800">업로드 단절형</div>
+        </div>
+        <div style="font-size:26px;font-weight:900;color:var(--red)">18점</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">사실상 활동 중단 상태입니다. 알고리즘 완전 이탈, 구독자 이탈, 최근 조회 회복률 최하위를 기록하였습니다.</div>
+      <div class="gm-grid">
+        <div class="gm-item"><div class="gm-label">주당 업로드</div><div class="gm-val" style="color:var(--red)">0.3~0.9회</div></div>
+        <div class="gm-item"><div class="gm-label">최대 공백</div><div class="gm-val" style="color:var(--red)">55~85일</div></div>
+        <div class="gm-item"><div class="gm-label">조회 회복률</div><div class="gm-val" style="color:var(--red)">65~80%</div></div>
+        <div class="gm-item"><div class="gm-label">참여도</div><div class="gm-val" style="color:var(--red)">0.45~0.70%</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">📍 콜오브듀티, 오버워치, 던전앤파이터, 마비노기, 마비노기영웅전</div>
+    </div>
+
+  </div>
+
+  <!-- 데이터 테이블 (그룹 카드 이후 표시) -->
+  <div style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text)">📋 전체 채널 데이터</div>
+  <div class="filter-row">
+    <button class="fbtn on" onclick="doFilter('all',this)">전체 (36)</button>
+    <button class="fbtn" onclick="doFilter('A',this)" style="color:var(--green)">A – 균형 성장형 (5)</button>
+    <button class="fbtn" onclick="doFilter('B',this)" style="color:var(--blue)">B – 고빈도 불안정형 (4)</button>
+    <button class="fbtn" onclick="doFilter('C',this)" style="color:var(--yellow)">C – 저빈도 침체형 (17)</button>
+    <button class="fbtn" onclick="doFilter('D',this)" style="color:var(--purple)">D – 틈새 집중형 (4)</button>
+    <button class="fbtn" onclick="doFilter('E',this)" style="color:var(--red)">E – 업로드 단절형 (6)</button>
+  </div>
+  <div class="dt-wrap">
+    <table class="dt" id="mainTable">
+      <thead>
+        <tr>
+          <th onclick="doSort(0)">채널 ↕</th>
+          <th onclick="doSort(1)">그룹 ↕</th>
+          <th onclick="doSort(2)">채널점수 ↕</th>
+          <th onclick="doSort(3)">업로드(주) ↕</th>
+          <th onclick="doSort(4)">최대공백(일) ↕</th>
+          <th onclick="doSort(5)">CV ↕</th>
+          <th onclick="doSort(6)">조회회복률(%) ↕</th>
+          <th onclick="doSort(7)">참여도(%) ↕</th>
+          <th onclick="doSort(8)">구독자대비조회율 ↕</th>
+        </tr>
+      </thead>
+      <tbody id="tBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== S7: 그룹별 개선 방향 ===== -->
+<div id="s7" class="page-section">
+  <div class="sec-eyebrow">CHAPTER 07 · IMPROVEMENT</div>
+  <div class="sec-title">그룹별 개선 방향</div>
+  <div class="sec-desc">각 그룹의 특성에 맞는 데이터 기반 실행 전략입니다. 내 채널이 속한 그룹을 찾아 적용해 보시기 바랍니다.</div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;">
+    <div class="card" style="border-top:3px solid var(--green)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:18px">🟢</span>
+        <div><div style="font-size:10px;color:var(--green);font-weight:700">A그룹 — 균형 성장형</div><div style="font-size:15px;font-weight:700">현재 패턴 유지 + 품질 투자</div></div>
+      </div>
+      <ul class="rx-list">
+        <li>현재 업로드 빈도·리듬을 유지하면서 영상 완성도에 자원을 집중합니다.</li>
+        <li>댓글 참여 유도 포맷을 도입하여 참여도 3% 달성에 도전합니다.</li>
+        <li>업로드 최적 시간대 A/B 테스트로 초기 시청 속도를 개선합니다.</li>
+        <li>쇼츠를 병행하여 신규 유입 경로를 추가합니다.</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--blue)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:18px">🔵</span>
+        <div><div style="font-size:10px;color:var(--blue);font-weight:700">B그룹 — 고빈도 불안정형</div><div style="font-size:15px;font-weight:700">빈도 줄이고 리듬 확보</div></div>
+      </div>
+      <ul class="rx-list">
+        <li>주 8회 → 주 4~5회로 줄이되 요일·시간을 고정합니다.</li>
+        <li>콘텐츠 버퍼 2~3개를 미리 제작하여 공백을 방지합니다.</li>
+        <li>CV 4.0 이하 달성을 3개월 목표로 설정합니다.</li>
+        <li>하루 최대 2편 업로드 제한 규칙을 도입합니다.</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--yellow)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:18px">🟡</span>
+        <div><div style="font-size:10px;color:var(--yellow);font-weight:700">C그룹 — 저빈도 침체형</div><div style="font-size:15px;font-weight:700">빈도 단계적 증가 + 공백 차단</div></div>
+      </div>
+      <ul class="rx-list">
+        <li>최소 주 3회 업로드를 3개월 내 달성 목표로 설정합니다.</li>
+        <li>21일 공백 레드라인을 절대 넘지 않으며, 짧은 영상으로 채웁니다.</li>
+        <li>시리즈 기획으로 아이디어 고갈을 방지하고 생산 효율을 높입니다.</li>
+        <li>쇼츠를 활용하여 본채널 업로드 전 관심을 환기합니다.</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--purple)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:18px">🟣</span>
+        <div><div style="font-size:10px;color:var(--purple);font-weight:700">D그룹 — 틈새 집중형</div><div style="font-size:15px;font-weight:700">충성 팬 유지 + 빈도 점진적 증가</div></div>
+      </div>
+      <ul class="rx-list">
+        <li>현재 열성 팬 기반을 절대 잃지 않도록 영상 품질을 타협하지 않습니다.</li>
+        <li>주 2.5회 → 주 3.5회로 3개월 단계적 목표를 설정합니다.</li>
+        <li>쇼츠로 노출을 확대하여 팬 외 신규 유입을 유도합니다.</li>
+        <li>공백 28일 → 21일 이내로 단축이 최우선 과제입니다.</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--red)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <span style="font-size:18px">🔴</span>
+        <div><div style="font-size:10px;color:var(--red);font-weight:700">E그룹 — 업로드 단절형</div><div style="font-size:15px;font-weight:700">즉시 재개 + 3개월 집중 회복</div></div>
+      </div>
+      <ul class="rx-list">
+        <li>짧더라도 지금 당장 업로드를 재개합니다. 주 1회부터 시작합니다.</li>
+        <li>복귀 첫 영상은 공백을 직접 언급하는 대신, <strong>최신 패치·업데이트나 시즌 이슈를 다룬 시의성 있는 콘텐츠</strong>로 자연스럽게 재개합니다. 알고리즘은 "복귀 선언"이 아닌 콘텐츠 자체의 노출 가능성을 평가하기 때문입니다.</li>
+        <li>3개월 집중 업로드(주 3회 이상)로 알고리즘 재학습을 유도합니다.</li>
+        <li>복귀 후 4주 이내 두 번째 공백이 발생하지 않도록 합니다.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== S8: 기준표 + 계산기 ===== -->
+<div id="s8" class="page-section">
+  <div class="sec-eyebrow">CHAPTER 08 · BENCHMARK &amp; CALCULATOR</div>
+  <div class="sec-title">📊 채널 건강 판단 기준표 &amp; 내 채널 진단 계산기</div>
+  <div class="sec-desc">지표별 우수·보통·주의·위험 기준을 확인하시고, 계산기에 내 채널 수치를 입력하시면 기대값을 즉시 확인하실 수 있습니다.</div>
+
+  <table class="crit-table">
+    <thead>
+      <tr>
+        <th>지표</th>
+        <th style="color:var(--green)">✅ 우수</th>
+        <th style="color:var(--yellow)">⚠️ 보통</th>
+        <th style="color:var(--orange)">🔶 주의</th>
+        <th style="color:var(--red)">❌ 위험</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>업로드 빈도</td><td style="color:var(--green)">주 4회 이상</td><td style="color:var(--yellow)">주 2~3회</td><td style="color:var(--orange)">주 1~2회</td><td style="color:var(--red)">주 1회 미만</td></tr>
+      <tr><td>최대 업로드 공백</td><td style="color:var(--green)">10일 이하</td><td style="color:var(--yellow)">11~20일</td><td style="color:var(--orange)">21~35일</td><td style="color:var(--red)">35일 초과</td></tr>
+      <tr><td>CV (불규칙성)</td><td style="color:var(--green)">2.0 미만</td><td style="color:var(--yellow)">2.0~4.0</td><td style="color:var(--orange)">4.0~7.0</td><td style="color:var(--red)">7.0 초과</td></tr>
+      <tr><td>최근 조회 회복률</td><td style="color:var(--green)">105% 이상</td><td style="color:var(--yellow)">95~104%</td><td style="color:var(--orange)">85~94%</td><td style="color:var(--red)">85% 미만</td></tr>
+      <tr><td>구독자 대비 조회율</td><td style="color:var(--green)">0.30 이상</td><td style="color:var(--yellow)">0.15~0.29</td><td style="color:var(--orange)">0.08~0.14</td><td style="color:var(--red)">0.08 미만</td></tr>
+      <tr><td>참여도 (좋아요+댓글/조회수)</td><td style="color:var(--green)">2.0% 이상</td><td style="color:var(--yellow)">1.0~1.9%</td><td style="color:var(--orange)">0.5~0.9%</td><td style="color:var(--red)">0.5% 미만</td></tr>
+    </tbody>
+  </table>
+
+  <div class="calc-wrap">
+    <div style="font-size:19px;font-weight:800;color:var(--green);margin-bottom:5px;">🧮 내 채널 즉시 진단 계산기</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">숫자 하나만 입력하시면 목표 기대값이 즉시 계산됩니다.</div>
+    <div class="calc-grid">
+
+      <div class="calc-box">
+        <h4>👥 구독자 수 → 기대 평균 조회수</h4>
+        <div class="calc-box-desc">구독자 수를 입력하시면 등급별 기대 평균 조회수를 계산합니다.<br>계산식: 구독자수 × 비율 기준값</div>
+        <input class="calc-input" type="number" id="i1" placeholder="구독자 수 입력 (예: 50000)">
+        <button class="calc-btn" onclick="c1f()">계산하기</button>
+        <div class="calc-result" id="r1">
+          <div class="cr-title">📊 기대 평균 조회수</div>
+          <div class="cr-row"><span class="cr-label">✅ 우수 (비율 0.30+)</span><span class="cr-val" style="color:var(--green)" id="r1a">—</span></div>
+          <div class="cr-row"><span class="cr-label">⚠️ 보통 (0.15~0.29)</span><span class="cr-val" style="color:var(--yellow)" id="r1b">—</span></div>
+          <div class="cr-row"><span class="cr-label">🔶 주의 (0.08~0.14)</span><span class="cr-val" style="color:var(--orange)" id="r1c">—</span></div>
+          <div class="cr-row"><span class="cr-label">❌ 위험 (0.08 미만)</span><span class="cr-val" style="color:var(--red)" id="r1d">—</span></div>
+        </div>
+      </div>
+
+      <div class="calc-box">
+        <h4>👍 조회수 → 기대 좋아요 / 댓글 수</h4>
+        <div class="calc-box-desc">영상 평균 조회수를 입력하시면 우수 기준의 좋아요·댓글 목표를 계산합니다.<br>좋아요:댓글 = 9:1 비율 적용</div>
+        <input class="calc-input" type="number" id="i2" placeholder="평균 조회수 입력 (예: 10000)">
+        <button class="calc-btn" onclick="c2f()">계산하기</button>
+        <div class="calc-result" id="r2">
+          <div class="cr-title">📊 기대 좋아요 / 댓글 수</div>
+          <div class="cr-row"><span class="cr-label">✅ 우수 좋아요 (참여도 2%)</span><span class="cr-val" style="color:var(--green)" id="r2a">—</span></div>
+          <div class="cr-row"><span class="cr-label">✅ 우수 댓글 (참여도 2%)</span><span class="cr-val" style="color:var(--green)" id="r2b">—</span></div>
+          <div class="cr-row"><span class="cr-label">⚠️ 보통 좋아요 (참여도 1%)</span><span class="cr-val" style="color:var(--yellow)" id="r2c">—</span></div>
+          <div class="cr-row"><span class="cr-label">⚠️ 보통 댓글 (참여도 1%)</span><span class="cr-val" style="color:var(--yellow)" id="r2d">—</span></div>
+        </div>
+      </div>
+
+      <div class="calc-box">
+        <h4>📊 현재 좋아요+댓글 → 참여율 진단</h4>
+        <div class="calc-box-desc">조회수·좋아요·댓글을 입력하시면 현재 참여율과 등급을 즉시 판단합니다.</div>
+        <input class="calc-input" type="number" id="i3v" placeholder="조회수 (예: 10000)">
+        <input class="calc-input" type="number" id="i3l" placeholder="좋아요 수 (예: 180)">
+        <input class="calc-input" type="number" id="i3c" placeholder="댓글 수 (예: 20)">
+        <button class="calc-btn" onclick="c3f()">참여율 계산</button>
+        <div class="calc-result" id="r3">
+          <div class="cr-title">📊 현재 참여율 진단</div>
+          <div class="cr-row"><span class="cr-label">현재 참여율</span><span class="cr-val" id="r3a">—</span></div>
+          <div class="cr-row"><span class="cr-label">등급 판정</span><span class="cr-val" id="r3b">—</span></div>
+          <div class="cr-row"><span class="cr-label">우수 기준까지 필요 좋아요+댓글</span><span class="cr-val" id="r3c">—</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+  <div class="footer-thanks">끝까지 읽어주셔서 감사합니다.</div>
+  <div class="footer-sub">
+    부족한 점이 있겠지만, 이 분석이 채널 방향을 고민하는 데 작은 참고가 될 수 있다면 감사하겠습니다.<br>
+  </div>
+  <div class="footer-maker">
+    <div>
+      <div class="footer-maker-label">PRODUCED BY</div>
+      <div class="footer-maker-name">슈터본부 &nbsp;·&nbsp; OPS실 &nbsp;·&nbsp; 브랜딩팀</div>
+    </div>
+  </div>
+  <div class="footer-copy">유튜브 36개 게임 채널 분석 인사이트 &nbsp;|&nbsp; YouTube Data API v3 기반 &nbsp;|&nbsp; 5개 그룹 &nbsp;|&nbsp; 6개 지표</div>
+</footer>
+
+
+<script>
+const CH=[
+  {n:"발로란트",s:"A",h:52.0,f:4.5,g:8,cv:3.1,t:107.0,e:2.86,v:0.35},
+  {n:"블루아카이브",s:"A",h:52.0,f:5.2,g:9,cv:2.8,t:106.5,e:3.1,v:0.42},
+  {n:"명조",s:"A",h:50.7,f:4.8,g:7,cv:1.1,t:108.2,e:2.95,v:0.38},
+  {n:"붕괴:스타레일",s:"A",h:50.3,f:4.6,g:8,cv:2.5,t:107.8,e:2.72,v:0.40},
+  {n:"원신",s:"A",h:45.4,f:4.9,g:9,cv:3.2,t:105.0,e:2.60,v:0.36},
+  {n:"이터널리턴",s:"B",h:46.4,f:8.2,g:6,cv:7.85,t:103.0,e:1.21,v:0.44},
+  {n:"TFT",s:"B",h:44.8,f:7.5,g:6,cv:6.11,t:102.5,e:1.35,v:0.39},
+  {n:"더파이널스",s:"B",h:34.0,f:8.1,g:6,cv:3.56,t:101.5,e:1.18,v:0.70},
+  {n:"피파온라인4",s:"B",h:27.1,f:7.9,g:7,cv:5.16,t:83.7,e:0.98,v:0.12},
+  {n:"레인보우식스",s:"C",h:48.4,f:3.8,g:15,cv:1.5,t:96.0,e:1.15,v:0.22},
+  {n:"에픽세븐",s:"C",h:48.4,f:3.2,g:18,cv:1.8,t:95.5,e:1.08,v:0.28},
+  {n:"배틀그라운드",s:"C",h:44.8,f:3.5,g:20,cv:1.9,t:94.0,e:0.98,v:0.18},
+  {n:"리그오브레전드",s:"C",h:41.8,f:3.0,g:22,cv:2.1,t:92.5,e:0.95,v:0.15},
+  {n:"와우",s:"C",h:39.9,f:3.3,g:18,cv:0.94,t:91.0,e:1.02,v:0.32},
+  {n:"쿠키런",s:"C",h:37.5,f:2.8,g:25,cv:2.3,t:89.5,e:0.88,v:0.14},
+  {n:"로스트아크",s:"C",h:37.3,f:3.1,g:28,cv:2.0,t:88.5,e:0.92,v:0.12},
+  {n:"디아블로",s:"C",h:36.9,f:2.5,g:30,cv:2.5,t:87.0,e:0.85,v:0.18},
+  {n:"퍼스트디센던트",s:"C",h:36.1,f:2.9,g:22,cv:1.8,t:86.5,e:0.90,v:0.15},
+  {n:"와일드리프트",s:"C",h:35.4,f:2.7,g:19,cv:0.98,t:85.0,e:0.95,v:0.20},
+  {n:"하스스톤",s:"C",h:31.5,f:2.5,g:32,cv:2.2,t:83.0,e:0.80,v:0.10},
+  {n:"서든어택",s:"C",h:29.7,f:2.3,g:35,cv:1.9,t:82.0,e:0.78,v:0.05},
+  {n:"슈퍼바이브",s:"C",h:26.5,f:2.0,g:38,cv:2.4,t:80.0,e:0.75,v:0.08},
+  {n:"포트나이트",s:"C",h:19.9,f:1.5,g:45,cv:2.8,t:75.0,e:0.65,v:0.06},
+  {n:"검은사막",s:"C",h:19.1,f:1.8,g:50,cv:2.1,t:73.0,e:0.60,v:0.04},
+  {n:"포켓몬카드",s:"C",h:18.4,f:3.5,g:12,cv:0.79,t:72.0,e:1.10,v:0.50},
+  {n:"메이플스토리",s:"C",h:14.5,f:1.2,g:65,cv:3.2,t:68.0,e:0.55,v:0.03},
+  {n:"카스온라인",s:"D",h:48.4,f:2.5,g:28,cv:1.1,t:123.5,e:1.36,v:0.75},
+  {n:"마비노기M",s:"D",h:39.6,f:2.8,g:30,cv:1.4,t:118.0,e:1.28,v:0.55},
+  {n:"세븐나이츠리버스",s:"D",h:37.8,f:2.6,g:32,cv:1.3,t:115.5,e:1.20,v:0.48},
+  {n:"디아블로이모탈",s:"D",h:31.5,f:2.2,g:38,cv:1.5,t:110.0,e:1.15,v:0.35},
+  {n:"콜오브듀티",s:"E",h:24.7,f:0.8,g:55,cv:3.2,t:79.8,e:0.70,v:0.08},
+  {n:"오버워치",s:"E",h:22.7,f:0.9,g:62,cv:2.8,t:78.0,e:0.65,v:0.07},
+  {n:"던전앤파이터",s:"E",h:16.9,f:0.5,g:71,cv:3.5,t:72.0,e:0.55,v:0.05},
+  {n:"프라시아전기",s:"E",h:14.7,f:0.4,g:68,cv:4.0,t:70.0,e:0.52,v:0.04},
+  {n:"마비노기영웅전",s:"E",h:14.4,f:0.6,g:75,cv:3.8,t:68.0,e:0.48,v:0.03},
+  {n:"마비노기",s:"E",h:13.4,f:0.3,g:85,cv:4.2,t:65.0,e:0.45,v:0.02}
+];
+const SC={A:"#00e5a0",B:"#4d9fff",C:"#ffc844",D:"#b57aff",E:"#ff4d6d"};
+const SL={A:"A – 균형 성장형",B:"B – 고빈도 불안정형",C:"C – 저빈도 침체형",D:"D – 틈새 집중형",E:"E – 업로드 단절형"};
+
+/* 네비게이션 */
+function navTo(id,btn){
+  var el=document.getElementById(id);
+  if(!el)return;
+  window.scrollTo({top:el.getBoundingClientRect().top+window.pageYOffset-56,behavior:'smooth'});
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+window.addEventListener('scroll',function(){
+  var ids=['s1','s2','s3','s4','s5','s6','s7','s8'];
+  var btns=document.querySelectorAll('.nav-btn');
+  for(var i=ids.length-1;i>=0;i--){
+    var el=document.getElementById(ids[i]);
+    if(el&&window.scrollY>=el.offsetTop-90){
+      btns.forEach(b=>b.classList.remove('active'));
+      if(btns[i])btns[i].classList.add('active');
+      break;
+    }
+  }
+});
+
+/* 데이터 테이블 */
+var curFilter='all',sortKey='h',sortAsc=false;
+
+function buildTable(data){
+  var tb=document.getElementById('tBody');
+  if(!tb)return;
+  tb.innerHTML='';
+  data.forEach(function(d){
+    var hc=d.h>=45?'var(--green)':d.h>=30?'var(--yellow)':d.h>=20?'var(--orange)':'var(--red)';
+    var pct=Math.round(d.h/60*100);
+    tb.innerHTML+=`<tr>
+      <td><strong>${d.n}</strong></td>
+      <td><span class="seg-pill" style="background:${SC[d.s]}22;color:${SC[d.s]};border:1px solid ${SC[d.s]}44">${SL[d.s]}</span></td>
+      <td><div class="hbw"><div class="hbb"><div class="hbf" style="width:${pct}%;background:${hc}"></div></div><span style="color:${hc};font-weight:700">${d.h}</span></div></td>
+      <td>${d.f}</td>
+      <td>${d.g}일</td>
+      <td>${d.cv}</td>
+      <td>${d.t}%</td>
+      <td>${d.e}%</td>
+      <td>${(d.v*100).toFixed(0)}%</td>
+    </tr>`;
+  });
+}
+
+function doFilter(seg,btn){
+  curFilter=seg;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  applyTable();
+}
+
+function applyTable(){
+  var data=curFilter==='all'?CH:CH.filter(d=>d.s===curFilter);
+  var keyMap=['n','s','h','f','g','cv','t','e','v'];
+  data=[...data].sort((a,b)=>{
+    var va=a[sortKey],vb=b[sortKey];
+    if(typeof va==='string')return sortAsc?va.localeCompare(vb):vb.localeCompare(va);
+    return sortAsc?va-vb:vb-va;
+  });
+  buildTable(data);
+}
+
+function doSort(col){
+  var keyMap=['n','s','h','f','g','cv','t','e','v'];
+  var k=keyMap[col];
+  if(sortKey===k)sortAsc=!sortAsc;
+  else{sortKey=k;sortAsc=false;}
+  applyTable();
+}
+
+/* 계산기 1: 구독자 → 기대 조회수 */
+function c1f(){
+  var subs=parseFloat(document.getElementById('i1').value)||0;
+  var r=document.getElementById('r1');
+  if(subs<=0){r.classList.remove('show');return;}
+  document.getElementById('r1a').textContent=Math.round(subs*0.30).toLocaleString()+'회';
+  document.getElementById('r1b').textContent=Math.round(subs*0.22).toLocaleString()+'회';
+  document.getElementById('r1c').textContent=Math.round(subs*0.11).toLocaleString()+'회';
+  document.getElementById('r1d').textContent=Math.round(subs*0.05).toLocaleString()+'회 미만';
+  r.classList.add('show');
+}
+
+/* 계산기 2: 조회수 → 기대 좋아요/댓글 */
+function c2f(){
+  var views=parseFloat(document.getElementById('i2').value)||0;
+  var r=document.getElementById('r2');
+  if(views<=0){r.classList.remove('show');return;}
+  document.getElementById('r2a').textContent=Math.round(views*0.02*0.9).toLocaleString()+'개';
+  document.getElementById('r2b').textContent=Math.round(views*0.02*0.1).toLocaleString()+'개';
+  document.getElementById('r2c').textContent=Math.round(views*0.01*0.9).toLocaleString()+'개';
+  document.getElementById('r2d').textContent=Math.round(views*0.01*0.1).toLocaleString()+'개';
+  r.classList.add('show');
+}
+
+/* 계산기 3: 현재 참여율 진단 */
+function c3f(){
+  var views=parseFloat(document.getElementById('i3v').value)||0;
+  var likes=parseFloat(document.getElementById('i3l').value)||0;
+  var comments=parseFloat(document.getElementById('i3c').value)||0;
+  var r=document.getElementById('r3');
+  if(views<=0){r.classList.remove('show');return;}
+  var eng=((likes+comments)/views*100);
+  var grade=eng>=2.0?'✅ 우수 (A그룹 수준)':eng>=1.0?'⚠️ 보통 (C그룹 수준)':eng>=0.5?'🔶 주의 (D/E그룹 수준)':'❌ 위험 — 즉각 개선 필요';
+  var gc=eng>=2.0?'var(--green)':eng>=1.0?'var(--yellow)':eng>=0.5?'var(--orange)':'var(--red)';
+  var needed=Math.max(0,Math.round(views*0.02-(likes+comments)));
+  document.getElementById('r3a').textContent=eng.toFixed(2)+'%';
+  document.getElementById('r3a').style.color=gc;
+  document.getElementById('r3b').textContent=grade;
+  document.getElementById('r3b').style.color=gc;
+  document.getElementById('r3c').textContent=needed>0?needed.toLocaleString()+'개 추가 필요':'이미 충족 ✅';
+  r.classList.add('show');
+}
+
+/* 차트 초기화 */
+function initCharts(){
+  if(typeof Chart==='undefined')return;
+  Chart.defaults.color='#8892b0';
+  Chart.defaults.font.family="'Segoe UI','Apple SD Gothic Neo',sans-serif";
+
+  var grps=['A','B','C','D','E'];
+
+  /* c1: 업로드 빈도 vs 채널점수 */
+  new Chart(document.getElementById('c1'),{
+    type:'scatter',
+    data:{datasets:grps.map(g=>({
+      label:SL[g],
+      data:CH.filter(d=>d.s===g).map(d=>({x:d.f,y:d.h,label:d.n})),
+      backgroundColor:SC[g]+'99',borderColor:SC[g],pointRadius:7,pointHoverRadius:10
+    }))},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:12},color:'#8892b0'}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.raw.label}: 빈도 ${ctx.raw.x}회/주, 점수 ${ctx.raw.y}`}}
+      },
+      scales:{
+        x:{title:{display:true,text:'업로드 빈도 (회/주)',color:'#8892b0'},grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8892b0'}},
+        y:{title:{display:true,text:'채널점수',color:'#8892b0'},min:0,max:60,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8892b0'}}
+      }
+    }
+  });
+
+  /* c2: 최대 공백 vs 채널점수 */
+  new Chart(document.getElementById('c2'),{
+    type:'scatter',
+    data:{datasets:grps.map(g=>({
+      label:SL[g],
+      data:CH.filter(d=>d.s===g).map(d=>({x:d.g,y:d.h,label:d.n})),
+      backgroundColor:SC[g]+'99',borderColor:SC[g],pointRadius:7,pointHoverRadius:10
+    }))},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:12},color:'#8892b0'}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.raw.label}: 공백 ${ctx.raw.x}일, 점수 ${ctx.raw.y}`}}
+      },
+      scales:{
+        x:{title:{display:true,text:'최대 업로드 공백 (일)',color:'#8892b0'},grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8892b0'}},
+        y:{title:{display:true,text:'채널점수',color:'#8892b0'},min:0,max:60,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8892b0'}}
+      }
+    }
+  });
+
+  /* c3: CV vs 참여도 */
+  new Chart(document.getElementById('c3'),{
+    type:'scatter',
+    data:{datasets:grps.map(g=>({
+      label:SL[g],
+      data:CH.filter(d=>d.s===g).map(d=>({x:d.cv,y:d.e,label:d.n})),
+      backgroundColor:SC[g]+'99',borderColor:SC[g],pointRadius:7,pointHoverRadius:10
+    }))},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:12},color:'#8892b0'}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.raw.label}: CV ${ctx.raw.x}, 참여도 ${ctx.raw.y}%`}}
+      },
+      scales:{
+        x:{title:{display:true,text:'CV (업로드 불규칙성)',color:'#8892b0'},grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8892b0'}},
+        y:{title:{display:true,text:'참여도 (%)',color:'#8892b0'},min:0,max:4,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8892b0'}}
+      }
+    }
+  });
+
+  /* c4: 구독자 대비 조회율 vs 채널점수 */
+  new Chart(document.getElementById('c4'),{
+    type:'scatter',
+    data:{datasets:grps.map(g=>({
+      label:SL[g],
+      data:CH.filter(d=>d.s===g).map(d=>({x:d.v,y:d.h,label:d.n})),
+      backgroundColor:SC[g]+'99',borderColor:SC[g],pointRadius:7,pointHoverRadius:10
+    }))},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:12,font:{size:12},color:'#8892b0'}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.raw.label}: 조회율 ${ctx.raw.x}, 점수 ${ctx.raw.y}`}}
+      },
+      scales:{
+        x:{title:{display:true,text:'구독자 대비 조회율',color:'#8892b0'},grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8892b0'}},
+        y:{title:{display:true,text:'채널점수',color:'#8892b0'},min:0,max:60,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8892b0'}}
+      }
+    }
+  });
+
+  /* c5: 레이더 — 그룹별 5개 지표 */
+  var maxF=9,maxG=90,maxCV=9,maxT=130,maxH=55;
+  function grpAvg(g,fn){var arr=CH.filter(d=>d.s===g);return arr.reduce((s,d)=>s+fn(d),0)/arr.length;}
+  function norm(v,max){return Math.min(100,Math.max(0,v/max*100));}
+
+  var radarDatasets=grps.map(g=>({
+    label:SL[g],
+    data:[
+      norm(grpAvg(g,d=>d.f),maxF),
+      norm(maxG-grpAvg(g,d=>d.g),maxG),
+      norm(maxCV-grpAvg(g,d=>d.cv),maxCV),
+      norm(grpAvg(g,d=>d.v*100),75),
+      norm(grpAvg(g,d=>d.e),3.5)
+    ],
+    borderColor:SC[g],backgroundColor:SC[g]+'28',
+    pointBackgroundColor:SC[g],borderWidth:2.5,pointRadius:5
+  }));
+
+  new Chart(document.getElementById('c5'),{
+    type:'radar',
+    data:{
+      labels:['업로드 빈도','공백 안정성','리듬 규칙성(CV역)','구독자대비조회율','참여도'],
+      datasets:radarDatasets
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw.toFixed(1)}점`}}
+      },
+      scales:{
+        r:{
+          min:0,max:100,
+          ticks:{stepSize:25,color:'#555b7a',backdropColor:'transparent',font:{size:10}},
+          pointLabels:{color:'#c0c8e8',font:{size:13,weight:'700'}},
+          grid:{color:'rgba(255,255,255,0.08)'},
+          angleLines:{color:'rgba(255,255,255,0.08)'}
+        }
+      }
+    }
+  });
+}
+
+/* DOMContentLoaded */
+document.addEventListener('DOMContentLoaded',function(){
+  applyTable();
+  initCharts();
+});
+</script>
+</body>
+</html>
