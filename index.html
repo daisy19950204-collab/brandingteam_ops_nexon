@@ -100,6 +100,11 @@
     display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:20px;
     font-size:12px; font-weight:700; color:#2A2E35;
   }
+  .legend-chip.filterable{cursor:pointer; user-select:none; transition:box-shadow .12s ease, opacity .12s ease;}
+  .legend-chip.filterable:hover{box-shadow:0 0 0 2px rgba(20,22,26,.18) inset;}
+  .legend-chip.filterable.active{box-shadow:0 0 0 2px rgba(20,22,26,.55) inset;}
+  .legend-chip.reset-chip{background:#fff; border:1.5px dashed var(--border-strong); color:var(--text-faint); cursor:pointer;}
+  .worker-dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:middle; flex:none; box-shadow:0 0 0 1px rgba(20,22,26,.15) inset;}
 
   /* ---------- Board ---------- */
   .board{background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden;}
@@ -135,6 +140,10 @@
   .month-day-bg.out-month{opacity:.4;}
   .month-daynum{position:absolute; top:3px; left:6px; font-size:11px; font-weight:700; color:var(--text-dim);}
   .month-day-bg.today .month-daynum{color:#B8790F;}
+  .today-badge{
+    display:inline-block; margin-left:4px; background:#C43E3E; color:#fff; font-size:8.5px; font-weight:800;
+    padding:1.5px 6px; border-radius:20px; vertical-align:middle; line-height:1.4;
+  }
   .ticket-bar.month-bar{margin:2px 2px;}
   .ticket-bar.month-bar.thin{margin:1px 2px;}
   .ticket-bar.month-bar.thin .seg-main{padding:0 5px;}
@@ -173,7 +182,7 @@
   .ticket-bar:hover{outline:2px solid rgba(0,0,0,.18); outline-offset:0;}
   .seg{display:flex; align-items:center; min-width:0; height:100%; position:relative;}
   .seg-main{padding:0 7px; color:#2A2E35;}
-  .seg-label{font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .seg-label{font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:relative; z-index:1;}
   .edge-date{font-size:9.5px; font-weight:800; color:#2A2E35; opacity:.75;}
   .edge-date.start-edge{position:absolute; left:5px; top:1px;}
   .edge-date.end-edge{position:absolute; right:5px; top:1px;}
@@ -182,7 +191,7 @@
     border-radius:50%; width:15px; height:15px; font-size:9px; display:flex; align-items:center; justify-content:center;
   }
   .absence-bar{
-    background-image:repeating-linear-gradient(-45deg, rgba(20,22,26,.14) 0 6px, transparent 6px 12px) !important;
+    background-image:repeating-linear-gradient(-45deg, rgba(255,255,255,.38) 0 6px, rgba(255,255,255,.08) 6px 12px) !important;
   }
 
   /* ---------- Cards / dashboard ---------- */
@@ -212,6 +221,8 @@
   .status-done{background:#F1F2F4; color:var(--text-faint);}
   .status-hold{background:#FBEBD3; color:#8A5518;}
   .empty-note{color:var(--text-faint); font-size:12.5px; padding:18px 4px; text-align:center;}
+  .deadline-danger{color:var(--danger); font-weight:800;}
+  .qty-badge{display:inline-block; font-size:10.5px; font-weight:800; color:var(--accent-dark); background:var(--accent-soft); padding:1px 6px; border-radius:8px; vertical-align:middle;}
   .ticket-bar.tb-done{opacity:.5;}
   .ticket-bar.tb-hold{box-shadow:0 0 0 2px var(--border-strong) inset; opacity:.85;}
   .board-summary{display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-top:18px;}
@@ -258,6 +269,11 @@
   .repeat-field-head label{margin-bottom:0;}
   .add-link-btn{width:26px; height:26px; flex:none; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--accent-dark); font-size:18px; line-height:1; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;}
   .add-link-btn:hover{background:var(--accent-soft); border-color:var(--accent);}
+  .copy-drive-btn{
+    border:1px solid var(--border); background:#fff; border-radius:6px; padding:3px 9px; font-size:11px; font-weight:700;
+    color:var(--accent-dark); cursor:pointer; white-space:nowrap; font-family:inherit;
+  }
+  .copy-drive-btn:hover{background:var(--accent-soft); border-color:var(--accent);}
   .repeat-input-row{display:flex; gap:6px; margin-bottom:7px;}
   .repeat-input-row:last-child{margin-bottom:0;}
   .repeat-input-row input{flex:1; min-width:0;}
@@ -301,19 +317,29 @@
 <script>
 /* ============================= 상수 ============================= */
 const WORKERS = ['심승선','임기백','이유정','이수민'];
-const PROJECTS = ['공통','부재','서든어택','퍼스트디센던트','오버워치','카스온라인','더파이널스','아크레이더스','낙원','SAZ'];
+const PROJECTS = ['공통','부재','서든어택','TFD','오버워치','CSO','TF','ARC','낙원','SAZ'];
 const PROJECT_COLORS = {
   '공통':'#5B6472',
   '부재':'#9C9284',
   '서든어택':'#C0392B',
-  '퍼스트디센던트':'#7C4DBF',
+  'TFD':'#7C4DBF',
   '오버워치':'#2E6FCC',
-  '카스온라인':'#5C7A2E',
-  '더파이널스':'#C23A8B',
-  '아크레이더스':'#0E8FA0',
+  'CSO':'#5C7A2E',
+  'TF':'#C23A8B',
+  'ARC':'#0E8FA0',
   '낙원':'#1E8A4C',
   'SAZ':'#B8790F'
 };
+// 작업자별 파스텔톤 색상 (간트 바 색상, 작업자 동그라미 등에 공통 사용)
+const WORKER_COLORS = {
+  '심승선':'#F3AFAF',
+  '임기백':'#F0E29A',
+  '이수민':'#A9D9B8',
+  '이유정':'#A7C7F2'
+};
+function workerDot(w){
+  return `<span class="worker-dot" style="background:${WORKER_COLORS[w] || '#C7CCD6'}"></span>`;
+}
 const STORAGE_KEY = 'tickets_v1';
 
 /* =====================================================================
@@ -421,11 +447,12 @@ function persistenceAvailable(){
   return !!firestoreDb || storageAvailable();
 }
 const DOW_LABEL = ['일','월','화','수','목','금','토'];
-const WORK_TYPES = ['라이브','오프라인 촬영','영상','기획','디자인','언리얼'];
+const WORK_TYPES = ['라이브','오프라인 촬영','롱폼','숏폼','기획','디자인','언리얼'];
 const WORK_TYPE_ICONS = {
   '라이브':'📡',
   '오프라인 촬영':'🎥',
-  '영상':'🎬',
+  '롱폼':'🎬',
+  '숏폼':'📱',
   '기획':'📝',
   '디자인':'🎨',
   '언리얼':'🧩'
@@ -433,12 +460,18 @@ const WORK_TYPE_ICONS = {
 const WORK_TYPE_COLORS = {
   '라이브':'#F3AFAF',
   '오프라인 촬영':'#F6C692',
-  '영상':'#A7C7F2',
+  '롱폼':'#A7C7F2',
+  '숏폼':'#DCEBFB',
   '기획':'#F0E29A',
   '디자인':'#A9D9B8',
   '언리얼':'#CBB4E8'
 };
 const NO_TYPE_COLOR = '#DBD5CD';
+const ABSENCE_FILTER_KEY = '__ABSENCE__'; // 상단 범례의 '부재' 칩 클릭 필터용 특수 키
+function matchesBoardTypeFilter(t){
+  if(!boardTypeFilters.length) return true;
+  return boardTypeFilters.some(f=> f===ABSENCE_FILTER_KEY ? t.project==='부재' : t.workType===f);
+}
 
 let TICKETS = [];
 let currentView = 'board';
@@ -446,6 +479,7 @@ let anchorMonday = mondayOf(new Date());
 let boardMode = 'twoWeek'; // 'twoWeek' | 'month'
 let monthAnchor = new Date();
 let monthFilterWorker = null; // 월간 보기에서 특정 작업자만 필터링 (null이면 전체)
+let boardTypeFilters = []; // 보드(2주/월) 상단 유형 색상 버튼 클릭 시 선택된 유형들만 필터링 (빈 배열이면 전체, 여러 개 동시 선택 가능)
 let workerCardMonthOffset = 0; // 대시보드 "작업자별 유형 티켓수" 카드의 월 이동 (0=이번달)
 let projectCardMonthOffset = 0; // 대시보드 "프로젝트별 유형 티켓수" 카드의 월 이동 (0=이번달)
 let searchText = ''; // 티켓 검색 탭: 자유 검색어
@@ -471,6 +505,71 @@ function businessDaysBetween(s,e){
   while(cur<=ed){ if(!isWeekend(cur)) c++; cur=addDays(cur,1); }
   return c;
 }
+function calendarDaysBetween(s,e){
+  if(!s||!e) return 0;
+  let sd=parseISO(s), ed=parseISO(e);
+  if(ed<sd) return 0;
+  return Math.round((ed-sd)/86400000)+1;
+}
+// 오프라인 촬영/라이브는 주말에도 실제로 진행되는 경우가 있어, 이런 유형은 주말도 영업일로 계산
+const WEEKEND_WORK_TYPES = ['오프라인 촬영','라이브'];
+// 특정 날짜(d)가 이 티켓 기준으로 '업무일'인지 판단.
+// - 평일이면 항상 업무일
+// - 오프라인 촬영/라이브 유형이면 주말도 항상 업무일
+// - 그 외에는 티켓에서 체크한 '토요일 출근'/'일요일 출근' 여부에 따라 그 요일만 업무일로 처리
+//   (weekendWork는 과거 단일 체크박스였던 데이터와의 하위 호환을 위해 함께 확인)
+function isWorkingDayForTicket(d, t){
+  const wd = d.getDay();
+  if(wd!==0 && wd!==6) return true;
+  if(WEEKEND_WORK_TYPES.includes(t.workType)) return true;
+  if(wd===6) return !!(t.weekendSat || t.weekendWork);
+  if(wd===0) return !!(t.weekendSun || t.weekendWork);
+  return false;
+}
+// 영업일 계산: 라이브/오프라인 촬영은 주말도 업무일로 치고, 그 외 유형은 평일만 기본 업무일로 본다.
+// 하루 단위로 세면서, 같은 날 같은 담당자가 동시에 진행 중인 티켓이 N개면(자기 자신 포함) 그 날은 1일이 아니라 1/N일로 계산한다.
+// (2개 겹치면 각각 0.5일, 3개 겹치면 각각 1/3일 ...)
+// '토요일 출근'/'일요일 출근' 체크는 기간과 무관하게 체크당 +1일만 추가한다 (겹침 보정과는 별개, 특정 날짜에 묶이지 않는 값이라 겹침 계산 대상 아님).
+// 같은 날 같은 담당자가 동시에 진행 중인 티켓(자기 자신 포함)이 몇 개인지 센다.
+// 부재는 '작업'이 아니므로 계산에서 제외한다.
+function concurrentTicketCountForDay(iso, t){
+  if(t.project === '부재' || !t.assignees || !t.assignees.length) return 1;
+  let count = 1; // 자기 자신
+  TICKETS.forEach(other=>{
+    if(other.id === t.id || other.project === '부재') return;
+    if(!other.assignees.some(a=> t.assignees.includes(a))) return;
+    if(iso >= other.startDate && iso <= other.endDate) count++;
+  });
+  return count;
+}
+// 특정 날짜에 해당 담당자가 등록된 부재(휴가) 중인지 확인
+function isAssigneeOnLeave(iso, assignee){
+  return TICKETS.some(o=> o.project==='부재' && o.assignees.includes(assignee) && iso>=o.startDate && iso<=o.endDate);
+}
+// 티켓의 담당자 전원이 그 날 부재 중이면(일할 사람이 아무도 없으면) 그 날은 업무일에서 제외한다.
+// (담당자가 여럿인 티켓에서 일부만 부재라면, 남은 담당자가 진행할 수 있으므로 그대로 계산한다)
+function isTicketBlockedByAbsence(iso, t){
+  if(t.project === '부재' || !t.assignees || !t.assignees.length) return false;
+  return t.assignees.every(a=> isAssigneeOnLeave(iso, a));
+}
+function countWorkingDaysForTicket(s,e,t){
+  if(!s||!e) return 0;
+  let sd=parseISO(s), ed=parseISO(e);
+  if(ed<sd) return 0;
+  let days = 0, cur = new Date(sd);
+  while(cur<=ed){
+    const iso = toISO(cur);
+    if(isWorkingDayForTicket(cur, t) && !isTicketBlockedByAbsence(iso, t)){
+      days += 1 / concurrentTicketCountForDay(iso, t);
+    }
+    cur = addDays(cur,1);
+  }
+  if(!WEEKEND_WORK_TYPES.includes(t.workType)){
+    if(t.weekendSat || t.weekendWork) days += 1;
+    if(t.weekendSun || t.weekendWork) days += 1;
+  }
+  return days;
+}
 function nextBusinessDay(iso){ let d=addDays(parseISO(iso),1); while(isWeekend(d)) d=addDays(d,1); return toISO(d); }
 function overlapBD(startISO,endISO,rs,re){
   const s = startISO > rs ? startISO : rs;
@@ -483,6 +582,28 @@ function clipRange(s,e,rs,re){
   const ce = e>re ? re : e;
   if(cs>ce) return null;
   return [cs,ce];
+}
+// 티켓 기준으로 '업무일이 아닌 날(쉬는 토/일)'에는 바를 끊어서, 이어지는 업무일 구간별로 나눠 반환한다.
+// alwaysContinuous가 true이면(부재) 나누지 않고 통째로 이어서 반환한다.
+function splitSegmentsByWorkDays(startISO, endISO, t, alwaysContinuous){
+  if(alwaysContinuous) return [[startISO, endISO]];
+  const segments = [];
+  let curStart = null, prevIso = null;
+  let d = parseISO(startISO);
+  const end = parseISO(endISO);
+  while(d <= end){
+    const iso = toISO(d);
+    if(isWorkingDayForTicket(d, t)){
+      if(curStart === null) curStart = iso;
+    } else if(curStart !== null){
+      segments.push([curStart, prevIso]); curStart = null;
+    }
+    prevIso = iso;
+    d = addDays(d,1);
+  }
+  if(curStart !== null) segments.push([curStart, prevIso]);
+  // 극단적으로 티켓 기간 전체가 쉬는 날로만 이루어진 경우, 표시가 아예 사라지지 않도록 원래 구간을 그대로 반환
+  return segments.length ? segments : [[startISO, endISO]];
 }
 function monthRange(offset){
   const now=new Date();
@@ -500,6 +621,16 @@ function fmtShort(iso){ const d=parseISO(iso); return `${d.getMonth()+1}/${d.get
 function fmtFull(iso){ const d=parseISO(iso); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; }
 function todayISO(){ return toISO(new Date()); }
 function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function qtyBadge(t){
+  const q = t.qty || 1;
+  return q > 1 ? ` <span class="qty-badge">X${q}</span>` : '';
+}
+// 영업일 표시는 소수점 첫째 자리까지만 (정수면 소수점 없이 표시)
+function fmtDays(n){
+  if(n===null || n===undefined || isNaN(n)) return '-';
+  const rounded = Math.round(n*10)/10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
 function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)); }
 
 const STATUS_LIST = ['예정','작업중','완료','보류'];
@@ -532,23 +663,32 @@ function statusChipHtml(status){
   return `<span class="status-chip ${STATUS_CHIP_CLASS[status]||'status-upcoming'}">${status}</span>`;
 }
 function actualBusinessDays(t){
-  if(t.actualEndDate) return businessDaysBetween(t.startDate, t.actualEndDate);
-  return null;
+  if(!t.actualEndDate) return null;
+  return countWorkingDaysForTicket(t.startDate, t.actualEndDate, t);
 }
 function expectedWorkDays(t){
   // 리소스 마감일이 있으면, 리소스가 준비된 다음 영업일부터 실제 제작이 시작되는 것으로 계산
-  if(t.resourceDeadline){
-    const effectiveStart = nextBusinessDay(t.resourceDeadline);
-    return businessDaysBetween(effectiveStart, t.endDate);
-  }
-  return businessDaysBetween(t.startDate, t.endDate);
+  const rangeStart = t.resourceDeadline ? nextBusinessDay(t.resourceDeadline) : t.startDate;
+  return countWorkingDaysForTicket(rangeStart, t.endDate, t);
 }
-function renderResourceField(val){
-  if(Array.isArray(val)){ const vals=val.filter(Boolean); return vals.length ? vals.map(renderResourceField).join('<br>') : '-'; }
+function isDrivePathLike(val){
+  // http(s) 링크가 아니면서 백슬래시가 포함된 경우 사내 드라이브/네트워크 경로로 간주
+  return !/^https?:\/\//i.test(val) && /\\/.test(val);
+}
+function renderResourceField(val, label){
+  label = label || '리소스';
+  if(Array.isArray(val)){
+    const vals = val.filter(Boolean);
+    if(!vals.length) return '-';
+    return vals.map((v,i)=> renderResourceField(v, vals.length>1 ? `${label}${i+1}` : label)).join('<br>');
+  }
   if(!val) return '-';
   const trimmed = val.trim();
   if(/^https?:\/\//i.test(trimmed)){
-    return `<a href="${escapeHtml(trimmed)}" target="_blank" rel="noopener" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">🔗 리소스 열기</a>`;
+    return `<a href="${escapeHtml(trimmed)}" target="_blank" rel="noopener" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">🔗 ${escapeHtml(label)}</a>`;
+  }
+  if(isDrivePathLike(trimmed)){
+    return `<button type="button" class="copy-drive-btn" data-copy="${escapeHtml(trimmed)}" title="${escapeHtml(trimmed)}">📁 드라이브 주소 복사</button>`;
   }
   return escapeHtml(trimmed);
 }
@@ -573,30 +713,30 @@ function buildSeedTickets(){
     return '예정';
   }
 
-  // [프로젝트 태그] -> 우리 시스템의 프로젝트명 매핑: TFD=퍼스트디센던트, OW=오버워치, KCSO=카스온라인, SAZ=SAZ, SA/서든어택=서든어택
+  // [프로젝트 태그] -> 우리 시스템의 프로젝트명 매핑: TFD=퍼스트디센던트, OW=오버워치, CSO=카스온라인, SAZ=SAZ, SA/서든어택=서든어택
   const raw = [
-    {title:'K-Culture(한국 전통 의상)', project:'퍼스트디센던트', type:'디자인', os:-8, oe:-3},
+    {title:'K-Culture(한국 전통 의상)', project:'TFD', type:'디자인', os:-8, oe:-3},
     {title:'오버워치 미션 수행 예능 콘텐츠', project:'오버워치', type:'기획', os:-8, oe:-3},
-    {title:'파이널 스테이지 진출 쇼츠', project:'오버워치', type:'영상', os:-6, oe:3},
-    {title:'신규 여자 일반 좀비 AI 영상', project:'카스온라인', type:'영상', os:-6, oe:-3, actualAdj:-1},
-    {title:'드래곤로드 프로모션 영상', project:'SAZ', type:'영상', os:-5, oe:3, memo:'https://drive.google.com/drive/folders/example-saz-dragonroad'},
-    {title:'드래곤로드 티저', project:'SAZ', type:'영상', os:-5, oe:3},
-    {title:'빨간망토', project:'퍼스트디센던트', type:'디자인', os:-5, oe:12},
+    {title:'파이널 스테이지 진출 쇼츠', project:'오버워치', type:'숏폼', os:-6, oe:3},
+    {title:'신규 여자 일반 좀비 AI 영상', project:'CSO', type:'롱폼', os:-6, oe:-3, actualAdj:-1},
+    {title:'드래곤로드 프로모션 영상', project:'SAZ', type:'롱폼', os:-5, oe:3, memo:'https://drive.google.com/drive/folders/example-saz-dragonroad'},
+    {title:'드래곤로드 티저', project:'SAZ', type:'숏폼', os:-5, oe:3},
+    {title:'빨간망토', project:'TFD', type:'디자인', os:-5, oe:12},
     {title:'사내대회 조연출', project:'오버워치', type:'기획', os:-7, oe:-4, actualAdj:0},
-    {title:'챔피언십 오픈 영상', project:'서든어택', type:'영상', os:-4, oe:3},
+    {title:'챔피언십 오픈 영상', project:'서든어택', type:'롱폼', os:-4, oe:3},
     {title:'맵 정보', project:'SAZ', type:'디자인', os:-3, oe:1},
     {title:'시범 경기 라이브 스튜디오 테스트', project:'서든어택', type:'라이브', os:5, oe:6},
-    {title:'패치노트 - 좀비 시나리오 보상 리뉴얼, 에픽 주무기 베리에이션, 신규 초월 클래스', project:'카스온라인', type:'기획', os:4, oe:8},
-    {title:'챔피언십 시범 경기 쇼츠', project:'서든어택', type:'영상', os:8, oe:15},
-    {title:'던전 앤 잉그리스(판타지)', project:'퍼스트디센던트', type:'디자인', os:8, oe:26, forceAssignees:['이유정','심승선'], memo:'https://drive.google.com/drive/folders/example-tfd-dungeon'},
-    {title:'신규 초월 클래스 쇼츠', project:'카스온라인', type:'영상', os:9, oe:12, statusOverride:'보류'},
+    {title:'패치노트 - 좀비 시나리오 보상 리뉴얼, 에픽 주무기 베리에이션, 신규 초월 클래스', project:'CSO', type:'기획', os:4, oe:8},
+    {title:'챔피언십 시범 경기 쇼츠', project:'서든어택', type:'숏폼', os:8, oe:15},
+    {title:'던전 앤 잉그리스(판타지)', project:'TFD', type:'디자인', os:8, oe:26, forceAssignees:['이유정','심승선'], memo:'https://drive.google.com/drive/folders/example-tfd-dungeon'},
+    {title:'신규 초월 클래스 쇼츠', project:'CSO', type:'숏폼', os:9, oe:12, statusOverride:'보류'},
     {title:'챔피언십 넥방 테스트', project:'서든어택', type:'언리얼', os:10, oe:11},
-    {title:'에픽 주무기 베리에이션 활용 AI 영상 (나루토 영상 레퍼런스)', project:'카스온라인', type:'영상', os:14, oe:19, memo:'https://drive.google.com/drive/folders/example-kcso-reference'},
+    {title:'에픽 주무기 베리에이션 활용 AI 영상 (나루토 영상 레퍼런스)', project:'CSO', type:'롱폼', os:14, oe:19, memo:'https://drive.google.com/drive/folders/example-kcso-reference'},
     {title:'챔피언십 콘텐츠 스케줄 기획', project:'서든어택', type:'기획', os:21, oe:25},
     {title:'예선전 라이브', project:'서든어택', type:'라이브', os:25, oe:26},
-    {title:'챔피언십 예선전 숏폼 5개', project:'서든어택', type:'영상', os:28, oe:33},
-    {title:'예선전 하이라이트 롱폼', project:'서든어택', type:'영상', os:28, oe:33},
-    {title:'천사와 악마', project:'퍼스트디센던트', type:'디자인', os:31, oe:37},
+    {title:'챔피언십 예선전 숏폼 5개', project:'서든어택', type:'숏폼', os:28, oe:33},
+    {title:'예선전 하이라이트 롱폼', project:'서든어택', type:'롱폼', os:28, oe:33},
+    {title:'천사와 악마', project:'TFD', type:'디자인', os:31, oe:37},
   ];
 
   const built = raw.map((spec, i)=>{
@@ -636,6 +776,53 @@ function buildSeedTickets(){
   });
 
   return built;
+}
+
+// 2026년 남은 공휴일 + 2027년 전체 공휴일 (전사 공통 부재, 담당자 전원 체크)
+// 토/일요일에 걸리는 공휴일 자체는 넣지 않고, 대체공휴일이 있는 경우 그 대체공휴일만 등록함
+// (단, 현충일처럼 대체공휴일이 없는 주말 공휴일은 아예 등록하지 않음)
+const HOLIDAY_ABSENCE_SEEDS = [
+  {title:'전사휴가 · 추석연휴', start:'2026-09-24', end:'2026-09-25'},
+  {title:'전사휴가 · 개천절(대체공휴일)', start:'2026-10-05', end:'2026-10-05'},
+  {title:'전사휴가 · 한글날', start:'2026-10-09', end:'2026-10-09'},
+  {title:'전사휴가 · 크리스마스', start:'2026-12-25', end:'2026-12-25'},
+  {title:'전사휴가 · 신정', start:'2027-01-01', end:'2027-01-01'},
+  {title:'전사휴가 · 설날연휴', start:'2027-02-08', end:'2027-02-09'},
+  {title:'전사휴가 · 삼일절', start:'2027-03-01', end:'2027-03-01'},
+  {title:'전사휴가 · 노동절(대체공휴일)', start:'2027-05-03', end:'2027-05-03'},
+  {title:'전사휴가 · 어린이날', start:'2027-05-05', end:'2027-05-05'},
+  {title:'전사휴가 · 부처님오신날', start:'2027-05-13', end:'2027-05-13'},
+  {title:'전사휴가 · 제헌절(대체공휴일)', start:'2027-07-19', end:'2027-07-19'},
+  {title:'전사휴가 · 광복절(대체공휴일)', start:'2027-08-16', end:'2027-08-16'},
+  {title:'전사휴가 · 추석연휴', start:'2027-09-14', end:'2027-09-16'},
+  {title:'전사휴가 · 개천절(대체공휴일)', start:'2027-10-04', end:'2027-10-04'},
+  {title:'전사휴가 · 한글날(대체공휴일)', start:'2027-10-11', end:'2027-10-11'},
+  {title:'전사휴가 · 크리스마스(대체공휴일)', start:'2027-12-27', end:'2027-12-27'}
+];
+function seedHolidayAbsences(){
+  const now = new Date().toISOString();
+  let added = false;
+  HOLIDAY_ABSENCE_SEEDS.forEach(h=>{
+    const exists = TICKETS.some(t=> t.project==='부재' && t.title===h.title && t.startDate===h.start && t.endDate===h.end);
+    if(exists) return;
+    TICKETS.push({
+      id: uid(),
+      title: h.title,
+      project: '부재',
+      assignees: [...WORKERS],
+      workType: null,
+      status: null,
+      startDate: h.start,
+      endDate: h.end,
+      actualEndDate: null,
+      memo: '',
+      weekendWork: false,
+      qty: 1,
+      createdAt: now, updatedAt: now
+    });
+    added = true;
+  });
+  return added;
 }
 
 /* ============================= 저장소 ============================= */
@@ -681,6 +868,33 @@ function showToast(msg){
   el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'), 2200);
 }
+async function copyTextToClipboard(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try{ document.execCommand('copy'); ok = true; }catch(e2){ ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+// 캡처 단계에서 처리하여, 버튼이 들어있는 티켓 행(.ticket-row)의 클릭(모달 열기)이 함께 실행되지 않도록 함
+document.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('.copy-drive-btn');
+  if(!btn) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const text = btn.dataset.copy || '';
+  const ok = await copyTextToClipboard(text);
+  showToast(ok ? '드라이브 주소를 복사했습니다.' : '복사에 실패했습니다. 직접 선택해 복사해주세요.');
+}, true);
 
 /* ============================= 연속 작업(체인) 계산 ============================= */
 function computeChains(){
@@ -821,11 +1035,34 @@ function renderContent(){
 }
 
 /* ============================= 보드(Gantt) ============================= */
-function boardLegendHtml(){
-  return `<div class="legend">${WORK_TYPES.map(wt=>`
-      <span class="legend-chip" style="background:${WORK_TYPE_COLORS[wt]}">${WORK_TYPE_ICONS[wt]} ${wt}</span>`).join('')}
-      <span class="legend-chip" style="background:${NO_TYPE_COLOR}">부재</span>
+function boardLegendHtml(showTypeColors){
+  if(showTypeColors === undefined) showTypeColors = true;
+  const chipStyle = wt => showTypeColors
+    ? `background:${WORK_TYPE_COLORS[wt]};`
+    : `background:#fff; border:1.5px solid var(--border); color:var(--text-dim);`;
+  const noTypeStyle = showTypeColors
+    ? `background:${NO_TYPE_COLOR};`
+    : `background:#fff; border:1.5px solid var(--border); color:var(--text-dim);`;
+  return `<div class="legend" id="boardTypeLegend">${WORK_TYPES.map(wt=>`
+      <span class="legend-chip filterable ${boardTypeFilters.includes(wt)?'active':''}" data-type="${wt}" style="${chipStyle(wt)}">${WORK_TYPE_ICONS[wt]} ${wt}</span>`).join('')}
+      <span class="legend-chip filterable ${boardTypeFilters.includes(ABSENCE_FILTER_KEY)?'active':''}" data-type="${ABSENCE_FILTER_KEY}" style="${noTypeStyle}">부재</span>
+      ${boardTypeFilters.length ? `<span class="legend-chip reset-chip" id="resetBoardTypeFilter">전체 보기</span>` : ''}
     </div>`;
+}
+function wireBoardTypeFilter(){
+  const legend = document.getElementById('boardTypeLegend');
+  if(!legend) return; // 보드 화면이 아닐 때는 존재하지 않음
+  legend.querySelectorAll('.legend-chip[data-type]').forEach(el=>{
+    el.onclick = ()=>{
+      const wt = el.dataset.type;
+      const idx = boardTypeFilters.indexOf(wt);
+      if(idx>-1) boardTypeFilters.splice(idx,1); // 이미 선택된 유형을 다시 누르면 해제
+      else boardTypeFilters.push(wt); // 연달아 누르면 추가로 선택되어 함께 표시됨
+      renderContent();
+    };
+  });
+  const resetBtn = document.getElementById('resetBoardTypeFilter');
+  if(resetBtn) resetBtn.onclick = ()=>{ boardTypeFilters = []; renderContent(); };
 }
 
 function renderBoard(){
@@ -854,7 +1091,7 @@ function renderTwoWeekBoard(){
     </div>`;
 
   const rows = WORKERS.map(w=>{
-    const wTickets = TICKETS.filter(t=>t.assignees.includes(w));
+    const wTickets = TICKETS.filter(t=>t.assignees.includes(w) && matchesBoardTypeFilter(t));
     const {items, maxLanes} = assignLanes(wTickets, rangeStart, rangeEnd);
     const rowHeight = maxLanes * 38 + 6;
 
@@ -868,34 +1105,40 @@ function renderTwoWeekBoard(){
 
     const bars = items.map(({t,lane})=>{
       const idxOf = iso => Math.round((parseISO(iso)-parseISO(rangeStart))/86400000);
-      const mainClip = clipRange(t.startDate, t.endDate, rangeStart, rangeEnd);
-      if(!mainClip) return '';
-
-      const totalStartIdx = idxOf(mainClip[0]);
-      const totalEndIdx = idxOf(mainClip[1]);
 
       const color = t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR;
       const chain = chains[t.id];
       const isAbsence = t.project === '부재';
       const status = ticketStatus(t);
       const statusCls = status==='완료' ? 'tb-done' : status==='보류' ? 'tb-hold' : '';
-      const showStartBold = t.startDate >= rangeStart && t.startDate <= rangeEnd;
-      const showEndBold = t.endDate >= rangeStart && t.endDate <= rangeEnd;
       const days_bd = expectedWorkDays(t);
       const actual = actualBusinessDays(t);
 
-      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (예상 ${days_bd}영업일${status==='완료'&&actual!==null?`, 실제 ${actual}영업일`:''})${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
+      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
 
-      return `
-        <div class="ticket-bar ${statusCls}" data-id="${t.id}" title="${escapeHtml(title)}"
-             style="grid-column:${totalStartIdx+1} / ${totalEndIdx+2}; grid-row:${lane+1};">
-          <div class="seg seg-main ${isAbsence?'absence-bar':''}" style="flex:1 0 0; background:${color};">
-            ${showStartBold ? `<span class="edge-date start-edge">${fmtShort(t.startDate)}</span>` : ''}
-            <span class="seg-label" style="margin-top:9px;">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}</span>
-            ${showEndBold ? `<span class="edge-date end-edge">${fmtShort(t.endDate)}</span>` : ''}
-          </div>
-          ${chain ? `<span class="chain-badge" title="연속 작업 ${chain.index}/${chain.size}">🔗</span>` : ''}
-        </div>`;
+      // 부재(휴가)는 원래 주말까지 이어서 표기, 그 외에는 '주말 출근 필요' 체크가 있을 때만 이어서 표기
+      const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, isAbsence);
+
+      return segments.map((seg, segIdx)=>{
+        const clip = clipRange(seg[0], seg[1], rangeStart, rangeEnd);
+        if(!clip) return '';
+        const totalStartIdx = idxOf(clip[0]);
+        const totalEndIdx = idxOf(clip[1]);
+        const isFirstSeg = segIdx===0, isLastSeg = segIdx===segments.length-1;
+        const showStartBold = isFirstSeg && t.startDate >= rangeStart && t.startDate <= rangeEnd;
+        const showEndBold = isLastSeg && t.endDate >= rangeStart && t.endDate <= rangeEnd;
+
+        return `
+          <div class="ticket-bar ${statusCls}" data-id="${t.id}" title="${escapeHtml(title)}"
+               style="grid-column:${totalStartIdx+1} / ${totalEndIdx+2}; grid-row:${lane+1};">
+            <div class="seg seg-main ${isAbsence?'absence-bar':''}" style="flex:1 0 0; background:${color};">
+              ${showStartBold ? `<span class="edge-date start-edge">${fmtShort(t.startDate)}</span>` : ''}
+              <span class="seg-label" style="margin-top:9px;">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}${qtyBadge(t)}</span>
+              ${showEndBold ? `<span class="edge-date end-edge">${fmtShort(t.endDate)}</span>` : ''}
+            </div>
+            ${(isLastSeg && chain) ? `<span class="chain-badge" title="연속 작업 ${chain.index}/${chain.size}">🔗</span>` : ''}
+          </div>`;
+      }).join('');
     }).join('');
 
     return `
@@ -927,13 +1170,32 @@ function renderMonthBoard(){
 
   const today = todayISO();
   const chains = computeChains();
-  const legend = boardLegendHtml();
-  const ticketPool = monthFilterWorker ? TICKETS.filter(t=>t.assignees.includes(monthFilterWorker)) : TICKETS;
+  const legend = boardLegendHtml(!!monthFilterWorker);
+  const ticketPool = TICKETS.filter(t=>
+    (!monthFilterWorker || t.assignees.includes(monthFilterWorker)) &&
+    matchesBoardTypeFilter(t)
+  );
+  // 전체보기(작업자 필터 없음)에서 담당자가 2명 이상인 티켓(부재 제외)은, 한 바 안에서 색상을 나누는 대신
+  // 담당자별로 완전히 분리된 바(각자 별도의 레인)로 표시되도록 담당자 수만큼 항목을 나눠준다.
+  const expandedTicketPool = ticketPool.flatMap(t=>{
+    if(!monthFilterWorker && t.project!=='부재' && t.assignees.length>1){
+      return t.assignees.map(a=> ({...t, assignees:[a]}));
+    }
+    return [t];
+  });
 
+  // 전체보기(작업자 필터 없음)일 때만 필터 칩 자체에 담당자 바 색상을 입혀서 범례를 대신한다.
+  // 특정 작업자를 선택하면 바 색상이 업무 유형 기준으로 바뀌므로, 이때는 필터 칩에서 담당자 색을 빼고
+  // 상단 업무 유형 범례(boardLegendHtml)의 색상이 그 역할을 하도록 한다.
+  const showWorkerColorOnPills = !monthFilterWorker;
   const workerFilter = `
     <div class="legend" style="margin-top:-4px;">
       <span style="font-size:11.5px; color:var(--text-faint); margin-right:2px;">작업자 필터:</span>
-      ${WORKERS.map(w=>`<span class="worker-filter-pill ${monthFilterWorker===w?'active':''}" data-worker="${w}">${w}</span>`).join('')}
+      ${WORKERS.map(w=>{
+        const isActive = monthFilterWorker===w;
+        const colorStyle = (showWorkerColorOnPills && !isActive) ? `background:${WORKER_COLORS[w]}; border-color:${WORKER_COLORS[w]}; color:#2A2E35;` : '';
+        return `<span class="worker-filter-pill ${isActive?'active':''}" data-worker="${w}" style="${colorStyle}">${w}</span>`;
+      }).join('')}
       ${monthFilterWorker ? `<span class="worker-filter-pill reset" id="resetWorkerFilter">전체 보기</span>` : ''}
     </div>`;
 
@@ -944,7 +1206,7 @@ function renderMonthBoard(){
 
   const weekRows = weeks.map(week=>{
     const wsISO = toISO(week[0]), weISO = toISO(week[6]);
-    const { items, maxLanes } = assignLanes(ticketPool, wsISO, weISO);
+    const { items, maxLanes } = assignLanes(expandedTicketPool, wsISO, weISO);
     const laneHeight = monthFilterWorker ? 38 : 22;
     const rowTemplate = `24px repeat(${maxLanes}, ${laneHeight}px)`;
 
@@ -955,32 +1217,46 @@ function renderMonthBoard(){
       if(isWeekend(d)) cls.push('weekend');
       if(iso===today) cls.push('today');
       if(!inMonth) cls.push('out-month');
-      return `<div class="${cls.join(' ')}" style="grid-column:${i+1}; grid-row:1 / span ${maxLanes+1};"><span class="month-daynum">${d.getDate()}</span></div>`;
+      return `<div class="${cls.join(' ')}" style="grid-column:${i+1}; grid-row:1 / span ${maxLanes+1};"><span class="month-daynum">${d.getDate()}${iso===today?'<span class="today-badge">오늘</span>':''}</span></div>`;
     }).join('');
 
     const bars = items.map(({t, lane})=>{
       const idxOf = iso => Math.round((parseISO(iso)-parseISO(wsISO))/86400000);
-      const mainClip = clipRange(t.startDate, t.endDate, wsISO, weISO);
-      if(!mainClip) return '';
-      const s = idxOf(mainClip[0]), e = idxOf(mainClip[1]);
 
-      const color = t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR;
-      const chain = chains[t.id];
       const isAbsence = t.project === '부재';
+      // 전체보기(작업자 필터 없음)에서는 담당자별 파스텔톤 색상(담당자가 여럿이면 위에서 이미 개별 바로 분리됨),
+      // 특정 작업자로 필터링된 경우에는 기존처럼 업무 유형별 색상 사용
+      // 단, 부재는 어느 모드에서든 항상 회색(NO_TYPE_COLOR)으로 표시
+      const color = isAbsence
+        ? NO_TYPE_COLOR
+        : (!monthFilterWorker
+            ? (WORKER_COLORS[t.assignees[0]] || NO_TYPE_COLOR)
+            : (t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR));
+      const chain = chains[t.id];
       const status = ticketStatus(t);
       const statusCls = status==='완료' ? 'tb-done' : status==='보류' ? 'tb-hold' : '';
       const days_bd = expectedWorkDays(t);
       const actual = actualBusinessDays(t);
-      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${t.assignees.join(',')} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (예상 ${days_bd}영업일${status==='완료'&&actual!==null?`, 실제 ${actual}영업일`:''})${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
+      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${t.assignees.join(',')} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
 
-      return `
-        <div class="ticket-bar month-bar ${monthFilterWorker?'':'thin'} ${statusCls}" data-id="${t.id}" title="${escapeHtml(title)}"
-             style="grid-column:${s+1} / ${e+2}; grid-row:${lane+2};">
-          <div class="seg seg-main ${isAbsence?'absence-bar':''}" style="flex:1 0 0; background:${color};">
-            <span class="seg-label">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)} <span class="month-bar-assignee">· ${escapeHtml(t.assignees.join(','))}</span></span>
-          </div>
-          ${chain ? `<span class="chain-badge" title="연속 작업 ${chain.index}/${chain.size}">🔗</span>` : ''}
-        </div>`;
+      // 부재(휴가)는 원래 주말까지 이어서 표기, 그 외에는 '주말 출근 필요' 체크가 있을 때만 이어서 표기
+      const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, isAbsence);
+
+      return segments.map((seg, segIdx)=>{
+        const clip = clipRange(seg[0], seg[1], wsISO, weISO);
+        if(!clip) return '';
+        const s = idxOf(clip[0]), e = idxOf(clip[1]);
+        const isLastSeg = segIdx===segments.length-1;
+
+        return `
+          <div class="ticket-bar month-bar ${monthFilterWorker?'':'thin'} ${statusCls}" data-id="${t.id}" title="${escapeHtml(title)}"
+               style="grid-column:${s+1} / ${e+2}; grid-row:${lane+2};">
+            <div class="seg seg-main ${isAbsence?'absence-bar':''}" style="flex:1 0 0; background:${color};">
+              <span class="seg-label">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}${qtyBadge(t)} <span class="month-bar-assignee">· ${escapeHtml(t.assignees.join(','))}</span></span>
+            </div>
+            ${(isLastSeg && chain) ? `<span class="chain-badge" title="연속 작업 ${chain.index}/${chain.size}">🔗</span>` : ''}
+          </div>`;
+      }).join('');
     }).join('');
 
     return `<div class="month-week" style="grid-template-rows:${rowTemplate};">${bgCells}${bars}</div>`;
@@ -989,6 +1265,18 @@ function renderMonthBoard(){
   return `${legend}${workerFilter}<div class="board">${head}${weekRows}</div>${renderBoardSummary()}`;
 }
 
+function deadlineRemainHtml(endDate){
+  const today = todayISO();
+  if(endDate === today){
+    return `<span class="deadline-danger">오늘 마감</span>`;
+  }
+  if(endDate < today){
+    const daysPast = calendarDaysBetween(endDate, today) - 1;
+    const label = daysPast <= 1 ? '어제 마감' : `${daysPast}일 지남`;
+    return `<span class="deadline-danger">${label}</span>`;
+  }
+  return `${businessDaysBetween(today, endDate)}영업일`;
+}
 /* ============================= 보드 하단 요약 (진행중 티켓 + 진행 예정 티켓) ============================= */
 function renderBoardSummary(){
   const today = todayISO();
@@ -1006,15 +1294,14 @@ function renderBoardSummary(){
         <thead><tr><th>제목</th><th>프로젝트</th><th>담당자</th><th>기간</th><th>마감까지</th><th>리소스</th><th>레퍼런스</th></tr></thead>
         <tbody>
           ${inProgress.map(t=>{
-            const remain = businessDaysBetween(todayISO(), t.endDate);
             return `<tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
-              <td>${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}</td>
+              <td>${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
               <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
               <td>${t.assignees.join(', ')}</td>
               <td>${fmtShort(t.startDate)} ~ ${fmtShort(t.endDate)}</td>
-              <td>${remain}영업일</td>
+              <td>${deadlineRemainHtml(t.endDate)}</td>
               <td>${renderResourceCell(t)}</td>
-              <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink)}</td>
+              <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -1027,17 +1314,17 @@ function renderBoardSummary(){
       <p class="card-sub">상태가 '예정'으로 설정된 티켓</p>
       ${upcoming.length ? `
       <table class="simple">
-        <thead><tr><th>제목</th><th>프로젝트</th><th>담당자</th><th>시작까지</th><th>리소스</th><th>레퍼런스</th></tr></thead>
+        <thead><tr><th>제목</th><th style="white-space:nowrap;">프로젝트</th><th>담당자</th><th style="white-space:nowrap;">시작까지</th><th>리소스</th><th>레퍼런스</th></tr></thead>
         <tbody>
           ${upcoming.map(t=>{
             const dday = businessDaysBetween(today, t.startDate) - 1;
             return `<tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
-              <td>${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}</td>
-              <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
+              <td>${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
+              <td style="white-space:nowrap; min-width:58px;"><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
               <td>${t.assignees.join(', ')}</td>
-              <td>${fmtShort(t.startDate)} (D-${Math.max(dday,0)})</td>
+              <td style="white-space:nowrap; min-width:82px;">${fmtShort(t.startDate)} (D-${Math.max(dday,0)})</td>
               <td>${renderResourceCell(t)}</td>
-              <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink)}</td>
+              <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -1060,7 +1347,7 @@ function renderDashboard(){
       keys.forEach(k=>{
         if(!table[k]) return;
         const wt = t.workType || '기타';
-        table[k][wt] = (table[k][wt]||0) + 1;
+        table[k][wt] = (table[k][wt]||0) + (t.qty||1);
       });
     });
     return labels.map(l=> ({label:l, counts:table[l]}));
@@ -1081,18 +1368,40 @@ function renderDashboard(){
   const allProjectsExceptAbsence = PROJECTS.filter(p=> p!=='부재');
   const projectRows = buildRows(allProjectsExceptAbsence, t=> [t.project], projectMonthTickets);
 
-  function typeMatrixTable(rows, rowHeader){
+  // ---- 작업자별 · 유형별 평균 소요 영업일 (전체 기간 기준, 부재 제외, 라이브·오프라인 촬영 제외) ----
+  const AVG_DAYS_WORK_TYPES = WORK_TYPES.filter(wt=> wt!=='라이브' && wt!=='오프라인 촬영');
+  const avgDaysAllTickets = TICKETS.filter(t=> t.project !== '부재' && t.workType && AVG_DAYS_WORK_TYPES.includes(t.workType));
+  function avgDaysRows(){
+    return WORKERS.map(w=>{
+      const counts = {};
+      AVG_DAYS_WORK_TYPES.forEach(wt=>{
+        const ts = avgDaysAllTickets.filter(t=> t.workType===wt && t.assignees.includes(w));
+        if(ts.length){
+          // 티켓 하나에 여러 개(수량)가 묶여 있으면 총 소요일을 수량으로 나눠 '건당' 일수로 환산해 평균에 반영
+          // 예: 숏폼 5개를 5영업일 만에 처리했다면 건당 1일로 계산됨
+          const totalDays = ts.reduce((sum,t)=> sum+expectedWorkDays(t), 0);
+          const totalQty = ts.reduce((sum,t)=> sum+(t.qty||1), 0);
+          const avg = totalDays / totalQty;
+          counts[wt] = `${fmtDays(avg)}일`;
+        }
+      });
+      return {label:w, counts};
+    });
+  }
+
+  function typeMatrixTable(rows, rowHeader, types){
+    types = types || WORK_TYPES;
     return `
     <table class="simple compact-matrix">
       <thead><tr>
         <th>${rowHeader}</th>
-        ${WORK_TYPES.map(wt=>`<th>${WORK_TYPE_ICONS[wt]} ${wt}</th>`).join('')}
+        ${types.map(wt=>`<th>${WORK_TYPE_ICONS[wt]} ${wt}</th>`).join('')}
       </tr></thead>
       <tbody>
         ${rows.map(r=>`
           <tr>
             <td><b>${r.label}</b></td>
-            ${WORK_TYPES.map(wt=>`<td>${r.counts[wt]||'-'}</td>`).join('')}
+            ${types.map(wt=>`<td>${r.counts[wt]||'-'}</td>`).join('')}
           </tr>`).join('')}
       </tbody>
     </table>`;
@@ -1116,7 +1425,7 @@ function renderDashboard(){
         ${reportTickets.map(t=>{
           const status = ticketStatus(t);
           return `<tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
-            <td>${escapeHtml(t.title)}</td>
+            <td>${escapeHtml(t.title)}${qtyBadge(t)}</td>
             <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
             <td>${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType}`:'-'}</td>
             <td>${fmtShort(t.startDate)} ~ ${fmtShort(t.endDate)}</td>
@@ -1155,10 +1464,15 @@ function renderDashboard(){
       ${projectRows.length ? typeMatrixTable(projectRows, '프로젝트') : `<div class="empty-note">해당 달에 등록된 작업이 없습니다.</div>`}
     </div>
     <div class="card">
+      <p class="card-title">담당자별 · 유형별 평균 소요 영업일</p>
+      <p class="card-sub">업무 유형별 예상 작업일수(영업일)의 평균 · 전체 기간 기준 (부재·라이브·오프라인 촬영 제외, 수량 있는 티켓은 건당 일수로 환산)</p>
+      ${avgDaysAllTickets.length ? typeMatrixTable(avgDaysRows(), '작업자', AVG_DAYS_WORK_TYPES) : `<div class="empty-note">등록된 작업이 없습니다.</div>`}
+    </div>
+    <div class="card">
       <p class="card-title">작업자별 기간 조회</p>
       <p class="card-sub">담당자와 기간을 선택해 그 기간에 겹치는 모든 티켓 내용을 확인 · 분기 피드백 작성용</p>
       <div class="pill-group" id="reportWorkerPills" style="margin-bottom:12px;">
-        ${WORKERS.map(w=>`<div class="pill ${reportWorker===w?'selected':''}" data-val="${w}">${w}</div>`).join('')}
+        ${WORKERS.map(w=>`<div class="pill ${reportWorker===w?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
       </div>
       <div class="two-col" style="margin-bottom:14px;">
         <div class="field" style="margin-bottom:0;">
@@ -1235,6 +1549,7 @@ function attachContentHandlers(){
   });
   wireReportPanel();
   wireMonthWorkerFilter();
+  wireBoardTypeFilter();
   wireDashboardWorkerCardNav();
   wireSearchView();
 }
@@ -1276,7 +1591,7 @@ function renderSearchView(){
       <div class="field" style="margin-bottom:8px;">
         <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">담당자 <span class="hint">(클릭하여 필터)</span></label>
         <div class="pill-group" id="searchWorkerPills">
-          ${WORKERS.map(w=>`<div class="pill ${searchWorkerFilter===w?'selected':''}" data-worker="${w}">${w}</div>`).join('')}
+          ${WORKERS.map(w=>`<div class="pill ${searchWorkerFilter===w?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
           ${searchWorkerFilter ? `<div class="pill" id="resetWorkerSearchFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
         </div>
       </div>
@@ -1311,17 +1626,17 @@ function renderSearchResults(){
           const status = ticketStatus(t);
           const days = expectedWorkDays(t);
           return `<tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
-            <td>${escapeHtml(t.title)}</td>
+            <td>${escapeHtml(t.title)}${qtyBadge(t)}</td>
             <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
             <td>${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType}`:'-'}</td>
             <td>${t.assignees.join(', ')}</td>
             <td>${fmtShort(t.startDate)} ~ ${fmtShort(t.endDate)}</td>
-            <td style="color:var(--danger); font-weight:800;">${days}일</td>
+            <td style="color:var(--danger); font-weight:800;">${fmtDays(days)}일</td>
             <td>${statusChipHtml(status)}</td>
             <td>${renderResourceCell(t)}</td>
             <td>${renderResourceField(t.sb)}</td>
             <td>${t.spec?escapeHtml(t.spec):'-'}</td>
-            <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink)}</td>
+            <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -1426,12 +1741,16 @@ function openModal(id, presetProject){
           <label>제목</label>
           <input type="text" id="fTitle" value="${t?escapeHtml(t.title):''}" placeholder="${isDedicatedAbsenceEntry?'예: 연차, 반차, 병가, 출장 등 사유를 적어주세요':'예: 시즌 밸런스 패치 작업'}">
         </div>
+        <div class="field" id="qtyFieldWrapper" style="display:${isDedicatedAbsenceEntry?'none':'block'};">
+          <label>수량 <span class="hint">(한 티켓에 여러 종/개의 작업이 묶여 있는 경우, 예: 3종이면 3)</span></label>
+          <input type="number" id="fQty" min="1" step="1" value="${t&&t.qty?t.qty:1}" style="max-width:120px;">
+        </div>
         <div class="select-row" id="projectTypeRow" style="display:${isDedicatedAbsenceEntry?'none':'grid'};">
           <div class="field" id="projectFieldWrapper">
             <label>프로젝트</label>
             <select id="fProject">
               <option value="">프로젝트 선택</option>
-              ${PROJECTS.map(p=>`<option value="${p}" ${(t?t.project===p:presetProject===p)?'selected':''}>${p}</option>`).join('')}
+              ${PROJECTS.filter(p=> p!=='부재' || initialProject==='부재').map(p=>`<option value="${p}" ${(t?t.project===p:presetProject===p)?'selected':''}>${p}</option>`).join('')}
             </select>
           </div>
           <div class="field" id="workTypeFieldWrapper">
@@ -1445,7 +1764,7 @@ function openModal(id, presetProject){
         <div class="field">
           <label>담당자 <span class="hint">(최대 4명까지 선택 가능)</span></label>
           <div class="pill-group" id="fAssignee">
-            ${WORKERS.map(w=>`<div class="pill ${t&&t.assignees&&t.assignees.includes(w)?'selected':''}" data-val="${w}">${w}</div>`).join('')}
+            ${WORKERS.map(w=>`<div class="pill ${t&&t.assignees&&t.assignees.includes(w)?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
           </div>
           <div class="form-error" id="assigneeLimitMsg" style="display:none; margin-top:8px;">담당자는 최대 4명까지 선택할 수 있습니다.</div>
         </div>
@@ -1460,7 +1779,19 @@ function openModal(id, presetProject){
           </div>
         </div>
         <div class="field">
-          <div class="computed-days" id="computedDays">예상 작업일수(영업일): <b id="daysVal">-</b></div>
+          <div class="computed-days" id="computedDays" style="justify-content:space-between;">
+            <span>예상 작업일수(영업일): <b id="daysVal">-</b></span>
+            <span id="weekendWorkFieldWrapper" style="display:flex; align-items:center; gap:10px; font-size:12px; font-weight:600; color:var(--text-dim); white-space:nowrap;">
+              <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                <input type="checkbox" id="fWeekendSat" ${t&&(t.weekendSat||t.weekendWork)?'checked':''} style="width:14px; height:14px; margin:0;">
+                토요일 출근
+              </label>
+              <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                <input type="checkbox" id="fWeekendSun" ${t&&(t.weekendSun||t.weekendWork)?'checked':''} style="width:14px; height:14px; margin:0;">
+                일요일 출근
+              </label>
+            </span>
+          </div>
         </div>
         <div class="field" id="completionField" style="display:${initialStatus==='완료'?'block':'none'};">
           <label>완료일 <span class="hint">(실제 작업을 마친 날짜)</span></label>
@@ -1515,6 +1846,7 @@ function openModal(id, presetProject){
     overlay.querySelector('#specFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#referenceFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#statusFieldWrapper').style.display = isAbsence ? 'none' : 'block';
+    overlay.querySelector('#weekendWorkFieldWrapper').style.visibility = isAbsence ? 'hidden' : 'visible';
     if(isAbsence){
       overlay.querySelector('#completionField').style.display = 'none';
     } else if(selStatus==='완료'){
@@ -1564,7 +1896,7 @@ function openModal(id, presetProject){
       }
     };
   });
-  overlay.querySelector('#fWorkType').onchange = (e)=>{ selWorkType = e.target.value || null; };
+  overlay.querySelector('#fWorkType').onchange = (e)=>{ selWorkType = e.target.value || null; updateDays(); updateActualDays(); };
 
   const initialResourceLinks = t ? ((t.resourceLinks&&t.resourceLinks.length)?t.resourceLinks:[t.memo||'']) : [''];
   const initialReferenceLinks = t ? ((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:[t.referenceLink||'']) : [''];
@@ -1579,6 +1911,18 @@ function openModal(id, presetProject){
   overlay.querySelector('#addReferenceLink').onclick=()=>{ initialReferenceLinks.push(''); renderRepeatInputs('referenceInputs',initialReferenceLinks,'예: https://... 참고 자료 링크'); };
 
 
+  function currentFormTicketDraft(){
+    const satEl = overlay.querySelector('#fWeekendSat');
+    const sunEl = overlay.querySelector('#fWeekendSun');
+    return {
+      id: editingId || '__draft__',
+      project: selProject,
+      assignees: selAssignees || [],
+      workType: selWorkType,
+      weekendSat: satEl ? satEl.checked : false,
+      weekendSun: sunEl ? sunEl.checked : false
+    };
+  }
   function updateDays(){
     const s = overlay.querySelector('#fStart').value;
     const e = overlay.querySelector('#fEnd').value;
@@ -1587,7 +1931,7 @@ function openModal(id, presetProject){
     const el = overlay.querySelector('#daysVal');
     if(s && e && e>=s){
       const effectiveStart = rd ? nextBusinessDay(rd) : s;
-      el.textContent = businessDaysBetween(effectiveStart, e) + '일';
+      el.textContent = fmtDays(countWorkingDaysForTicket(effectiveStart, e, currentFormTicketDraft())) + '일';
     }
     else { el.textContent = '-'; }
   }
@@ -1596,13 +1940,17 @@ function openModal(id, presetProject){
     const ae = overlay.querySelector('#fActualEnd') ? overlay.querySelector('#fActualEnd').value : '';
     const el = overlay.querySelector('#actualDaysVal');
     if(!el) return;
-    if(s && ae && ae>=s){ el.textContent = businessDaysBetween(s,ae) + '일'; }
+    if(s && ae && ae>=s){ el.textContent = fmtDays(countWorkingDaysForTicket(s, ae, currentFormTicketDraft())) + '일'; }
     else { el.textContent = '-'; }
   }
   overlay.querySelector('#fStart').oninput = ()=>{ updateDays(); updateActualDays(); };
   overlay.querySelector('#fEnd').oninput = updateDays;
   overlay.querySelector('#fResourceDeadline').oninput = updateDays;
   overlay.querySelector('#fActualEnd').oninput = updateActualDays;
+  const fWeekendSatEl = overlay.querySelector('#fWeekendSat');
+  const fWeekendSunEl = overlay.querySelector('#fWeekendSun');
+  if(fWeekendSatEl) fWeekendSatEl.onchange = ()=>{ updateDays(); updateActualDays(); };
+  if(fWeekendSunEl) fWeekendSunEl.onchange = ()=>{ updateDays(); updateActualDays(); };
   updateDays();
   updateActualDays();
 
@@ -1673,6 +2021,10 @@ function openModal(id, presetProject){
     const spec = selProject==='부재' ? '' : overlay.querySelector('#fSpec').value.trim();
     const referenceLinks = selProject==='부재' ? [] : Array.from(overlay.querySelectorAll('#referenceInputs input')).map(x=>x.value.trim()).filter(Boolean);
     const referenceLink = referenceLinks[0] || '';
+    const weekendSat = selProject==='부재' ? false : overlay.querySelector('#fWeekendSat').checked;
+    const weekendSun = selProject==='부재' ? false : overlay.querySelector('#fWeekendSun').checked;
+    const qtyInput = overlay.querySelector('#fQty');
+    const qty = (selProject==='부재' || !qtyInput) ? 1 : Math.max(1, parseInt(qtyInput.value, 10) || 1);
     const errEl = overlay.querySelector('#formError');
     const saveBtn = overlay.querySelector('#mSave');
 
@@ -1708,7 +2060,9 @@ function openModal(id, presetProject){
       startDate:start, endDate:end,
       actualEndDate: (!isAbsenceSave && selStatus==='완료') ? (actualEnd||null) : null,
       memo, resourceLinks: isAbsenceSave ? [] : resourceLinks, sb: isAbsenceSave ? '' : sb, resourceDeadline: (isAbsenceSave || !resourceDeadline) ? null : resourceDeadline,
-      spec: isAbsenceSave ? '' : spec, referenceLink: isAbsenceSave ? '' : referenceLink, referenceLinks: isAbsenceSave ? [] : referenceLinks, updatedAt:now
+      spec: isAbsenceSave ? '' : spec, referenceLink: isAbsenceSave ? '' : referenceLink, referenceLinks: isAbsenceSave ? [] : referenceLinks,
+      weekendSat: isAbsenceSave ? false : !!weekendSat, weekendSun: isAbsenceSave ? false : !!weekendSun,
+      weekendWork: false, qty: isAbsenceSave ? 1 : qty, updatedAt:now
     };
     if(editingId){
       const idx = TICKETS.findIndex(x=>x.id===editingId);
@@ -1807,13 +2161,16 @@ function openTicketFromSharedUrl(){
 
     if(TICKETS.length === 0){
       TICKETS = buildSeedTickets();
+      seedHolidayAbsences();
       await Promise.race([
         persistTickets(),
         new Promise(resolve => setTimeout(resolve, 4000))
       ]);
     } else {
       // 시작일이 되었거나 지난 '예정' 티켓은 자동으로 '작업중'으로 전환 (완료 처리는 계속 수기로)
-      if(autoAdvanceStatuses()){
+      const advanced = autoAdvanceStatuses();
+      const holidaysAdded = seedHolidayAbsences();
+      if(advanced || holidaysAdded){
         await Promise.race([
           persistTickets(),
           new Promise(resolve => setTimeout(resolve, 4000))
