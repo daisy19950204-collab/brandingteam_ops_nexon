@@ -448,14 +448,14 @@ function persistenceAvailable(){
   return !!firestoreDb || storageAvailable();
 }
 const DOW_LABEL = ['일','월','화','수','목','금','토'];
-const WORK_TYPES = ['라이브','오프라인 촬영','롱폼','숏폼','기획','디자인','언리얼'];
+const WORK_TYPES = ['라이브','오프라인 촬영','롱폼','숏폼','기획','이미지','언리얼'];
 const WORK_TYPE_ICONS = {
   '라이브':'📡',
   '오프라인 촬영':'🎥',
   '롱폼':'🎬',
   '숏폼':'📱',
   '기획':'📝',
-  '디자인':'🎨',
+  '이미지':'🎨',
   '언리얼':'🧩'
 };
 const WORK_TYPE_COLORS = {
@@ -464,7 +464,7 @@ const WORK_TYPE_COLORS = {
   '롱폼':'#A7C7F2',
   '숏폼':'#DCEBFB',
   '기획':'#F0E29A',
-  '디자인':'#A9D9B8',
+  '이미지':'#A9D9B8',
   '언리얼':'#CBB4E8'
 };
 const NO_TYPE_COLOR = '#DBD5CD';
@@ -527,6 +527,15 @@ function isWorkingDayForTicket(d, t){
   if(wd===0) return !!(t.weekendSun || t.weekendWork);
   return false;
 }
+// 영업일 '계산'에서 하루 단위로 셀 때 쓰는 기준 (시각적 바 이어보이기 판단용인 isWorkingDayForTicket과는 다름).
+// 평일은 항상 포함, 촬영/라이브 유형은 주말도 매일 포함하되, '토요일 출근'/'일요일 출근' 체크로 인한 주말은
+// 여기서 세지 않고 countWorkingDaysForTicket 마지막에 체크당 +1일만 별도로 더한다.
+// (그렇게 안 하면 체크한 요일이 실제로 그 기간에 있을 때 이중으로 계산되어 버림)
+function isCountableDayForTicket(d, t){
+  const wd = d.getDay();
+  if(wd!==0 && wd!==6) return true;
+  return WEEKEND_WORK_TYPES.includes(t.workType);
+}
 // 영업일 계산: 라이브/오프라인 촬영은 주말도 업무일로 치고, 그 외 유형은 평일만 기본 업무일로 본다.
 // 하루 단위로 세면서, 같은 날 같은 담당자가 동시에 진행 중인 티켓이 N개면(자기 자신 포함) 그 날은 1일이 아니라 1/N일로 계산한다.
 // (2개 겹치면 각각 0.5일, 3개 겹치면 각각 1/3일 ...)
@@ -553,6 +562,17 @@ function isTicketBlockedByAbsence(iso, t){
   if(t.project === '부재' || !t.assignees || !t.assignees.length) return false;
   return t.assignees.every(a=> isAssigneeOnLeave(iso, a));
 }
+// 티켓 기간 [s,e] 안에 특정 요일(targetDow: 0=일,6=토)이 한 번이라도 있는지 확인
+function rangeIncludesWeekday(s, e, targetDow){
+  let sd=parseISO(s), ed=parseISO(e);
+  if(ed<sd) return false;
+  let cur = new Date(sd);
+  while(cur<=ed){
+    if(cur.getDay()===targetDow) return true;
+    cur = addDays(cur,1);
+  }
+  return false;
+}
 function countWorkingDaysForTicket(s,e,t){
   if(!s||!e) return 0;
   let sd=parseISO(s), ed=parseISO(e);
@@ -560,14 +580,16 @@ function countWorkingDaysForTicket(s,e,t){
   let days = 0, cur = new Date(sd);
   while(cur<=ed){
     const iso = toISO(cur);
-    if(isWorkingDayForTicket(cur, t) && !isTicketBlockedByAbsence(iso, t)){
+    if(isCountableDayForTicket(cur, t) && !isTicketBlockedByAbsence(iso, t)){
       days += 1 / concurrentTicketCountForDay(iso, t);
     }
     cur = addDays(cur,1);
   }
+  // '토요일 출근'/'일요일 출근' 체크는 그 요일이 실제로 이 기간 안에 있을 때만 +1일 적용
+  // (기간에 아예 없는 요일을 체크해도 날짜가 늘어나지 않도록)
   if(!WEEKEND_WORK_TYPES.includes(t.workType)){
-    if(t.weekendSat || t.weekendWork) days += 1;
-    if(t.weekendSun || t.weekendWork) days += 1;
+    if((t.weekendSat || t.weekendWork) && rangeIncludesWeekday(s,e,6)) days += 1;
+    if((t.weekendSun || t.weekendWork) && rangeIncludesWeekday(s,e,0)) days += 1;
   }
   return days;
 }
@@ -716,20 +738,20 @@ function buildSeedTickets(){
 
   // [프로젝트 태그] -> 우리 시스템의 프로젝트명 매핑: TFD=퍼스트디센던트, OW=오버워치, CSO=카스온라인, SAZ=SAZ, SA/서든어택=서든어택
   const raw = [
-    {title:'K-Culture(한국 전통 의상)', project:'TFD', type:'디자인', os:-8, oe:-3},
+    {title:'K-Culture(한국 전통 의상)', project:'TFD', type:'이미지', os:-8, oe:-3},
     {title:'오버워치 미션 수행 예능 콘텐츠', project:'오버워치', type:'기획', os:-8, oe:-3},
     {title:'파이널 스테이지 진출 쇼츠', project:'오버워치', type:'숏폼', os:-6, oe:3},
     {title:'신규 여자 일반 좀비 AI 영상', project:'CSO', type:'롱폼', os:-6, oe:-3, actualAdj:-1},
     {title:'드래곤로드 프로모션 영상', project:'SAZ', type:'롱폼', os:-5, oe:3, memo:'https://drive.google.com/drive/folders/example-saz-dragonroad'},
     {title:'드래곤로드 티저', project:'SAZ', type:'숏폼', os:-5, oe:3},
-    {title:'빨간망토', project:'TFD', type:'디자인', os:-5, oe:12},
+    {title:'빨간망토', project:'TFD', type:'이미지', os:-5, oe:12},
     {title:'사내대회 조연출', project:'오버워치', type:'기획', os:-7, oe:-4, actualAdj:0},
     {title:'챔피언십 오픈 영상', project:'서든어택', type:'롱폼', os:-4, oe:3},
-    {title:'맵 정보', project:'SAZ', type:'디자인', os:-3, oe:1},
+    {title:'맵 정보', project:'SAZ', type:'이미지', os:-3, oe:1},
     {title:'시범 경기 라이브 스튜디오 테스트', project:'서든어택', type:'라이브', os:5, oe:6},
     {title:'패치노트 - 좀비 시나리오 보상 리뉴얼, 에픽 주무기 베리에이션, 신규 초월 클래스', project:'CSO', type:'기획', os:4, oe:8},
     {title:'챔피언십 시범 경기 쇼츠', project:'서든어택', type:'숏폼', os:8, oe:15},
-    {title:'던전 앤 잉그리스(판타지)', project:'TFD', type:'디자인', os:8, oe:26, forceAssignees:['이유정','심승선'], memo:'https://drive.google.com/drive/folders/example-tfd-dungeon'},
+    {title:'던전 앤 잉그리스(판타지)', project:'TFD', type:'이미지', os:8, oe:26, forceAssignees:['이유정','심승선'], memo:'https://drive.google.com/drive/folders/example-tfd-dungeon'},
     {title:'신규 초월 클래스 쇼츠', project:'CSO', type:'숏폼', os:9, oe:12, statusOverride:'보류'},
     {title:'챔피언십 넥방 테스트', project:'서든어택', type:'언리얼', os:10, oe:11},
     {title:'에픽 주무기 베리에이션 활용 AI 영상 (나루토 영상 레퍼런스)', project:'CSO', type:'롱폼', os:14, oe:19, memo:'https://drive.google.com/drive/folders/example-kcso-reference'},
@@ -737,7 +759,7 @@ function buildSeedTickets(){
     {title:'예선전 라이브', project:'서든어택', type:'라이브', os:25, oe:26},
     {title:'챔피언십 예선전 숏폼 5개', project:'서든어택', type:'숏폼', os:28, oe:33},
     {title:'예선전 하이라이트 롱폼', project:'서든어택', type:'롱폼', os:28, oe:33},
-    {title:'천사와 악마', project:'TFD', type:'디자인', os:31, oe:37},
+    {title:'천사와 악마', project:'TFD', type:'이미지', os:31, oe:37},
   ];
 
   const built = raw.map((spec, i)=>{
