@@ -284,6 +284,7 @@
   }
   .computed-days b{color:var(--text); font-size:14px;}
   .form-error{color:var(--danger); font-size:12px; margin-top:8px; display:none;}
+  .footer-error{color:var(--danger); font-size:12.5px; font-weight:700; max-width:280px; text-align:right; line-height:1.4;}
   .modal-foot{display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-top:1px solid var(--border); background:#FAFAFB;}
   .btn{border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer;}
   .btn-primary{background:var(--accent); color:#fff;}
@@ -1795,7 +1796,7 @@ function openModal(id, presetProject){
         </div>
         <div class="field" id="completionField" style="display:${initialStatus==='완료'?'block':'none'};">
           <label>완료일 <span class="hint">(실제 작업을 마친 날짜)</span></label>
-          <input type="date" id="fActualEnd" value="${t&&t.actualEndDate?t.actualEndDate:todayISO()}">
+          <input type="date" id="fActualEnd" value="${t&&t.actualEndDate?t.actualEndDate:(t&&t.endDate?t.endDate:todayISO())}">
           <div class="computed-days" id="actualDaysBox" style="margin-top:8px;">실제 소요(영업일): <b id="actualDaysVal">-</b></div>
         </div>
         <div class="field" id="specFieldWrapper">
@@ -1824,7 +1825,8 @@ function openModal(id, presetProject){
         <div style="display:flex; gap:8px;">
           ${t ? `<button class="btn btn-danger" id="mDelete">삭제</button><button class="btn btn-ghost" id="mCopyLink">🔗 링크 복사</button>` : ''}
         </div>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="footer-error" id="footerError"></span>
           <button class="btn btn-ghost" id="mCancel">취소</button>
           <button class="btn btn-primary" id="mSave">저장</button>
         </div>
@@ -1868,12 +1870,19 @@ function openModal(id, presetProject){
 
   overlay.querySelectorAll('#fStatus .pill').forEach(p=>{
     p.onclick = ()=>{
+      const prevStatus = selStatus;
       selStatus = p.dataset.val;
       overlay.querySelectorAll('#fStatus .pill').forEach(x=>{ x.classList.remove('selected'); x.style.cssText=''; });
       p.classList.add('selected');
       const c = STATUS_COLORS[selStatus];
       p.style.cssText = `border-color:${c};background:${c}22;color:${c}`;
       overlay.querySelector('#completionField').style.display = (selStatus==='완료') ? 'block' : 'none';
+      if(selStatus==='완료' && prevStatus!=='완료'){
+        // '완료'로 처음 전환하는 순간에는 마감일을 그대로 완료일 기본값으로 채워준다.
+        // 생각보다 일찍 끝난 경우에만 사용자가 이 필드를 수동으로 앞당기면 된다.
+        const endVal = overlay.querySelector('#fEnd').value;
+        if(endVal) overlay.querySelector('#fActualEnd').value = endVal;
+      }
       updateActualDays();
     };
   });
@@ -2026,6 +2035,7 @@ function openModal(id, presetProject){
     const qtyInput = overlay.querySelector('#fQty');
     const qty = (selProject==='부재' || !qtyInput) ? 1 : Math.max(1, parseInt(qtyInput.value, 10) || 1);
     const errEl = overlay.querySelector('#formError');
+    const footerErrEl = overlay.querySelector('#footerError');
     const saveBtn = overlay.querySelector('#mSave');
 
     const errors = [];
@@ -2040,10 +2050,14 @@ function openModal(id, presetProject){
     if(errors.length){
       errEl.style.display = 'block';
       errEl.textContent = errors.join(' ');
+      // 스크롤을 내려야 보이는 하단 안내문 외에, 저장 버튼 바로 옆에도 즉시 보이도록 표시
+      footerErrEl.textContent = '⚠ ' + errors[0];
+      showToast(errors.join(' '));
       return;
     }
     errEl.style.display = 'none';
     errEl.textContent = '';
+    footerErrEl.textContent = '';
 
     if(retryCount===0){
       saving = true;
