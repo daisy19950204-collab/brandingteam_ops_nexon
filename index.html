@@ -824,7 +824,7 @@ function renderContent(){
 function boardLegendHtml(){
   return `<div class="legend">${WORK_TYPES.map(wt=>`
       <span class="legend-chip" style="background:${WORK_TYPE_COLORS[wt]}">${WORK_TYPE_ICONS[wt]} ${wt}</span>`).join('')}
-      <span class="legend-chip" style="background:${NO_TYPE_COLOR}">부재(유형 없음)</span>
+      <span class="legend-chip" style="background:${NO_TYPE_COLOR}">부재</span>
     </div>`;
 }
 
