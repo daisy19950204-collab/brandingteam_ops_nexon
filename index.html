@@ -1490,7 +1490,9 @@ function openModal(id, presetProject){
         <div class="form-error" id="formError"></div>
       </div>
       <div class="modal-foot">
-        <div>${t ? `<button class="btn btn-danger" id="mDelete">삭제</button>` : ''}</div>
+        <div style="display:flex; gap:8px;">
+          ${t ? `<button class="btn btn-danger" id="mDelete">삭제</button><button class="btn btn-ghost" id="mCopyLink">🔗 링크 복사</button>` : ''}
+        </div>
         <div style="display:flex; gap:8px;">
           <button class="btn btn-ghost" id="mCancel">취소</button>
           <button class="btn btn-primary" id="mSave">저장</button>
@@ -1610,6 +1612,33 @@ function openModal(id, presetProject){
   overlay.addEventListener('mousedown', (e)=>{ if(e.target===overlay) close(); });
 
   if(t){
+    const copyLinkBtn = overlay.querySelector('#mCopyLink');
+    if(copyLinkBtn){
+      copyLinkBtn.onclick = async ()=>{
+        const shareUrl = new URL(window.location.href);
+        shareUrl.searchParams.set('ticket', t.id);
+        shareUrl.hash = '';
+        const text = shareUrl.toString();
+        try{
+          if(navigator.clipboard && window.isSecureContext){
+            await navigator.clipboard.writeText(text);
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+          }
+          showToast('티켓 링크를 복사했습니다.');
+        }catch(e){
+          window.prompt('아래 티켓 링크를 복사해주세요.', text);
+        }
+      };
+    }
     let deleting = false;
     overlay.querySelector('#mDelete').onclick = async ()=>{
       if(deleting) return;
@@ -1722,6 +1751,18 @@ function openModal(id, presetProject){
   };
 }
 
+function openTicketFromSharedUrl(){
+  const params = new URLSearchParams(window.location.search);
+  const ticketId = params.get('ticket');
+  if(!ticketId) return;
+  const exists = TICKETS.some(t=>t.id===ticketId);
+  if(exists){
+    openModal(ticketId);
+  } else {
+    showToast('공유된 티켓을 찾을 수 없습니다.');
+  }
+}
+
 /* ============================= 초기화 ============================= */
 (async function init(){
   const loadingText = document.getElementById('loadingVeil');
@@ -1794,6 +1835,7 @@ function openModal(id, presetProject){
       }
     }
     renderApp();
+    openTicketFromSharedUrl();
   }catch(e){
     if(unlocked) return;
     unlocked = true;
