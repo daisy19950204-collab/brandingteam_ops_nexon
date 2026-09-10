@@ -227,6 +227,8 @@
   .resize-handle:active::before{opacity:1;}
   .ticket-bar.resizing{opacity:.4;}
   .new-ticket-modal{border:2.5px solid var(--danger); box-shadow:0 0 0 4px rgba(224,79,95,.18), 0 20px 60px rgba(0,0,0,.25);}
+  .required-field label{color:var(--danger); font-weight:800;}
+  .required-field input, .required-field select{border:2px solid var(--danger) !important;}
   .new-badge{
     display:inline-flex; align-items:center; justify-content:center;
     width:34px; height:34px; border-radius:50%;
@@ -3125,6 +3127,7 @@ function getFilteredSearchTickets(){
       case 'start': cmp = a.startDate<b.startDate?-1:(a.startDate>b.startDate?1:0); break;
       case 'end': cmp = a.endDate<b.endDate?-1:(a.endDate>b.endDate?1:0); break;
       case 'days': cmp = (expectedWorkDays(a)||0) - (expectedWorkDays(b)||0); break;
+      case 'actual': { const aa = actualBusinessDays(a), bb = actualBusinessDays(b); cmp = (aa==null?-1:aa) - (bb==null?-1:bb); break; }
     }
     return cmp * dir;
   });
@@ -3161,7 +3164,7 @@ function renderSearchResults(){
         <th class="sortable-th" data-sort="start">시작일 ${sortArrowHtml('start')}</th>
         <th class="sortable-th" data-sort="end">마감일 ${sortArrowHtml('end')}</th>
         <th class="sortable-th" data-sort="days" style="white-space:nowrap;">예상 작업일수 ${sortArrowHtml('days')}</th>
-        <th style="white-space:nowrap;">실 작업일수</th>
+        <th class="sortable-th" data-sort="actual" style="white-space:nowrap;">실 작업일수 ${sortArrowHtml('actual')}</th>
         <th style="white-space:nowrap;">상태</th>
         <th>리소스</th>
         <th style="min-width:120px;">레퍼런스</th>
@@ -3603,7 +3606,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
             ${STATUS_LIST.map(s=>`<div class="pill ${initialStatus===s?'selected':''}" data-val="${s}" style="${initialStatus===s?`border-color:${STATUS_COLORS[s]};background:${STATUS_COLORS[s]}22;color:${STATUS_COLORS[s]}`:''}">${s}</div>`).join('')}
           </div>
         </div>
-        <div class="field">
+        <div class="field ${t?'':'required-field'}" id="titleFieldWrapper">
           <label>제목</label>
           <input type="text" id="fTitle" value="${t?escapeHtml(t.title):''}" placeholder="${isDedicatedAbsenceEntry?'예: 연차, 반차, 병가, 출장 등 사유를 적어주세요':'예: 시즌 밸런스 패치 작업'}">
         </div>
@@ -3612,14 +3615,14 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
           <input type="number" id="fQty" min="1" step="1" value="${t&&t.qty?t.qty:1}" style="max-width:120px;">
         </div>
         <div class="select-row" id="projectTypeRow" style="display:${isDedicatedAbsenceEntry?'none':'grid'};">
-          <div class="field" id="projectFieldWrapper">
+          <div class="field ${t?'':'required-field'}" id="projectFieldWrapper">
             <label>프로젝트</label>
             <select id="fProject">
               <option value="">프로젝트 선택</option>
               ${PROJECTS.filter(p=> p!=='부재' || initialProject==='부재').map(p=>`<option value="${p}" ${(t?t.project===p:presetProject===p)?'selected':''}>${p}</option>`).join('')}
             </select>
           </div>
-          <div class="field" id="workTypeFieldWrapper">
+          <div class="field ${t?'':'required-field'}" id="workTypeFieldWrapper">
             <label>업무 유형</label>
             <select id="fWorkType">
               <option value="">업무 유형 선택</option>
@@ -3635,11 +3638,11 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
           <div class="form-error" id="assigneeLimitMsg" style="display:none; margin-top:8px;">담당자는 최대 4명까지 선택할 수 있습니다.</div>
         </div>
         <div class="two-col">
-          <div class="field">
+          <div class="field ${t?'':'required-field'}" id="startDateFieldWrapper">
             <label>시작일</label>
             <input type="date" id="fStart" value="${t?t.startDate:(presetStart||'')}">
           </div>
-          <div class="field">
+          <div class="field ${t?'':'required-field'}" id="endDateFieldWrapper">
             <label>마감일</label>
             <input type="date" id="fEnd" value="${t?t.endDate:(presetEnd||'')}">
           </div>
