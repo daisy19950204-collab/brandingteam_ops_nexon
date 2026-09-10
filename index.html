@@ -1114,14 +1114,19 @@ function statusChipHtml(status){
 function actualBusinessDays(t){
   // 완료 상태의 실제 소요는 '겹치는 일정을 나눠 계산한 영업일'로 산출한다.
   // 완료일(actualEndDate)이 없어도 완료 상태이면 마감일을 완료일로 사용해 계산한다.
-  const end = t.actualEndDate || (ticketStatus(t)==='완료' ? t.endDate : null);
-  if(!end) return null;
+  // 단, 마감일보다 늦게 저장된 actualEndDate도 마감일로 클램프한다 (실제 소요일이 마감일을 초과해 늘어나면 안 됨).
+  if(!t.startDate || !t.endDate) return null;
+  const stored = t.actualEndDate || (ticketStatus(t)==='완료' ? t.endDate : null);
+  if(!stored) return null;
+  const end = stored < t.endDate ? stored : t.endDate;
   return countWorkingDaysForTicket(t.startDate, end, t);
 }
 // 모달·검색에서 동일한 값을 보장하도록 draft 버전 헬퍼
 function actualBusinessDaysForDraft(draft){
-  const end = draft.actualEndDate || (ticketStatus(draft)==='완료' ? draft.endDate : null);
-  if(!draft.startDate || !end) return null;
+  if(!draft.startDate || !draft.endDate) return null;
+  const stored = draft.actualEndDate || (ticketStatus(draft)==='완료' ? draft.endDate : null);
+  if(!stored) return null;
+  const end = stored < draft.endDate ? stored : draft.endDate;
   return countWorkingDaysForTicket(draft.startDate, end, draft);
 }
 function expectedWorkDays(t){
@@ -3826,17 +3831,27 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
   }
   function updateActualDays(){
     const s = overlay.querySelector('#fStart').value;
-    // 저장된 완료일(actualEndDate)이 있으면 그것을 종점으로 사용해 검색 테이블과 동일 값을 보장한다.
-    // 없으면 완료 상태에서는 마감일을 종점으로 사용.
+    const endNow = overlay.querySelector('#fEnd').value;
+    // 저장된 완료일(actualEndDate)이 있으면 그것을 종점으로 사용해 검색·CSV와 동일 값을 보장한다.
+    // 단, 실제 소요일은 마감일을 초과해 늘어나면 의미가 어긋나므로 마감일로 클램프한다.
     const stored = (t && t.actualEndDate) ? t.actualEndDate : '';
-    const ae = stored || (selStatus==='완료' ? overlay.querySelector('#fEnd').value : '');
+    let ae = stored || (selStatus==='완료' ? endNow : '');
+    if(ae && endNow && ae > endNow) ae = endNow;
     const el = overlay.querySelector('#actualDaysVal');
     if(!el) return;
     if(s && ae && ae>=s){
       el.textContent = fmtDays(countWorkingDaysForTicket(s, ae, currentFormTicketDraft())) + '일';
     } else { el.textContent = '-'; }
     const infoEl = overlay.querySelector('#actualEndInfo');
-    if(infoEl){ infoEl.textContent = stored ? ('저장된 완료일: '+stored) : '저장된 완료일: 없음(마감일 기준 계산)'; }
+    if(infoEl){
+      if(stored && endNow && stored > endNow){
+        infoEl.textContent = '저장된 완료일: '+stored+' (마감일 '+endNow+' 초과 → 마감일 기준 계산)';
+      } else if(stored){
+        infoEl.textContent = '저장된 완료일: '+stored;
+      } else {
+        infoEl.textContent = '저장된 완료일: 없음(마감일 기준 계산)';
+      }
+    }
   }
   overlay.querySelector('#fStart').oninput = ()=>{ updateDays(); updateActualDays(); };
   overlay.querySelector('#fEnd').oninput = ()=>{ updateDays(); updateActualDays(); };
