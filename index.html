@@ -104,11 +104,12 @@
   .view-title{font-size:17px; font-weight:700;}
   .range-nav{display:flex; align-items:center; gap:8px;}
   .range-btn{
-    width:30px; height:30px; border-radius:7px; border:1px solid var(--border);
-    background:#fff; cursor:pointer; font-size:14px; color:var(--text-dim);
+    width:30px; height:30px; border-radius:7px; border:1px solid var(--accent);
+    background:var(--accent); cursor:pointer; font-size:14px; color:#fff; font-weight:800;
     display:flex; align-items:center; justify-content:center;
+    box-shadow:0 1px 3px rgba(15,110,99,.3);
   }
-  .range-btn:hover{background:var(--bg); border-color:var(--border-strong);}
+  .range-btn:hover{background:var(--accent-dark); border-color:var(--accent-dark);}
   .range-label{font-size:13.5px; font-weight:600; color:var(--text); min-width:190px; text-align:center;}
   .today-btn{
     border:1px solid var(--border); background:#fff; border-radius:7px; padding:6px 12px;
@@ -804,6 +805,7 @@ let searchSortDir = 'asc'; // 티켓 검색 탭: 정렬 방향 ('asc' | 'desc')
 const SEARCH_SORT_DEFAULT_DIR = { title:'asc', start:'asc', end:'desc', days:'asc' }; // 각 정렬 기준별 최초 클릭 시 기본 방향 (마감일은 최근순이 기본이라 desc)
 let editingId = null;
 let reportWorker = null; // 작업자별 기간 조회 패널 상태
+let reportYear = new Date().getFullYear(); // 작업자별 분기 작업 조회 연도 (2026/2027/2028)
 let reportStart = null;
 let reportEnd = null;
 
@@ -2860,7 +2862,7 @@ function renderDashboard(){
 
   // ---- 작업자별 기간 조회 (분기 피드백용 상세 내역) ----
   if(!reportWorker) reportWorker = WORKERS[0];
-  if(!reportStart) reportStart = quarterRange(Math.floor(now.getMonth()/3)+1, year)[0];
+  if(!reportStart) reportStart = quarterRange(Math.floor(now.getMonth()/3)+1, reportYear)[0];
   if(!reportEnd) reportEnd = todayISO();
 
   const reportTickets = TICKETS
@@ -2925,9 +2927,12 @@ function renderDashboard(){
       <div class="pill-group" id="reportWorkerPills" style="margin-bottom:12px;">
         ${WORKERS.map(w=>`<div class="pill ${reportWorker===w?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
       </div>
+      <div class="pill-group" id="reportYearPills" style="margin-bottom:8px;">
+        ${[2026,2027,2028].map(y=>`<div class="pill ${reportYear===y?'selected':''}" data-year="${y}">${y}년</div>`).join('')}
+      </div>
       <div class="pill-group" id="reportQuarterPills" style="margin-bottom:12px;">
         ${[1,2,3,4].map(q=>{
-          const [qs, qe] = quarterRange(q, year);
+          const [qs, qe] = quarterRange(q, reportYear);
           const isSel = reportStart===qs && reportEnd===qe;
           return `<div class="pill ${isSel?'selected':''}" data-quarter="${q}">${q}분기 (${q===1?'1~3':q===2?'4~6':q===3?'7~9':'10~12'}월)</div>`;
         }).join('')}
@@ -2961,13 +2966,22 @@ function wireReportPanel(){
       renderContent();
     };
   });
+  const yearPillGroup = document.getElementById('reportYearPills');
+  if(yearPillGroup) yearPillGroup.querySelectorAll('[data-year]').forEach(el=>{
+    el.onclick = ()=>{
+      reportYear = parseInt(el.dataset.year,10);
+      reportStart = quarterRange(1, reportYear)[0];
+      reportEnd = quarterRange(4, reportYear)[1];
+      renderContent();
+    };
+  });
   const quarterPillGroup = document.getElementById('reportQuarterPills');
   if(quarterPillGroup){
     quarterPillGroup.querySelectorAll('.pill').forEach(p=>{
       p.onclick = ()=>{
         const q = parseInt(p.dataset.quarter, 10);
         const year = new Date().getFullYear();
-        const [qStart, qEnd] = quarterRange(q, year);
+        const [qStart, qEnd] = quarterRange(q, reportYear);
         reportStart = qStart;
         reportEnd = qEnd;
         renderContent();
@@ -3651,7 +3665,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
         </div>
         <div class="field" id="completionField" style="display:none;">
           <div class="computed-days" id="actualDaysBox" style="background:var(--accent-soft); color:var(--accent-dark); padding:8px 11px; border-radius:7px; font-weight:700; margin-top:6px;">
-            <span>실제 소요(영업일): <b id="actualDaysVal">-</b></span><span id="actualEndInfo" style="font-weight:500; color:var(--text-dim); font-size:11.5px; display:block; margin-top:4px;">저장된 완료일: 없음(마감일 기준 계산)</span>
+            <span>완료로 변경 시 실제 소요(영업일): <b id="actualDaysVal">-</b></span><span id="actualEndInfo" style="font-weight:500; color:var(--text-dim); font-size:11.5px; display:block; margin-top:4px;">저장된 완료일: 없음(마감일 기준 계산)</span>
           </div>
         </div>
         <div class="field" id="specFieldWrapper">
