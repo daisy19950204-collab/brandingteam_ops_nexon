@@ -1869,7 +1869,7 @@ function renderMobileAbsenceView(){
     if(mobileAbsenceHideShared && t.assignees && t.assignees.length === WORKERS.length) return false;
     if(mobileAbsenceWorkerFilter && !t.assignees.includes(mobileAbsenceWorkerFilter)) return false;
     return true;
-  }).sort((a,b)=> a.startDate<b.startDate?-1:1);
+  }).sort((a,b)=> absenceSortComparator(a,b));
 
   return `
     <div class="card" style="margin-bottom:14px;">
@@ -1878,7 +1878,7 @@ function renderMobileAbsenceView(){
       <p class="absence-alert-heading" style="margin-top:14px;">📅 부재 예정 (7일 이내)</p>
       ${upcomingAbsences.length ? upcomingAbsences.map(t=>{
         const dDay = Math.round((parseISO(t.startDate)-parseISO(today))/86400000);
-        return `<div class="absence-alert-item"><span class="dday-badge">D-${dDay}</span> ${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(', ')} <span style="color:var(--text-faint);">· ${fmtShort(t.startDate)}~${fmtShort(t.endDate)} · ${escapeHtml(t.title)}</span></div>`;
+        return `<div class="absence-alert-item"><span class="dday-badge">D-${dDay}</span> ${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(', ')} <span style="color:var(--text-faint);">· ${absenceDateRangeShort(t)} · ${escapeHtml(t.title)}</span></div>`;
       }).join('') : `<div class="empty-note" style="margin:0;">일주일 이내 예정된 부재가 없습니다.</div>`}
     </div>
     <div class="pill-group" id="mobileAbsenceWorkerPills" style="margin-bottom:10px;">
@@ -1893,7 +1893,7 @@ function renderMobileAbsenceView(){
     ${filtered.length ? filtered.map(t=>`
       <div class="mobile-ticket-card" data-id="${t.id}">
         <div class="mobile-ticket-card-title">${escapeHtml(t.title)}</div>
-        <div class="mobile-ticket-card-meta">${escapeHtml(mobileAbsenceAssigneeLabel(t))} · ${fmtShort(t.startDate)}~${fmtShort(t.endDate)}</div>
+        <div class="mobile-ticket-card-meta">${escapeHtml(mobileAbsenceAssigneeLabel(t))} · ${mobileAbsenceDateRangeText(t)}</div>
       </div>`).join('') : `<div class="empty-note">등록된 부재가 없습니다.</div>`}
   `;
 }
@@ -2921,7 +2921,7 @@ function absenceAlertsHtml(){
     <div class="absence-alert-item">
       <span class="dday-badge">D-${dDay}</span>
       <span>${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(', ')}</span>
-      <span style="color:var(--text-faint);">· ${fmtShort(t.startDate)}~${fmtShort(t.endDate)} · ${escapeHtml(t.title)}</span>
+      <span style="color:var(--text-faint);">· ${absenceDateRangeShort(t)} · ${escapeHtml(t.title)}</span>
     </div>`;
   };
 
@@ -2979,6 +2979,33 @@ function absenceAssigneeLabel(t){
   return (t.assignees||[]).join(', ');
 }
 
+/* ============================= 부재 관리: 날짜 표기 / 정렬 공통 유틸 ============================= */
+// 'M/D(요일)' 형식 (예: 9/7(월))
+function fmtShortDow(iso){
+  const d = parseISO(iso);
+  return `${d.getMonth()+1}/${d.getDate()}(${DOW_LABEL[d.getDay()]})`;
+}
+// PC 부재 목록/알림용: 시작일~마감일, 시작일과 마감일이 같으면 마감일은 '-'로 표시해 헷갈리지 않게 함
+function absenceDateRangeShort(t){
+  const endStr = t.startDate===t.endDate ? '-' : fmtShortDow(t.endDate);
+  return `${fmtShortDow(t.startDate)}~${endStr}`;
+}
+// 모바일 부재 목록용: 하루짜리는 "9월 7일 월요일" 형태로 풀어서, 여러 날이면 요일 포함 짧은 표기로
+function mobileAbsenceDateRangeText(t){
+  if(t.startDate === t.endDate){
+    const d = parseISO(t.startDate);
+    return `${d.getMonth()+1}월 ${d.getDate()}일 ${DOW_LABEL[d.getDay()]}요일`;
+  }
+  return `${fmtShortDow(t.startDate)}~${fmtShortDow(t.endDate)}`;
+}
+// 지난 부재(마감일이 오늘 이전)는 항상 목록 맨 아래로 내리고, 그 안에서는 주어진 비교 함수(cmpFn)를 그대로 적용
+function absenceSortComparator(a, b, cmpFn){
+  const today = todayISO();
+  const aPast = a.endDate < today, bPast = b.endDate < today;
+  if(aPast !== bPast) return aPast ? 1 : -1;
+  return cmpFn ? cmpFn(a, b) : (a.startDate<b.startDate?-1:1);
+}
+
 function getFilteredAbsenceTickets(){
   const q = absenceSearchText.trim().toLowerCase();
   const filtered = TICKETS.filter(t=>{
@@ -2993,19 +3020,19 @@ function getFilteredAbsenceTickets(){
   });
 
   if(!absenceSortKey){
-    filtered.sort((a,b)=> a.startDate<b.startDate?-1:1);
+    filtered.sort((a,b)=> absenceSortComparator(a,b));
     return filtered;
   }
   const dir = absenceSortDir==='asc' ? 1 : -1;
-  filtered.sort((a,b)=>{
+  filtered.sort((a,b)=> absenceSortComparator(a,b,(x,y)=>{
     let cmp = 0;
     switch(absenceSortKey){
-      case 'title': cmp = (a.title||'').localeCompare((b.title||''), 'ko'); break;
-      case 'start': cmp = a.startDate<b.startDate?-1:(a.startDate>b.startDate?1:0); break;
-      case 'end': cmp = a.endDate<b.endDate?-1:(a.endDate>b.endDate?1:0); break;
+      case 'title': cmp = (x.title||'').localeCompare((y.title||''), 'ko'); break;
+      case 'start': cmp = x.startDate<y.startDate?-1:(x.startDate>y.startDate?1:0); break;
+      case 'end': cmp = x.endDate<y.endDate?-1:(x.endDate>y.endDate?1:0); break;
     }
     return cmp * dir;
-  });
+  }));
   return filtered;
 }
 
@@ -3046,8 +3073,8 @@ function renderAbsenceResults(){
             <td class="cb-cell" onclick="event.stopPropagation()"><input type="checkbox" class="absence-select-cb" data-id="${t.id}" ${checked?'checked':''}></td>
             <td style="cursor:pointer;">${escapeHtml(t.title)}</td>
             <td style="cursor:pointer;">${escapeHtml(absenceAssigneeLabel(t))}</td>
-            <td style="cursor:pointer;">${fmtShort(t.startDate)}</td>
-            <td style="cursor:pointer;">${fmtShort(t.endDate)}</td>
+            <td style="cursor:pointer;">${fmtShortDow(t.startDate)}</td>
+            <td style="cursor:pointer;">${t.startDate===t.endDate ? '-' : fmtShortDow(t.endDate)}</td>
             <td style="cursor:pointer;">${statusChipHtml(status)}</td>
             <td style="cursor:pointer;">${t.memo?escapeHtml(t.memo):'-'}</td>
           </tr>`;
@@ -3190,7 +3217,7 @@ function openModal(id, presetProject){
           <input type="text" id="fTitle" value="${t?escapeHtml(t.title):''}" placeholder="${isDedicatedAbsenceEntry?'예: 연차, 반차, 병가, 출장 등 사유를 적어주세요':'예: 시즌 밸런스 패치 작업'}">
         </div>
         <div class="field" id="qtyFieldWrapper" style="display:${isDedicatedAbsenceEntry?'none':'block'};">
-          <label>수량 <span class="hint">(한 티켓에 여러 종/개의 작업이 묶여 있는 경우, 예: 3종이면 3)</span></label>
+          <label>수량 <span class="hint">(영상 작업 전용 · 한 티켓에 서로 다른 편이 여러 개 묶여 있으면 그 편수만큼 입력, 단 같은 영상의 베리에이션은 종 수에 포함하지 않음)</span></label>
           <input type="number" id="fQty" min="1" step="1" value="${t&&t.qty?t.qty:1}" style="max-width:120px;">
         </div>
         <div class="select-row" id="projectTypeRow" style="display:${isDedicatedAbsenceEntry?'none':'grid'};">
