@@ -482,13 +482,9 @@
   .mmw-holiday{
     display:flex; align-items:center; justify-content:center; font-size:19px; pointer-events:none; z-index:1;
   }
-  .mmw-holiday.mmw-holiday-lane{
-    flex-direction:column; justify-content:flex-start; align-items:center; font-size:11px; gap:0; padding-top:1px;
-  }
-  .mmw-lane-label{font-size:6px; font-weight:800; color:var(--text-dim); line-height:1;}
-  .mmw-holiday-lane.today .mmw-lane-label{color:#fff;}
+  .mmw-holiday.mmw-holiday-lane{font-size:12px;}
   .mmw-sick-bar{
-    border-radius:3px; background:#1c1c1c; display:flex; align-items:center; overflow:hidden;
+    border-radius:3px; background:#5A5F68; display:flex; align-items:center; overflow:hidden;
     padding-left:3px; pointer-events:none; z-index:1; margin:0 1px;
   }
   .mmw-sick-bar-label{color:#fff; font-size:7px; font-weight:800; white-space:nowrap;}
@@ -1633,8 +1629,7 @@ function renderMobileMonthGrid(){
           if(len >= 2){
             personalAbsenceCells.push(`<div class="mmw-sick-bar" style="grid-column:${runStart+1} / ${i+1}; grid-row:${2+wi};" title="${escapeHtml(w)} 장기 휴가/병가"><span class="mmw-sick-bar-label">병가</span></div>`);
           } else {
-            const isTodayCell = toISO(week[runStart]) === today;
-            personalAbsenceCells.push(`<div class="mmw-holiday mmw-holiday-lane ${isTodayCell?'today':''}" style="grid-column:${runStart+1}; grid-row:${2+wi};" title="${escapeHtml(w)} 휴가">🌙<span class="mmw-lane-label">휴가</span></div>`);
+            personalAbsenceCells.push(`<div class="mmw-holiday mmw-holiday-lane" style="grid-column:${runStart+1}; grid-row:${2+wi};" title="${escapeHtml(w)} 휴가">🌙</div>`);
           }
           runStart = null;
         }
@@ -1688,7 +1683,7 @@ function renderMobileMonthGrid(){
       ${WORKERS.map(w=>`<span class="mobile-month-legend-item">${workerDot(w)}${w}</span>`).join('')}
       <span class="mobile-month-legend-item">🌴 공휴일</span>
       <span class="mobile-month-legend-item">🌙 개인 휴가</span>
-      <span class="mobile-month-legend-item"><span style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#1c1c1c;"></span> 병가/장기휴가</span>
+      <span class="mobile-month-legend-item"><span style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#5A5F68;"></span> 병가/장기휴가</span>
     </div>
     <div class="mobile-month-dow-row">${DOW_LABEL.map(d=>`<div>${d}</div>`).join('')}</div>
     <div class="mobile-month-weeks">${weeksHtml}</div>
