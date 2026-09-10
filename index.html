@@ -25,6 +25,31 @@
     --lane-h:38px;
     --shadow: 0 1px 2px rgba(20,22,26,.04), 0 4px 14px rgba(20,22,26,.06);
   }
+  /* OS/브라우저가 다크모드여도 항상 화이트(라이트) 테마로 고정 */
+  html{color-scheme:light;}
+  :root{color-scheme:light;}
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#F4F5F7;
+      --panel:#FFFFFF;
+      --border:#E3E6EB;
+      --border-strong:#C7CCD6;
+      --text:#181B22;
+      --text-dim:#6B7280;
+      --text-faint:#9AA1AC;
+      --accent:#0F6E63;
+      --accent-dark:#0B5951;
+      --accent-soft:#E1F3F0;
+      --danger:#C43E3E;
+      --danger-soft:#FBE7E7;
+      --weekend-bg:#EEF0F3;
+      --today-bg:#DCEEEB;
+      --today-line:#0F6E63;
+      --shadow: 0 1px 2px rgba(20,22,26,.04), 0 4px 14px rgba(20,22,26,.06);
+    }
+    html, body{background:var(--bg); color:var(--text);}
+    input, select, textarea, button{color-scheme:light;}
+  }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
@@ -134,7 +159,7 @@
   .month-head-cell{padding:9px 4px; text-align:center; font-size:11.5px; font-weight:600; color:var(--text-dim); border-right:1px solid var(--border);}
   .month-head-cell:last-child{border-right:none;}
   .month-head-cell.weekend-label{color:#C0392B;}
-  .month-week{display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--border);}
+  .month-week{position:relative; display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--border);}
   .month-week:last-child{border-bottom:none;}
   .month-day-bg{border-right:1px solid var(--border); position:relative;}
   .month-day-bg:last-child{border-right:none;}
@@ -182,7 +207,33 @@
     margin:3px 3px; border-radius:7px; display:flex; overflow:hidden; cursor:pointer;
     box-shadow:0 1px 1px rgba(0,0,0,.06); position:relative; align-self:stretch;
   }
-  .ticket-bar:hover{outline:2px solid rgba(0,0,0,.18); outline-offset:0;}
+  .ticket-bar:hover{outline:2.5px solid var(--accent); outline-offset:1px;}
+  .ticket-bar.tb-done:hover{opacity:.92;}
+  .resize-handle{
+    position:absolute; top:0; bottom:0; width:10px; z-index:4;
+    cursor:col-resize; touch-action:none;
+  }
+  .resize-handle.left{left:0;}
+  .resize-handle.right{right:0;}
+  .resize-handle.left::before, .resize-handle.right::before{
+    content:''; position:absolute; top:0; bottom:0; width:2px;
+    background:rgba(20,22,26,.30); opacity:0; transition:opacity .12s ease;
+  }
+  .resize-handle.left::before{left:1px;}
+  .resize-handle.right::before{right:1px;}
+  .ticket-bar:hover .resize-handle.left::before,
+  .ticket-bar:hover .resize-handle.right::before,
+  .resize-handle:active::before{opacity:1;}
+  .ticket-bar.resizing{opacity:.4;}
+  .new-ticket-modal{border:2.5px solid var(--danger); box-shadow:0 0 0 4px rgba(224,79,95,.18), 0 20px 60px rgba(0,0,0,.25);}
+  .new-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:50%;
+    background:var(--danger); color:#fff;
+    font-size:12px; font-weight:800; letter-spacing:.5px;
+    box-shadow:0 2px 6px rgba(224,79,95,.5);
+    margin-left:10px; vertical-align:middle;
+  }
   .seg{display:flex; align-items:center; min-width:0; height:100%; position:relative;}
   .seg-main{padding:0 7px; color:#2A2E35;}
   .seg-label{font-size:11px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:relative; z-index:1;}
@@ -223,6 +274,10 @@
   table.simple th.sortable-th .sort-arrow.inactive{color:var(--accent); opacity:.5;}
   table.simple td.cb-cell, table.simple th.cb-cell{width:34px; padding-left:10px; padding-right:0;}
   .ticket-select-cb, #searchSelectAll{width:15px; height:15px; cursor:pointer; margin:0;}
+  .tr-absence{background:#FFF3C4;}
+  .tr-absence:hover{background:#FFEBA8;}
+  .table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .table-scroll table{width:100%;}
   .search-results-toolbar{display:flex; align-items:center; justify-content:space-between; margin:14px 0 8px; gap:10px; flex-wrap:wrap;}
   .csv-download-btn{display:inline-flex; align-items:center; gap:5px; padding:6px 13px; font-size:12px;}
   .csv-download-btn:disabled{opacity:.45; cursor:not-allowed;}
@@ -253,7 +308,10 @@
     75% { box-shadow:0 0 0 1px rgba(232,169,52,.3); filter:brightness(1.05); }
   }
   .ticket-jump-highlight{ animation:ticketJumpFlash 1.7s ease-in-out 1; z-index:6; }
-  .board-summary{display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-top:18px;}
+  .board-summary{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px;}
+  .board-summary .card{min-width:0;}
+  .board-summary table.simple{width:100%;}
+  .board-summary table.simple th, .board-summary table.simple td{word-break:break-word;}
   @media(max-width:980px){.board-summary{grid-template-columns:1fr;}}
   .mini-legend{display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--text-faint); margin-bottom:14px;}
   .mini-legend span b{color:var(--text-dim); font-weight:700;}
@@ -321,6 +379,8 @@
   .btn-ghost:hover{background:var(--bg);}
   .btn-danger{background:var(--danger-soft); color:var(--danger);}
   .btn-danger:hover{background:#F6D3D3;}
+  .btn-jump{background:var(--accent); color:#fff;}
+  .btn-jump:hover{background:var(--accent-dark);}
 
   .toast{
     position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff;
@@ -688,7 +748,7 @@ function persistenceAvailable(){
   return !!firestoreDb || storageAvailable();
 }
 const DOW_LABEL = ['일','월','화','수','목','금','토'];
-const WORK_TYPES = ['라이브','오프라인 촬영','롱폼','숏폼','기획','이미지','언리얼'];
+const WORK_TYPES = ['라이브','오프라인 촬영','롱폼','숏폼','기획','이미지','언리얼','etc'];
 const WORK_TYPE_ICONS = {
   '라이브':'📡',
   '오프라인 촬영':'🎥',
@@ -696,7 +756,8 @@ const WORK_TYPE_ICONS = {
   '숏폼':'📱',
   '기획':'📝',
   '이미지':'🎨',
-  '언리얼':'🧩'
+  '언리얼':'🧩',
+  'etc':'📦'
 };
 const WORK_TYPE_COLORS = {
   '라이브':'#F3AFAF',
@@ -705,7 +766,8 @@ const WORK_TYPE_COLORS = {
   '숏폼':'#DCEBFB',
   '기획':'#F0E29A',
   '이미지':'#A9D9B8',
-  '언리얼':'#CBB4E8'
+  '언리얼':'#CBB4E8',
+  'etc':'#C9CFD8'
 };
 const NO_TYPE_COLOR = '#DBD5CD';
 const ABSENCE_FILTER_KEY = '__ABSENCE__'; // 상단 범례의 '부재' 칩 클릭 필터용 특수 키
@@ -724,9 +786,11 @@ let boardTypeFilters = []; // 보드(2주/월) 상단 유형 색상 버튼 클�
 let workerCardMonthOffset = 0; // 대시보드 "작업자별 유형 티켓수" 카드의 월 이동 (0=이번달)
 let projectCardMonthOffset = 0; // 대시보드 "프로젝트별 유형 티켓수" 카드의 월 이동 (0=이번달)
 let searchText = ''; // 티켓 검색 탭: 자유 검색어
-let searchStatusFilter = null; // 티켓 검색 탭: 상태 필터 (null=전체)
-let searchTypeFilter = null; // 티켓 검색 탭: 업무 유형 필터 (null=전체)
-let searchWorkerFilter = null; // 티켓 검색 탭: 작업자 필터 (null=전체)
+let searchStatusFilters = []; // 티켓 검색 탭: 상태 필터 (여러 개 동시 선택 가능)
+let searchTypeFilters = []; // 티켓 검색 탭: 업무 유형 필터 (여러 개 동시 선택 가능)
+let searchWorkerFilters = []; // 티켓 검색 탭: 작업자 필터 (여러 개 동시 선택 가능)
+let searchStartFilter = ''; // 티켓 검색 탭: 기간 필터 시작일 (해당 구간만 보기/CSV 추출용)
+let searchEndFilter = ''; // 티켓 검색 탭: 기간 필터 종료일
 let searchSelectedIds = new Set(); // 티켓 검색 탭: 체크박스로 선택된 티켓 id 목록 (CSV 다운로드용)
 let absenceSelectedIds = new Set(); // 부재 관리 목록: 체크박스로 선택된 부재 id 목록 (CSV 다운로드용)
 let absenceSearchText = ''; // 부재 관리 페이지 전용 검색어
@@ -754,6 +818,8 @@ let mobileSearchWorkerFilter = null;
 let mobileSearchStatusFilter = null;
 let mobileSearchProjectFilter = null;
 let mobileSearchTypeFilter = null;
+let mobileSearchStartFilter = '';
+let mobileSearchEndFilter = '';
 let mobileAbsenceWorkerFilter = null;
 let mobileAbsenceHideShared = false;
 let mobileMonthAnchor = null; // 모바일 월간 보기용 기준 월 (Date), 초기화 시 이번 달로 세팅
@@ -986,10 +1052,14 @@ function buildQuarterFeedbackText(worker, tickets, start, end){
   lines.push(`[이 기간 작업 유형별 평균 소요 영업일]`);
   typeOrderAll.forEach(wt=>{
     const ts = byTypeAll[wt];
-    const totalDays = ts.reduce((sum,t)=> sum+expectedWorkDays(t), 0);
     const totalQty = ts.reduce((sum,t)=> sum+qtyOf(t), 0);
-    const avg = totalQty ? totalDays/totalQty : 0;
-    lines.push(`  - ${wt}: 평균 ${fmtDays(avg)}영업일 (총 ${totalQty}건)`);
+    const expAvg = totalQty ? ts.reduce((sum,t)=> sum+expectedWorkDays(t), 0) / totalQty : 0;
+    // 실제 소요 평균은 완료(actualEndDate 설정)된 티켓만 집계
+    const doneTs = ts.filter(t=> t.actualEndDate);
+    const doneQty = doneTs.reduce((sum,t)=> sum+qtyOf(t), 0);
+    const actAvg = doneQty ? doneTs.reduce((sum,t)=> sum+actualBusinessDays(t), 0) / doneQty : null;
+    const actStr = actAvg===null ? '-' : fmtDays(actAvg);
+    lines.push(`  - ${wt}: 예상 평균 ${fmtDays(expAvg)}영업일 / 실제 평균 ${actStr}영업일 (총 ${totalQty}건${doneQty?`, 완료 ${doneQty}건`:''})`);
   });
 
   return lines.join('\n');
@@ -1046,9 +1116,14 @@ function actualBusinessDays(t){
   return countWorkingDaysForTicket(t.startDate, t.actualEndDate, t);
 }
 function expectedWorkDays(t){
+  // 예상 작업일수는 '주말을 뺀 월~금 순수 작업일'을 기본으로 계산한다 (겹침/부재 보정 없음).
+  // '토요일/일요일 근무' 체크가 있면 해당 주말이 실제 기간에 있을 때 +1일 반영한다.
   // 리소스 마감일이 있으면, 리소스가 준비된 다음 영업일부터 실제 제작이 시작되는 것으로 계산
   const rangeStart = t.resourceDeadline ? nextBusinessDay(t.resourceDeadline) : t.startDate;
-  return countWorkingDaysForTicket(rangeStart, t.endDate, t);
+  let days = businessDaysBetween(rangeStart, t.endDate);
+  if((t.weekendSat || t.weekendWork) && rangeIncludesWeekday(rangeStart, t.endDate, 6)) days += 1;
+  if((t.weekendSun || t.weekendWork) && rangeIncludesWeekday(rangeStart, t.endDate, 0)) days += 1;
+  return days;
 }
 function isDrivePathLike(val){
   // http(s) 링크가 아니면서 백슬래시가 포함된 경우 사내 드라이브/네트워크 경로로 간주
@@ -1104,10 +1179,11 @@ function plainField(val){
   if(Array.isArray(val)) return val.filter(Boolean).join(' | ');
   return val || '';
 }
-const CSV_HEADERS = ['제목','프로젝트','업무 유형','담당자','시작일','마감일','예상 작업일수','상태','리소스','레퍼런스','SB·기획','사이즈·포맷'];
+const CSV_HEADERS = ['제목','프로젝트','업무 유형','담당자','시작일','마감일','예상 작업일수','실 작업일수','상태','리소스','레퍼런스','SB·기획','사이즈·포맷'];
 function ticketToCSVRow(t){
   const status = ticketStatus(t);
   const days = expectedWorkDays(t);
+  const actual = actualBusinessDays(t);
   return [
     t.title || '',
     t.project || '',
@@ -1116,6 +1192,7 @@ function ticketToCSVRow(t){
     t.startDate || '',
     t.endDate || '',
     fmtDays(days),
+    (actual===null?'':fmtDays(actual)+'일'),
     status || '',
     plainField((t.resourceLinks&&t.resourceLinks.length)?t.resourceLinks:t.memo),
     plainField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink),
@@ -1815,6 +1892,8 @@ function getFilteredMobileSearchTickets(){
       const hay = [t.title, t.project, ...(t.assignees||[])].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
     }
+    if(mobileSearchStartFilter && t.endDate < mobileSearchStartFilter) return false;
+    if(mobileSearchEndFilter && t.startDate > mobileSearchEndFilter) return false;
     return true;
   }).sort((a,b)=> a.startDate<b.startDate?-1:1);
 }
@@ -1835,6 +1914,10 @@ function renderMobileSearchView(){
   return `
     <div class="field" style="margin-bottom:8px;">
       <input type="text" id="mobileSearchInput" value="${escapeHtml(mobileSearchText)}" placeholder="제목, 프로젝트, 담당자로 검색...">
+    </div>
+    <div class="mobile-search-filter-row" style="grid-template-columns:1fr 1fr; margin-bottom:8px;">
+      <input type="date" id="mobileSearchStartInput" value="${mobileSearchStartFilter}" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 4px; font-size:10.5px; font-family:inherit; background:#fff; color:var(--text);">
+      <input type="date" id="mobileSearchEndInput" value="${mobileSearchEndFilter}" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 4px; font-size:10.5px; font-family:inherit; background:#fff; color:var(--text);">
     </div>
     <div class="mobile-search-filter-row">
       <select id="mobileSearchStatusSelect">
@@ -2049,6 +2132,10 @@ function wireMobileApp(){
     };
     renderMobileSearchResultsOnly();
   }
+  const mSearchStart = app.querySelector('#mobileSearchStartInput');
+  if(mSearchStart) mSearchStart.onchange = (e)=>{ mobileSearchStartFilter = e.target.value || ''; renderMobileSearchResultsOnly(); };
+  const mSearchEnd = app.querySelector('#mobileSearchEndInput');
+  if(mSearchEnd) mSearchEnd.onchange = (e)=>{ mobileSearchEndFilter = e.target.value || ''; renderMobileSearchResultsOnly(); };
   const mSearchStatusSelect = app.querySelector('#mobileSearchStatusSelect');
   if(mSearchStatusSelect){
     mSearchStatusSelect.onchange = (e)=>{
@@ -2214,7 +2301,7 @@ function renderTwoWeekBoard(){
       const cls=['day-bg'];
       if(isWeekend(d)) cls.push('weekend');
       if(iso===today) cls.push('today');
-      return `<div class="${cls.join(' ')}" style="grid-row:1 / span ${maxLanes}; grid-column:${i+1}"></div>`;
+      return `<div class="${cls.join(' ')}" data-date="${iso}" data-worker="${escapeHtml(w)}" style="grid-row:1 / span ${maxLanes}; grid-column:${i+1}"></div>`;
     }).join('');
 
     const bars = items.map(({t,lane})=>{
@@ -2250,6 +2337,8 @@ function renderTwoWeekBoard(){
               <span class="seg-label" style="margin-top:9px;">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${(isAbsence && t.assignees && t.assignees.length===1) ? escapeHtml(t.assignees[0])+' ' : ''}${escapeHtml(t.title)}${qtyBadge(t)}</span>
               ${showEndBold ? `<span class="edge-date end-edge">${fmtShort(t.endDate)}</span>` : ''}
             </div>
+            ${isFirstSeg ? `<div class="resize-handle left" data-id="${t.id}" data-edge="start" title="시작일 변경(드래그)"></div>` : ''}
+            ${isLastSeg ? `<div class="resize-handle right" data-id="${t.id}" data-edge="end" title="마감일 변경(드래그)"></div>` : ''}
             ${(isLastSeg && chain) ? `<span class="chain-badge" title="연속 작업 ${chain.index}/${chain.size}">🔗</span>` : ''}
           </div>`;
       }).join('');
@@ -2331,7 +2420,7 @@ function renderMonthBoard(){
       if(isWeekend(d)) cls.push('weekend');
       if(iso===today) cls.push('today');
       if(!inMonth) cls.push('out-month');
-      return `<div class="${cls.join(' ')}" style="grid-column:${i+1}; grid-row:1 / span ${maxLanes+1};"><span class="month-daynum">${d.getDate()}${iso===today?'<span class="today-badge">오늘</span>':''}</span></div>`;
+      return `<div class="${cls.join(' ')}" data-date="${iso}" style="grid-column:${i+1}; grid-row:1 / span ${maxLanes+1};"><span class="month-daynum">${d.getDate()}${iso===today?'<span class="today-badge">오늘</span>':''}</span></div>`;
     }).join('');
 
     const bars = items.map(({t, lane})=>{
@@ -2368,12 +2457,14 @@ function renderMonthBoard(){
             <div class="seg seg-main ${isAbsence?'absence-bar':''}" style="flex:1 0 0; background:${color};">
               <span class="seg-label">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}${qtyBadge(t)} <span class="month-bar-assignee">· ${escapeHtml(t.assignees.join(','))}</span></span>
             </div>
+            ${segIdx===0 ? `<div class="resize-handle left" data-id="${t.id}" data-edge="start" title="시작일 변경(드래그)"></div>` : ''}
+            ${isLastSeg ? `<div class="resize-handle right" data-id="${t.id}" data-edge="end" title="마감일 변경(드래그)"></div>` : ''}
             ${(isLastSeg && chain) ? `<span class="chain-badge" title="연속 작업 ${chain.index}/${chain.size}">🔗</span>` : ''}
           </div>`;
       }).join('');
     }).join('');
 
-    return `<div class="month-week" style="grid-template-rows:${rowTemplate};">${bgCells}${bars}</div>`;
+    return `<div class="month-week" data-ws="${wsISO}" style="grid-template-rows:${rowTemplate};">${bgCells}${bars}</div>`;
   }).join('');
 
   return `${legend}${workerFilter}<div class="board">${head}${weekRows}</div>${renderBoardSummary()}`;
@@ -2409,7 +2500,8 @@ function renderBoardSummary(){
         <tbody>
           ${inProgress.map(t=>{
             const needsResourceCheck = !!t.resourceCheckNeeded;
-            return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''}" data-id="${t.id}" style="cursor:pointer;">
+            const isAbsenceRow = t.project==='부재';
+            return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''} ${isAbsenceRow?'tr-absence':''}" data-id="${t.id}" style="cursor:pointer;">
               <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
               <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
               <td>${t.assignees.join(', ')}</td>
@@ -2429,16 +2521,21 @@ function renderBoardSummary(){
       <p class="card-sub">상태가 '예정'으로 설정된 티켓 · <span class="resource-flag-badge" style="margin-right:0;">❗ 리소스 확인</span> 표시는 리소스 도착 확인이 필요한 티켓입니다</p>
       ${upcoming.length ? `
       <table class="simple">
-        <thead><tr><th>제목</th><th style="white-space:nowrap;">프로젝트</th><th>담당자</th><th style="white-space:nowrap;">시작까지</th><th>리소스</th><th>레퍼런스</th></tr></thead>
+        <thead><tr><th>제목</th><th>프로젝트</th><th>담당자</th><th>시작까지</th><th>리소스</th><th>레퍼런스</th></tr></thead>
         <tbody>
           ${upcoming.map(t=>{
             const dday = businessDaysBetween(today, t.startDate) - 1;
             const needsResourceCheck = !!t.resourceCheckNeeded;
-            return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''}" data-id="${t.id}" style="cursor:pointer;">
+            const isAbsenceRow = t.project==='부재';
+            // 전체 휴가(담당자 전원 부재)는 공간 확보를 위해 담당자를 'ALL'로 표기
+            const assigneeLabel = (t.project==='부재' && t.assignees && t.assignees.length===WORKERS.length)
+              ? 'ALL'
+              : (t.assignees||[]).join(', ');
+            return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''} ${isAbsenceRow?'tr-absence':''}" data-id="${t.id}" style="cursor:pointer;">
               <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
-              <td style="white-space:nowrap; min-width:58px;"><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
-              <td>${t.assignees.join(', ')}</td>
-              <td style="white-space:nowrap; min-width:82px;">${fmtShort(t.startDate)} (D-${Math.max(dday,0)})</td>
+              <td style="min-width:58px;"><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
+              <td>${escapeHtml(assigneeLabel)}</td>
+              <td style="min-width:82px;">${fmtShort(t.startDate)} (D-${Math.max(dday,0)})</td>
               <td>${renderResourceCell(t)}</td>
               <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
             </tr>`;
@@ -2448,6 +2545,203 @@ function renderBoardSummary(){
     </div>`;
 
   return `<div class="board-summary">${progressCard}${upcomingCard}</div>`;
+}
+
+/* ============================= 보드 빈 공간 클릭 → 새 티켓 / 2주 바 가장자리 드래그로 기간 수정 ============================= */
+let suppressNextBarClick = false; // 바 가장자리 드래그 후 클릭이 티켓 모달을 여는 것을 방지
+
+function cleanupActiveResize(){
+  document.querySelectorAll('#resizeActiveLine').forEach(el=> el.remove());
+  const tip = document.getElementById('resizeTip'); if(tip && tip.parentNode) tip.parentNode.removeChild(tip);
+}
+
+function wireBoardEmptyClick(){
+  document.querySelectorAll('.day-bg[data-date]').forEach(cell=>{
+    cell.onclick = ()=>{
+      openModal(null, null, cell.dataset.date, null, cell.dataset.worker || null);
+    };
+  });
+  document.querySelectorAll('.month-day-bg[data-date]').forEach(cell=>{
+    cell.onclick = ()=>{
+      openModal(null, null, cell.dataset.date, null, monthFilterWorker || null);
+    };
+  });
+}
+
+function wireTwoWeekBarResize(){
+  document.querySelectorAll('.resize-handle').forEach(handle=>{
+    handle.addEventListener('click', (e)=> e.stopPropagation());
+    handle.addEventListener('mousedown', (e)=>{
+      e.stopPropagation();
+      e.preventDefault();
+      suppressNextBarClick = true;
+      const t = TICKETS.find(x=>x.id===handle.dataset.id);
+      if(!t) return;
+      openResizePopup(t, handle.dataset.edge);
+    });
+  });
+}
+function updateResizeLineTip(state, tip){
+  const t = TICKETS.find(x=>x.id===state.ticketId);
+  if(!t) return;
+  const label = state.edge==='start' ? '시작일' : '마감일';
+  const nd = state.edge==='start' ? state.newStart : state.newEnd;
+  tip.textContent = `${label} ${fmtShort(nd)} · ${fmtDays(businessDaysBetween(state.newStart, state.newEnd))}영업일`;
+  tip.style.left = (state.clientX + 14) + 'px';
+  tip.style.top = (state.clientY - 30) + 'px';
+}
+
+/* 월 보드(월간 보기)에서도 2주 보드와 동일하게 바 좌/우 모서리를 잡아 시작일·마감일을 드래그로 수정한다.
+   그리드 레이아웃은 건드리지 않고, 원본 바는 그대로 둔 채 '초록 세로선'이 새 경계를 표시한다.
+   세로선은 수직축(전체 높이)이 고정되고, 수평 위치만 마우스를 따라가며 날짜 경계에 자석처럼 스냅된다. */
+function wireMonthBarResize(){
+  document.querySelectorAll('.resize-handle').forEach(handle=>{
+    handle.addEventListener('click', (e)=> e.stopPropagation());
+    handle.addEventListener('mousedown', (e)=>{
+      e.stopPropagation();
+      e.preventDefault();
+      suppressNextBarClick = true;
+      const t = TICKETS.find(x=>x.id===handle.dataset.id);
+      if(!t) return;
+      openResizePopup(t, handle.dataset.edge);
+    });
+  });
+}
+// 모서리 클릭 시 팝업으로 시작일/마감일을 -1/+1 조정하는 방식
+function openResizePopup(t, edge){
+  const label = edge==='start' ? '시작일' : '마감일';
+  let draftDate = edge==='start' ? t.startDate : t.endDate;
+  let draftSat = !!(t.weekendSat || t.weekendWork);
+  let draftSun = !!(t.weekendSun || t.weekendWork);
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay open';
+  overlay.id = 'resizePopupOverlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-head"><h3>${label} 수정</h3><button type="button" class="modal-close" id="rpClose">✕</button></div>
+      <div class="modal-body">
+        <p style="margin:0 0 10px; font-size:13.5px; line-height:1.6;"><b>${escapeHtml(t.title)}</b> <span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${escapeHtml(t.project)}</span></p>
+        <div style="display:flex; align-items:center; gap:8px; margin:0 0 12px;">
+          <span style="background:var(--accent); color:#fff; font-weight:800; padding:4px 12px; border-radius:16px; font-size:12.5px;">${label} 수정</span>
+          <span style="font-size:13px; color:var(--text-dim);">현 <b style="color:var(--text);">${fmtFull(edge==='start'?t.startDate:t.endDate)}</b></span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
+          <button type="button" class="btn btn-ghost" id="rpMinus" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:58px; height:58px; border-radius:10px; font-weight:800; padding:4px 0; line-height:1;">
+            <span style="font-size:14px;">◀</span><span style="font-size:12px;">-1</span>
+          </button>
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:170px; padding:10px 14px; border:1.5px solid var(--border); border-radius:12px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.06);">
+            <span style="font-size:10.5px; font-weight:800; color:var(--text-faint); letter-spacing:.5px; text-transform:uppercase; margin-bottom:3px;">${label}</span>
+            <span id="rpDow" style="font-size:13px; font-weight:800; color:var(--accent-dark); margin-bottom:2px;"></span>
+            <span id="rpDate" style="font-size:20px; font-weight:800; letter-spacing:.3px;"></span>
+          </div>
+          <button type="button" class="btn btn-ghost" id="rpPlus" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:58px; height:58px; border-radius:10px; font-weight:800; padding:4px 0; line-height:1;">
+            <span style="font-size:14px;">▶</span><span style="font-size:12px;">+1</span>
+          </button>
+        </div>
+        <div class="field" style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:700; color:var(--text-dim); display:block; margin-bottom:6px;">주말 근무 필요</label>
+          <div style="display:flex; gap:14px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:600;">
+              <input type="checkbox" id="rpSat" ${draftSat?'checked':''} style="width:15px; height:15px; margin:0;"> 토요일 근무
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:600;">
+              <input type="checkbox" id="rpSun" ${draftSun?'checked':''} style="width:15px; height:15px; margin:0;"> 일요일 근무
+            </label>
+          </div>
+        </div>
+        <div class="computed-days" id="rpDays" style="justify-content:center;">변경 후 예상 작업일수(영업일): <b>-</b></div>
+      </div>
+      <div class="modal-foot">
+        <div></div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-ghost" id="rpCancel">취소</button>
+          <button type="button" class="btn btn-primary" id="rpOk">확인</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  function refresh(){
+    const d = parseISO(draftDate);
+    overlay.querySelector('#rpDow').textContent = DOW_LABEL[d.getDay()] + '요일';
+    overlay.querySelector('#rpDate').textContent = fmtFull(draftDate);
+    const newStart = edge==='start' ? draftDate : t.startDate;
+    const newEnd = edge==='start' ? t.endDate : draftDate;
+    const draft = {...t, startDate:newStart, endDate:newEnd, weekendSat: draftSat, weekendSun: draftSun};
+    const exp = expectedWorkDays(draft);
+    overlay.querySelector('#rpDays').innerHTML = `변경 후 예상 작업일수(영업일): <b>${fmtDays(exp)}일</b>`;
+  }
+  overlay.querySelector('#rpMinus').onclick = ()=>{ draftDate = toISO(addDays(parseISO(draftDate), -1)); refresh(); };
+  overlay.querySelector('#rpPlus').onclick = ()=>{ draftDate = toISO(addDays(parseISO(draftDate), 1)); refresh(); };
+  overlay.querySelector('#rpSat').onchange = (e)=>{ draftSat = e.target.checked; refresh(); };
+  overlay.querySelector('#rpSun').onchange = (e)=>{ draftSun = e.target.checked; refresh(); };
+  function close(){ overlay.remove(); }
+  overlay.querySelector('#rpClose').onclick = close;
+  overlay.querySelector('#rpCancel').onclick = close;
+  overlay.addEventListener('mousedown', (e)=>{ if(e.target===overlay) close(); });
+  overlay.querySelector('#rpOk').onclick = async ()=>{
+    const newStart = edge==='start' ? draftDate : t.startDate;
+    const newEnd = edge==='start' ? t.endDate : draftDate;
+    if(newStart > newEnd){ showToast('시작일은 마감일보다 늦을 수 없습니다.'); return; }
+    const idx = TICKETS.findIndex(x=>x.id===t.id);
+    if(idx>-1) TICKETS[idx] = {...TICKETS[idx], startDate:newStart, endDate:newEnd, weekendSat: draftSat, weekendSun: draftSun, updatedAt:new Date().toISOString()};
+    const ok = await persistTickets();
+    if(ok) showToast('일정을 수정했습니다.');
+    else if(!persistenceAvailable()){ showToast('저장할 수 없는 화면입니다. 안내 배너를 확인해주세요.'); document.getElementById('storageWarningBanner').style.display='flex'; }
+    else showToast('저장에 실패했습니다. 다시 시도해주세요.');
+    close();
+    renderApp();
+  };
+  refresh();
+}
+function confirmResize(t, edge, newStart, newEnd){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay open';
+  overlay.id = 'resizeConfirmOverlay';
+  const label = edge==='start' ? '시작일' : '마감일';
+  const oldDate = edge==='start' ? t.startDate : t.endDate;
+  const newDate = edge==='start' ? newStart : newEnd;
+  const newExpected = expectedWorkDays({...t, startDate:newStart, endDate:newEnd});
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:440px;">
+      <div class="modal-head"><h3>일정 수정</h3><button type="button" class="modal-close" id="rcClose">✕</button></div>
+      <div class="modal-body">
+        <p style="margin:0 0 10px; font-size:13.5px; line-height:1.6;"><b>${escapeHtml(t.title)}</b> <span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${escapeHtml(t.project)}</span></p>
+        <p style="margin:0 0 14px; font-size:13px; line-height:1.6; color:var(--text-dim);">${label}을(를) <b style="color:var(--text);">${fmtFull(oldDate)}</b> → <b style="color:var(--accent-dark);">${fmtFull(newDate)}</b> 으로 변경하시겠습니까?</p>
+        <div class="computed-days" style="justify-content:space-between;">
+          <span>변경 후 예상 작업일수(영업일): <b>${fmtDays(newExpected)}일</b></span>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <div></div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn btn-ghost" id="rcCancel">취소</button>
+          <button type="button" class="btn btn-primary" id="rcOk">수정</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  function close(){ overlay.remove(); }
+  overlay.querySelector('#rcClose').onclick = close;
+  overlay.querySelector('#rcCancel').onclick = close;
+  overlay.addEventListener('mousedown', (e)=>{ if(e.target===overlay) close(); });
+  overlay.querySelector('#rcOk').onclick = async ()=>{
+    const idx = TICKETS.findIndex(x=>x.id===t.id);
+    if(idx>-1){
+      TICKETS[idx] = {...TICKETS[idx], startDate:newStart, endDate:newEnd, updatedAt:new Date().toISOString()};
+    }
+    const ok = await persistTickets();
+    if(ok) showToast('일정을 수정했습니다.');
+    else if(!persistenceAvailable()){
+      showToast('저장할 수 없는 화면입니다. 안내 배너를 확인해주세요.');
+      document.getElementById('storageWarningBanner').style.display = 'flex';
+    } else {
+      showToast('저장에 실패했습니다. 다시 시도해주세요.');
+    }
+    close();
+    renderApp();
+  };
 }
 
 /* ============================= 대시보드 ============================= */
@@ -2495,10 +2789,13 @@ function renderDashboard(){
         if(ts.length){
           // 티켓 하나에 여러 개(수량)가 묶여 있으면 총 소요일을 수량으로 나눠 '건당' 일수로 환산해 평균에 반영
           // 예: 숏폼 5개를 5영업일 만에 처리했다면 건당 1일로 계산됨
-          const totalDays = ts.reduce((sum,t)=> sum+expectedWorkDays(t), 0);
           const totalQty = ts.reduce((sum,t)=> sum+(t.qty||1), 0);
-          const avg = totalDays / totalQty;
-          counts[wt] = `${fmtDays(avg)}일`;
+          const expAvg = totalQty ? ts.reduce((sum,t)=> sum+expectedWorkDays(t), 0) / totalQty : 0;
+          // 실제 소요 평균: 완료(actualEndDate 설정)된 티켓만 집계
+          const doneTs = ts.filter(t=> t.actualEndDate);
+          const doneQty = doneTs.reduce((sum,t)=> sum+(t.qty||1), 0);
+          const actAvg = doneQty ? doneTs.reduce((sum,t)=> sum+actualBusinessDays(t), 0) / doneQty : null;
+          counts[wt] = {exp: expAvg, act: actAvg};
         }
       });
       return {label:w, counts};
@@ -2518,6 +2815,28 @@ function renderDashboard(){
           <tr>
             <td><b>${r.label}</b></td>
             ${types.map(wt=>`<td>${r.counts[wt]||'-'}</td>`).join('')}
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  function avgDaysMatrixTable(rows, types){
+    return `
+    <table class="simple compact-matrix">
+      <thead><tr>
+        <th>작업자</th>
+        ${types.map(wt=>`<th>${WORK_TYPE_ICONS[wt]} ${wt}</th>`).join('')}
+      </tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td><b>${r.label}</b></td>
+            ${types.map(wt=>{
+              const v = r.counts[wt];
+              if(!v) return '<td>-</td>';
+              const actStr = v.act===null ? '-' : fmtDays(v.act)+'일';
+              return `<td title="예상 / 실제">${fmtDays(v.exp)}일 / ${actStr}</td>`;
+            }).join('')}
           </tr>`).join('')}
       </tbody>
     </table>`;
@@ -2581,8 +2900,8 @@ function renderDashboard(){
     </div>
     <div class="card">
       <p class="card-title">담당자별 · 유형별 평균 소요 영업일</p>
-      <p class="card-sub">업무 유형별 예상 작업일수(영업일)의 평균 · 전체 기간 기준 (부재·라이브·오프라인 촬영 제외, 수량 있는 티켓은 건당 일수로 환산)</p>
-      ${avgDaysAllTickets.length ? typeMatrixTable(avgDaysRows(), '작업자', AVG_DAYS_WORK_TYPES) : `<div class="empty-note">등록된 작업이 없습니다.</div>`}
+      <p class="card-sub">'예상 작업일수(월~금 순수) 평균 / 실제 소요(겹침 반영) 평균' · 전체 기간 기준 (부재·라이브·오프라인 촬영 제외, 수량 있는 티켓은 건당 일수로 환산, 실제는 완료 티켓만 집계)</p>
+      ${avgDaysAllTickets.length ? avgDaysMatrixTable(avgDaysRows(), AVG_DAYS_WORK_TYPES) : `<div class="empty-note">등록된 작업이 없습니다.</div>`}
     </div>
     <div class="card">
       <p class="card-title">작업자별 기간 조회</p>
@@ -2672,7 +2991,10 @@ function wireReportPanel(){
 
 function attachContentHandlers(){
   document.querySelectorAll('.ticket-bar, .ticket-row').forEach(el=>{
-    el.addEventListener('click', ()=> openModal(el.dataset.id));
+    el.addEventListener('click', (e)=>{
+      if(suppressNextBarClick){ suppressNextBarClick = false; e.stopPropagation(); return; }
+      openModal(el.dataset.id);
+    });
   });
   wireReportPanel();
   wireMonthWorkerFilter();
@@ -2680,17 +3002,20 @@ function attachContentHandlers(){
   wireDashboardWorkerCardNav();
   wireSearchView();
   wireAbsenceView();
+  wireBoardEmptyClick();
+  if(currentView==='board' && boardMode==='twoWeek') wireTwoWeekBarResize();
+  if(currentView==='board' && boardMode==='month') wireMonthBarResize();
 }
 
 /* ============================= 티켓 검색 ============================= */
 function renderSearchView(){
   const statusPillsHtml = STATUS_LIST.map(s=>{
-    const isSel = searchStatusFilter===s;
+    const isSel = searchStatusFilters.includes(s);
     const c = STATUS_COLORS[s];
     return `<div class="pill ${isSel?'selected':''}" data-status="${s}" style="${isSel?`border-color:${c};background:${c}22;color:${c}`:''}">${s}</div>`;
   }).join('');
   const typePillsHtml = WORK_TYPES.map(wt=>{
-    const isSel = searchTypeFilter===wt;
+    const isSel = searchTypeFilters.includes(wt);
     const c = WORK_TYPE_COLORS[wt];
     return `<div class="pill ${isSel?'selected':''}" data-type="${wt}" style="${isSel?`border-color:${c};background:${c}55;color:#2A2E35`:''}">${WORK_TYPE_ICONS[wt]} ${wt}</div>`;
   }).join('');
@@ -2698,29 +3023,42 @@ function renderSearchView(){
   return `
     <div class="card">
       <p class="card-title">전체 티켓 검색</p>
-      <p class="card-sub">제목·프로젝트·담당자로 검색하거나, 상태·업무 유형·담당자를 클릭해 필터링하세요 (부재는 왼쪽 메뉴의 "부재 관리"에서 확인하세요)</p>
+      <p class="card-sub">제목·프로젝트·담당자로 검색하거나, 상태·업무 유형·담당자를 클릭해 필터링하세요 (각 항목은 여러 개 동시 선택 가능 · 부재는 왼쪽 메뉴의 "부재 관리"에서 확인하세요)</p>
       <div class="field">
         <input type="text" id="searchInput" value="${escapeHtml(searchText)}" placeholder="제목, 프로젝트, 담당자로 검색...">
       </div>
+      <div class="field" style="margin-bottom:8px;">
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">기간 <span class="hint">(시작~종료 구간과 겹치는 티켓만 표시 · 해당 구간 CSV 추출용)</span></label>
+        <div class="two-col">
+          <div class="field" style="margin-bottom:0;">
+            <label>시작일</label>
+            <input type="date" id="searchStartFilterInput" value="${searchStartFilter}">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>종료일</label>
+            <input type="date" id="searchEndFilterInput" value="${searchEndFilter}">
+          </div>
+        </div>
+      </div>
       <div class="field">
-        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">상태 <span class="hint">(클릭하여 필터)</span></label>
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">상태 <span class="hint">(클릭하여 필터 · 여러 개 동시 선택 가능)</span></label>
         <div class="pill-group" id="searchStatusPills">
           ${statusPillsHtml}
-          ${searchStatusFilter ? `<div class="pill" id="resetStatusFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
+          ${searchStatusFilters.length ? `<div class="pill" id="resetStatusFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
         </div>
       </div>
       <div class="field" style="margin-bottom:8px;">
-        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">업무 유형 <span class="hint">(클릭하여 필터)</span></label>
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">업무 유형 <span class="hint">(클릭하여 필터 · 여러 개 동시 선택 가능)</span></label>
         <div class="pill-group" id="searchTypePills">
           ${typePillsHtml}
-          ${searchTypeFilter ? `<div class="pill" id="resetTypeFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
+          ${searchTypeFilters.length ? `<div class="pill" id="resetTypeFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
         </div>
       </div>
       <div class="field" style="margin-bottom:8px;">
-        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">담당자 <span class="hint">(클릭하여 필터)</span></label>
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">담당자 <span class="hint">(클릭하여 필터 · 여러 명 동시 선택 가능)</span></label>
         <div class="pill-group" id="searchWorkerPills">
-          ${WORKERS.map(w=>`<div class="pill ${searchWorkerFilter===w?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
-          ${searchWorkerFilter ? `<div class="pill" id="resetWorkerSearchFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
+          ${WORKERS.map(w=>`<div class="pill ${searchWorkerFilters.includes(w)?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
+          ${searchWorkerFilters.length ? `<div class="pill" id="resetWorkerSearchFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
         </div>
       </div>
       <div id="searchResultsContainer"></div>
@@ -2732,13 +3070,16 @@ function getFilteredSearchTickets(){
   const q = searchText.trim().toLowerCase();
   const filtered = TICKETS.filter(t=>{
     if(t.project === '부재') return false; // 부재는 아래 별도 "부재 관리" 목록에서 관리
-    if(searchStatusFilter && ticketStatus(t) !== searchStatusFilter) return false;
-    if(searchTypeFilter && t.workType !== searchTypeFilter) return false;
-    if(searchWorkerFilter && !t.assignees.includes(searchWorkerFilter)) return false;
+    if(searchStatusFilters.length && !searchStatusFilters.includes(ticketStatus(t))) return false;
+    if(searchTypeFilters.length && !searchTypeFilters.includes(t.workType)) return false;
+    if(searchWorkerFilters.length && !(t.assignees||[]).some(a=> searchWorkerFilters.includes(a))) return false;
     if(q){
       const hay = [t.title, t.project, ...(t.assignees||[]), t.memo||'', t.sb||'', t.spec||'', t.referenceLink||'', ...((t.resourceLinks)||[]), ...((t.referenceLinks)||[])].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
     }
+    // 기간 필터: [searchStartFilter, searchEndFilter] 구간과 겹치는 티켓만 표시
+    if(searchStartFilter && t.endDate < searchStartFilter) return false;
+    if(searchEndFilter && t.startDate > searchEndFilter) return false;
     return true;
   });
 
@@ -2779,17 +3120,19 @@ function renderSearchResults(){
       <button type="button" class="btn btn-ghost csv-download-btn" id="searchCsvDownloadBtn" ${selectedInView.length?'':'disabled'}>⬇ 선택 항목 CSV 다운로드</button>
     </div>
     ${filtered.length ? `
-    <table class="simple">
+    <div class="table-scroll">
+    <table class="simple" style="min-width:1200px;">
       <thead><tr>
         <th class="cb-cell"><input type="checkbox" id="searchSelectAll" ${allSelected?'checked':''}></th>
         <th class="sortable-th" data-sort="title">제목 ${sortArrowHtml('title')}</th>
         <th style="min-width:76px; white-space:nowrap;">프로젝트</th>
-        <th>유형</th>
-        <th style="min-width:96px;">담당자</th>
+        <th style="white-space:nowrap;">유형</th>
+        <th style="min-width:96px; white-space:nowrap;">담당자</th>
         <th class="sortable-th" data-sort="start">시작일 ${sortArrowHtml('start')}</th>
         <th class="sortable-th" data-sort="end">마감일 ${sortArrowHtml('end')}</th>
-        <th class="sortable-th" data-sort="days">예상 작업일수 ${sortArrowHtml('days')}</th>
-        <th>상태</th>
+        <th class="sortable-th" data-sort="days" style="white-space:nowrap;">예상 작업일수 ${sortArrowHtml('days')}</th>
+        <th style="white-space:nowrap;">실 작업일수</th>
+        <th style="white-space:nowrap;">상태</th>
         <th>리소스</th>
         <th style="min-width:120px;">레퍼런스</th>
         <th>SB·기획</th>
@@ -2799,6 +3142,7 @@ function renderSearchResults(){
         ${filtered.map(t=>{
           const status = ticketStatus(t);
           const days = expectedWorkDays(t);
+          const actual = actualBusinessDays(t);
           const checked = searchSelectedIds.has(t.id);
           return `<tr class="ticket-row" data-id="${t.id}">
             <td class="cb-cell" onclick="event.stopPropagation()"><input type="checkbox" class="ticket-select-cb" data-id="${t.id}" ${checked?'checked':''}></td>
@@ -2809,6 +3153,7 @@ function renderSearchResults(){
             <td style="cursor:pointer;">${fmtShort(t.startDate)}</td>
             <td style="cursor:pointer;">${fmtShort(t.endDate)}</td>
             <td style="cursor:pointer; color:var(--danger); font-weight:800;">${fmtDays(days)}일</td>
+            <td style="cursor:pointer;">${actual===null?'-':fmtDays(actual)+'일'}</td>
             <td style="cursor:pointer;">${statusChipHtml(status)}</td>
             <td style="cursor:pointer;">${renderResourceCell(t)}</td>
             <td style="cursor:pointer;">${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
@@ -2817,7 +3162,8 @@ function renderSearchResults(){
           </tr>`;
         }).join('')}
       </tbody>
-    </table>` : `<div class="empty-note">검색 결과가 없습니다.</div>`}
+    </table>
+    </div>` : `<div class="empty-note">검색 결과가 없습니다.</div>`}
   `;
 
   container.querySelectorAll('.ticket-row').forEach(el=>{
@@ -2875,35 +3221,42 @@ function wireSearchView(){
     searchText = e.target.value;
     renderSearchResults(); // 입력창은 그대로 두고 결과만 갱신 (포커스 유지)
   };
+  const startInput = document.getElementById('searchStartFilterInput');
+  if(startInput) startInput.onchange = (e)=>{ searchStartFilter = e.target.value || ''; renderSearchResults(); };
+  const endInput = document.getElementById('searchEndFilterInput');
+  if(endInput) endInput.onchange = (e)=>{ searchEndFilter = e.target.value || ''; renderSearchResults(); };
   document.querySelectorAll('#searchStatusPills [data-status]').forEach(el=>{
     el.onclick = ()=>{
       const s = el.dataset.status;
-      searchStatusFilter = (searchStatusFilter===s) ? null : s;
+      const idx = searchStatusFilters.indexOf(s);
+      if(idx>-1) searchStatusFilters.splice(idx,1); else searchStatusFilters.push(s);
       renderContent();
     };
   });
   const resetStatus = document.getElementById('resetStatusFilter');
-  if(resetStatus) resetStatus.onclick = ()=>{ searchStatusFilter = null; renderContent(); };
+  if(resetStatus) resetStatus.onclick = ()=>{ searchStatusFilters = []; renderContent(); };
 
   document.querySelectorAll('#searchTypePills [data-type]').forEach(el=>{
     el.onclick = ()=>{
       const wt = el.dataset.type;
-      searchTypeFilter = (searchTypeFilter===wt) ? null : wt;
+      const idx = searchTypeFilters.indexOf(wt);
+      if(idx>-1) searchTypeFilters.splice(idx,1); else searchTypeFilters.push(wt);
       renderContent();
     };
   });
   const resetType = document.getElementById('resetTypeFilter');
-  if(resetType) resetType.onclick = ()=>{ searchTypeFilter = null; renderContent(); };
+  if(resetType) resetType.onclick = ()=>{ searchTypeFilters = []; renderContent(); };
 
   document.querySelectorAll('#searchWorkerPills [data-worker]').forEach(el=>{
     el.onclick = ()=>{
       const w = el.dataset.worker;
-      searchWorkerFilter = (searchWorkerFilter===w) ? null : w;
+      const idx = searchWorkerFilters.indexOf(w);
+      if(idx>-1) searchWorkerFilters.splice(idx,1); else searchWorkerFilters.push(w);
       renderContent();
     };
   });
   const resetWorker = document.getElementById('resetWorkerSearchFilter');
-  if(resetWorker) resetWorker.onclick = ()=>{ searchWorkerFilter = null; renderContent(); };
+  if(resetWorker) resetWorker.onclick = ()=>{ searchWorkerFilters = []; renderContent(); };
 
   renderSearchResults();
 }
@@ -3195,21 +3548,22 @@ function wireMonthWorkerFilter(){
 }
 
 /* ============================= 모달 (생성/수정) ============================= */
-function openModal(id, presetProject){
+function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
   editingId = id;
   const t = id ? TICKETS.find(x=>x.id===id) : null;
   const initialStatus = t ? ticketStatus(t) : '예정';
   const initialProject = t ? t.project : (presetProject || null);
   const isDedicatedAbsenceEntry = presetProject==='부재' && !t; // "+ 부재 등록" 버튼으로 들어온 신규 부재 등록
+  const initAssignees = t ? [...(t.assignees||[])] : (presetAssignee ? [presetAssignee] : []);
   const overlay = document.createElement('div');
   overlay.className = 'overlay open';
   overlay.id = 'overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal ${t?'':'new-ticket-modal'}">
       <div class="modal-head">
-        <h3>${t ? '티켓 수정' : (presetProject==='부재' ? '부재 등록' : '새 티켓 만들기')}</h3>
+        <h3>${t ? '티켓 수정' : (presetProject==='부재' ? '부재 등록' : '새 티켓 만들기')}${t ? '' : `<span class="new-badge">NEW</span>`}</h3>
         <div style="display:flex; align-items:center; gap:8px;">
-          <button type="button" class="btn btn-ghost csv-download-btn" id="mCsvDownload" title="현재 티켓 내용을 CSV 파일로 내려받기">⬇ CSV</button>
+          ${t && deviceMode==='pc' ? `<button type="button" class="btn btn-ghost csv-download-btn" id="mCsvDownload" title="현재 티켓 내용을 CSV 파일로 내려받기">⬇ CSV</button>` : ''}
           <button class="modal-close" id="mClose">✕</button>
         </div>
       </div>
@@ -3247,23 +3601,23 @@ function openModal(id, presetProject){
         <div class="field">
           <label>담당자 <span class="hint">(최대 4명까지 선택 가능)</span></label>
           <div class="pill-group" id="fAssignee">
-            ${WORKERS.map(w=>`<div class="pill ${t&&t.assignees&&t.assignees.includes(w)?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
+            ${WORKERS.map(w=>`<div class="pill ${initAssignees.includes(w)?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
           </div>
           <div class="form-error" id="assigneeLimitMsg" style="display:none; margin-top:8px;">담당자는 최대 4명까지 선택할 수 있습니다.</div>
         </div>
         <div class="two-col">
           <div class="field">
             <label>시작일</label>
-            <input type="date" id="fStart" value="${t?t.startDate:''}">
+            <input type="date" id="fStart" value="${t?t.startDate:(presetStart||'')}">
           </div>
           <div class="field">
             <label>마감일</label>
-            <input type="date" id="fEnd" value="${t?t.endDate:''}">
+            <input type="date" id="fEnd" value="${t?t.endDate:(presetEnd||'')}">
           </div>
         </div>
         ${t ? `
         <div class="field" style="margin-top:-6px; margin-bottom:14px;">
-          <button type="button" class="btn btn-ghost" id="mJumpToBoard" style="display:inline-flex; align-items:center; gap:6px; padding:7px 12px; font-size:12.5px;">📅 보드에서 일정 위치 보기</button>
+          <button type="button" class="btn btn-jump" id="mJumpToBoard" style="display:inline-flex; align-items:center; gap:6px; padding:7px 12px; font-size:12.5px;">📅 보드에서 일정 위치 보기</button>
         </div>` : ''}
         <div class="field" id="expectedDaysFieldWrapper">
           <div class="computed-days" id="computedDays" style="justify-content:space-between;">
@@ -3280,10 +3634,10 @@ function openModal(id, presetProject){
             </span>
           </div>
         </div>
-        <div class="field" id="completionField" style="display:${initialStatus==='완료'?'block':'none'};">
-          <label>완료일 <span class="hint">(실제 작업을 마친 날짜)</span></label>
-          <input type="date" id="fActualEnd" value="${t&&t.actualEndDate?t.actualEndDate:(t&&t.endDate?t.endDate:todayISO())}">
-          <div class="computed-days" id="actualDaysBox" style="margin-top:8px;">실제 소요(영업일): <b id="actualDaysVal">-</b></div>
+        <div class="field" id="completionField" style="display:none;">
+          <div class="computed-days" id="actualDaysBox" style="background:var(--accent-soft); color:var(--accent-dark); padding:8px 11px; border-radius:7px; font-weight:700; margin-top:6px;">
+            <span>완료로 변경 시 실제 소요(영업일): <b id="actualDaysVal">-</b></span><span style="font-weight:500; color:var(--text-dim); font-size:11.5px; margin-left:8px;">· 완료일은 마감일 기준으로 자동 계산됨</span>
+          </div>
         </div>
         <div class="field" id="specFieldWrapper">
           <label>사이즈 · 포맷 · 구성 <span class="hint">(선택)</span></label>
@@ -3329,7 +3683,7 @@ function openModal(id, presetProject){
 
   let selStatus = initialStatus;
   let selProject = initialProject;
-  let selAssignees = t ? [...(t.assignees||[])] : [];
+  let selAssignees = [...initAssignees];
   let selWorkType = t ? (t.workType || null) : null;
 
   function updateFieldsForProject(){
@@ -3403,15 +3757,33 @@ function openModal(id, presetProject){
 
   const initialResourceLinks = t ? ((t.resourceLinks&&t.resourceLinks.length)?t.resourceLinks:[t.memo||'']) : [''];
   const initialReferenceLinks = t ? ((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:[t.referenceLink||'']) : [''];
+  // 현재 입력창에 적혀 있는 값을 그대로 읽어온다 (추가/삭제 시 기존에 입력한 내용이 사라지지 않도록)
+  function readRepeatValues(containerId){
+    return Array.from(overlay.querySelectorAll('#'+containerId+' input')).map(x=>x.value);
+  }
   function renderRepeatInputs(containerId, values, placeholder){
     const box=overlay.querySelector('#'+containerId);
     box.innerHTML=values.map((v,i)=>`<div class="repeat-input-row"><input type="text" value="${escapeHtml(v||'')}" placeholder="${placeholder}">${values.length>1?'<button type="button" class="remove-link-btn" title="삭제">✕</button>':''}</div>`).join('');
-    box.querySelectorAll('.remove-link-btn').forEach((btn,i)=>btn.onclick=()=>{ values.splice(i,1); renderRepeatInputs(containerId,values,placeholder); });
+    box.querySelectorAll('.remove-link-btn').forEach((btn,i)=>{
+      btn.onclick=()=>{
+        const cur = readRepeatValues(containerId); // 삭제 전 현재 입력값 유지
+        cur.splice(i,1);
+        renderRepeatInputs(containerId, cur, placeholder);
+      };
+    });
   }
   renderRepeatInputs('resourceInputs', initialResourceLinks, '예: https://drive.google.com/... 또는 사내 드라이브 경로');
   renderRepeatInputs('referenceInputs', initialReferenceLinks, '예: https://... 참고 자료 링크');
-  overlay.querySelector('#addResourceLink').onclick=()=>{ initialResourceLinks.push(''); renderRepeatInputs('resourceInputs',initialResourceLinks,'예: https://drive.google.com/... 또는 사내 드라이브 경로'); };
-  overlay.querySelector('#addReferenceLink').onclick=()=>{ initialReferenceLinks.push(''); renderRepeatInputs('referenceInputs',initialReferenceLinks,'예: https://... 참고 자료 링크'); };
+  overlay.querySelector('#addResourceLink').onclick=()=>{
+    const cur = readRepeatValues('resourceInputs'); // 첫 번째 입력값을 잃지 않도록 현재 값 유지
+    cur.push('');
+    renderRepeatInputs('resourceInputs', cur, '예: https://drive.google.com/... 또는 사내 드라이브 경로');
+  };
+  overlay.querySelector('#addReferenceLink').onclick=()=>{
+    const cur = readRepeatValues('referenceInputs');
+    cur.push('');
+    renderRepeatInputs('referenceInputs', cur, '예: https://... 참고 자료 링크');
+  };
 
 
   function currentFormTicketDraft(){
@@ -3433,8 +3805,9 @@ function openModal(id, presetProject){
     const rd = rdField ? rdField.value : '';
     const el = overlay.querySelector('#daysVal');
     if(s && e && e>=s){
+      // 예상 작업일수는 '주말을 뺀 월~금 순수 작업일'로 계산
       const effectiveStart = rd ? nextBusinessDay(rd) : s;
-      el.textContent = fmtDays(countWorkingDaysForTicket(effectiveStart, e, currentFormTicketDraft())) + '일';
+      el.textContent = fmtDays(businessDaysBetween(effectiveStart, e)) + '일';
     }
     else { el.textContent = '-'; }
   }
@@ -3449,7 +3822,7 @@ function openModal(id, presetProject){
   overlay.querySelector('#fStart').oninput = ()=>{ updateDays(); updateActualDays(); };
   overlay.querySelector('#fEnd').oninput = updateDays;
   overlay.querySelector('#fResourceDeadline').oninput = updateDays;
-  overlay.querySelector('#fActualEnd').oninput = updateActualDays;
+  const _fAe = overlay.querySelector('#fActualEnd'); if(_fAe) _fAe.oninput = updateActualDays;
   const fWeekendSatEl = overlay.querySelector('#fWeekendSat');
   const fWeekendSunEl = overlay.querySelector('#fWeekendSun');
   if(fWeekendSatEl) fWeekendSatEl.onchange = ()=>{ updateDays(); updateActualDays(); };
@@ -3472,7 +3845,8 @@ function openModal(id, presetProject){
     };
   }
 
-  overlay.querySelector('#mCsvDownload').onclick = ()=>{
+  const mCsvBtn = overlay.querySelector('#mCsvDownload');
+  if(mCsvBtn) mCsvBtn.onclick = ()=>{
     const isAbsenceDraft = selProject === '부재';
     const draftTitle = overlay.querySelector('#fTitle').value.trim();
     const draftStart = overlay.querySelector('#fStart').value;
@@ -3748,5 +4122,7 @@ wireDeviceModeToggle();
   }
 })();
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
