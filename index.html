@@ -419,16 +419,6 @@
   }
   .mobile-chip-done{opacity:.5;}
   .mobile-empty-chip{font-size:11px; color:var(--text-faint); padding:4px 2px;}
-  .mobile-fab-row{
-    flex:none; display:flex; gap:8px; padding:10px 12px 12px; background:var(--panel); border-top:1px solid var(--border);
-  }
-  .mobile-fab{
-    flex:1; border:none; border-radius:12px; padding:12px; font-size:13.5px; font-weight:800;
-    background:var(--accent); color:#fff; cursor:pointer;
-  }
-  .mobile-fab:hover{background:var(--accent-dark);}
-  .mobile-fab.secondary{background:#fff; color:var(--text-dim); border:1.5px solid var(--border);}
-  .mobile-fab.secondary:hover{background:var(--bg);}
 
   .mobile-menu-overlay{
     position:absolute; inset:0; background:rgba(20,22,26,.45); display:none;
@@ -445,6 +435,17 @@
   }
   .mobile-menu-item:hover{background:var(--bg);}
   .mobile-menu-item.active{background:var(--accent-soft); color:var(--accent-dark);}
+  .mobile-menu-actions{
+    display:flex; flex-direction:column; gap:7px; padding:12px 12px 4px; background:var(--bg);
+    border-top:2px solid var(--border);
+  }
+  .mobile-menu-action-btn{
+    border:none; border-radius:9px; padding:11px; font-size:12.5px; font-weight:800; cursor:pointer;
+    background:var(--accent); color:#fff;
+  }
+  .mobile-menu-action-btn:hover{background:var(--accent-dark);}
+  .mobile-menu-action-btn.secondary{background:#fff; color:var(--text-dim); border:1.5px solid var(--border);}
+  .mobile-menu-action-btn.secondary:hover{background:var(--bg);}
   .mobile-menu-cancel{
     padding:11px 15px; font-size:12px; color:var(--text-faint); text-align:center; cursor:pointer;
   }
@@ -452,7 +453,7 @@
   .mobile-subview-body{flex:1; overflow-y:auto; padding:12px 14px 24px;}
 
   .mobile-month-header{
-    flex:none; display:flex; align-items:center; justify-content:center; gap:16px; padding:2px 0 8px;
+    flex:none; display:flex; align-items:center; justify-content:center; gap:10px; padding:2px 0 8px;
   }
   .mobile-month-legend{
     flex:none; display:flex; flex-wrap:wrap; gap:10px; margin-bottom:6px; font-size:9.5px; color:var(--text-dim); font-weight:600;
@@ -472,15 +473,25 @@
   }
   .mmw-bg{background:var(--panel); cursor:pointer;}
   .mmw-bg.out-month{background:var(--bg); opacity:.45;}
-  .mmw-bg.today{background:var(--accent-soft);}
+  .mmw-bg.today{background:var(--accent);}
   .mmw-num{
     font-size:8.5px; font-weight:800; color:var(--text-dim); padding:1px 0 0 3px; pointer-events:none; z-index:2;
   }
+  .mmw-num.today{color:#fff;}
   .mmw-bar{border-radius:3px; pointer-events:none; z-index:1; margin:0 1px;}
   .mmw-holiday{
     display:flex; align-items:center; justify-content:center; font-size:19px; pointer-events:none; z-index:1;
   }
-  .mmw-holiday.mmw-holiday-lane{font-size:11px;}
+  .mmw-holiday.mmw-holiday-lane{
+    flex-direction:column; justify-content:flex-start; align-items:center; font-size:11px; gap:0; padding-top:1px;
+  }
+  .mmw-lane-label{font-size:6px; font-weight:800; color:var(--text-dim); line-height:1;}
+  .mmw-holiday-lane.today .mmw-lane-label{color:#fff;}
+  .mmw-sick-bar{
+    border-radius:3px; background:#1c1c1c; display:flex; align-items:center; overflow:hidden;
+    padding-left:3px; pointer-events:none; z-index:1; margin:0 1px;
+  }
+  .mmw-sick-bar-label{color:#fff; font-size:7px; font-weight:800; white-space:nowrap;}
 
   .mobile-day-popup-backdrop{
     position:absolute; inset:0; background:rgba(20,22,26,.55); z-index:40;
@@ -1590,25 +1601,44 @@ function renderMobileMonthGrid(){
       return `<div class="${cls.join(' ')}" data-date="${iso}" style="grid-column:${i+1}; grid-row:1 / span 5;"></div>`;
     }).join('');
 
-    const numCells = week.map((d,i)=> `<div class="mmw-num" style="grid-column:${i+1}; grid-row:1;">${d.getDate()}</div>`).join('');
+    const numCells = week.map((d,i)=>{
+      const iso = toISO(d);
+      return `<div class="mmw-num ${iso===today?'today':''}" style="grid-column:${i+1}; grid-row:1;">${d.getDate()}</div>`;
+    }).join('');
 
     // 전체 휴가(공휴일, 담당자 전원)는 큰 야자수 아이콘 하나로 모든 레인을 덮어 표시
     const holidayCells = week.map((d,i)=>{
       const iso = toISO(d);
       if(!mobileIsCompanyWideHoliday(iso)) return '';
-      return `<div class="mmw-holiday" style="grid-column:${i+1}; grid-row:2 / span 4;" title="전체 휴가">🌴</div>`;
+      return `<div class="mmw-holiday" style="grid-column:${i+1}; grid-row:2 / span 4;" title="공휴일">🌴</div>`;
     }).join('');
 
-    // 개인 전일 휴가(반차 제외)는 해당 담당자 레인에만 작은 야자수 아이콘으로 표시 (공통휴가인 날은 제외 - 이미 위에서 처리됨)
-    const personalHolidayCells = [];
-    week.forEach((d,i)=>{
-      const iso = toISO(d);
-      if(mobileIsCompanyWideHoliday(iso)) return;
-      WORKERS.forEach((w, wi)=>{
-        if(mobileWorkerFullDayAbsenceOnDate(w, iso)){
-          personalHolidayCells.push(`<div class="mmw-holiday mmw-holiday-lane" style="grid-column:${i+1}; grid-row:${2+wi};" title="${escapeHtml(w)} 휴가">🌴</div>`);
+    // 개인 부재(반차 제외, 공통휴가 제외): 1일이면 🌙 아이콘, 2일 이상 이어지면 검은 바 + '병가' 라벨로 표시
+    const personalAbsenceCells = [];
+    WORKERS.forEach((w, wi)=>{
+      let runStart = null;
+      const isPersonalFullDayOff = (i)=>{
+        const d = week[i];
+        if(!d) return false;
+        const iso = toISO(d);
+        if(mobileIsCompanyWideHoliday(iso)) return false;
+        return mobileWorkerFullDayAbsenceOnDate(w, iso);
+      };
+      for(let i=0;i<=7;i++){
+        const active = i<7 && isPersonalFullDayOff(i);
+        if(active){
+          if(runStart===null) runStart = i;
+        } else if(runStart!==null){
+          const len = i - runStart;
+          if(len >= 2){
+            personalAbsenceCells.push(`<div class="mmw-sick-bar" style="grid-column:${runStart+1} / ${i+1}; grid-row:${2+wi};" title="${escapeHtml(w)} 장기 휴가/병가"><span class="mmw-sick-bar-label">병가</span></div>`);
+          } else {
+            const isTodayCell = toISO(week[runStart]) === today;
+            personalAbsenceCells.push(`<div class="mmw-holiday mmw-holiday-lane ${isTodayCell?'today':''}" style="grid-column:${runStart+1}; grid-row:${2+wi};" title="${escapeHtml(w)} 휴가">🌙<span class="mmw-lane-label">휴가</span></div>`);
+          }
+          runStart = null;
         }
-      });
+      }
     });
 
     // 담당자별로, 실제 티켓의 시작일·마감일 경계에서 바를 끊는다.
@@ -1644,7 +1674,7 @@ function renderMobileMonthGrid(){
       return `<div class="mmw-bar" style="grid-column:${r.start+1} / ${r.end+2}; grid-row:${2+r.wi}; background:${color};" title="${r.count}건 겹침"></div>`;
     }).join('');
 
-    return `<div class="mobile-month-week">${bgCells}${barsHtml}${personalHolidayCells.join('')}${holidayCells}${numCells}</div>`;
+    return `<div class="mobile-month-week">${bgCells}${barsHtml}${personalAbsenceCells.join('')}${holidayCells}${numCells}</div>`;
   }).join('');
 
   return `
@@ -1652,10 +1682,13 @@ function renderMobileMonthGrid(){
       <button type="button" class="mobile-nav-btn" id="mPrevMonth">‹</button>
       <div class="mobile-date-label">${year}.${String(month+1).padStart(2,'0')}</div>
       <button type="button" class="mobile-nav-btn" id="mNextMonth">›</button>
+      <button type="button" class="mobile-today-goto-btn" id="mobileThisMonthBtn">이번달</button>
     </div>
     <div class="mobile-month-legend">
       ${WORKERS.map(w=>`<span class="mobile-month-legend-item">${workerDot(w)}${w}</span>`).join('')}
-      <span class="mobile-month-legend-item">🌴 전체 휴가</span>
+      <span class="mobile-month-legend-item">🌴 공휴일</span>
+      <span class="mobile-month-legend-item">🌙 개인 휴가</span>
+      <span class="mobile-month-legend-item"><span style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#1c1c1c;"></span> 병가/장기휴가</span>
     </div>
     <div class="mobile-month-dow-row">${DOW_LABEL.map(d=>`<div>${d}</div>`).join('')}</div>
     <div class="mobile-month-weeks">${weeksHtml}</div>
@@ -1846,7 +1879,6 @@ function renderMobileMainArea(){
 function renderMobileApp(){
   if(!mobileBoardDate) mobileBoardDate = todayISO();
   const app = document.getElementById('app');
-  const showFab = mobileView === 'day' || mobileView === 'month';
   app.innerHTML = `
     <div class="mobile-frame ${mobileImmersive?'immersive':''}">
       <div class="mobile-topbar">
@@ -1857,11 +1889,6 @@ function renderMobileApp(){
         </div>
       </div>
       ${renderMobileMainArea()}
-      ${showFab ? `
-      <div class="mobile-fab-row">
-        <button type="button" class="mobile-fab secondary" id="mobileAddAbsenceBtn">+ 부재 등록</button>
-        <button type="button" class="mobile-fab" id="mobileAddTicketBtn">+ 티켓 등록</button>
-      </div>` : ''}
       <div class="mobile-menu-overlay ${mobileMenuOpen?'open':''}" id="mobileMenuOverlay">
         <div class="mobile-menu-sheet">
           <div class="mobile-menu-item ${mobileView==='day'?'active':''}" data-view="day">📆 일별 일정</div>
@@ -1870,6 +1897,10 @@ function renderMobileApp(){
           <div class="mobile-menu-item ${mobileView==='upcoming'?'active':''}" data-view="upcoming">🕒 진행 예정인 티켓</div>
           <div class="mobile-menu-item ${mobileView==='search'?'active':''}" data-view="search">🔍 티켓 검색</div>
           <div class="mobile-menu-item ${mobileView==='absence'?'active':''}" data-view="absence">🌴 부재 관리</div>
+          <div class="mobile-menu-actions">
+            <button type="button" class="mobile-menu-action-btn secondary" id="mobileAddAbsenceBtn">+ 부재 등록</button>
+            <button type="button" class="mobile-menu-action-btn" id="mobileAddTicketBtn">+ 티켓 등록</button>
+          </div>
           <div class="mobile-menu-cancel" id="mobileMenuCancel">닫기</div>
         </div>
       </div>
@@ -1901,6 +1932,8 @@ function wireMobileApp(){
     mobileMonthAnchor = new Date(a.getFullYear(), a.getMonth()+1, 1);
     renderApp();
   };
+  const thisMonthBtn = app.querySelector('#mobileThisMonthBtn');
+  if(thisMonthBtn) thisMonthBtn.onclick = ()=>{ mobileMonthAnchor = new Date(); renderApp(); };
   app.querySelectorAll('.mmw-bg[data-date]').forEach(cell=>{
     cell.onclick = ()=>{
       mobileDayPopupDate = cell.dataset.date;
@@ -1917,9 +1950,9 @@ function wireMobileApp(){
   wireMobileTicketCardClicks(app);
 
   const addTicketBtn = app.querySelector('#mobileAddTicketBtn');
-  if(addTicketBtn) addTicketBtn.onclick = ()=> openModal(null);
+  if(addTicketBtn) addTicketBtn.onclick = ()=>{ mobileMenuOpen = false; openModal(null); };
   const addAbsenceBtn = app.querySelector('#mobileAddAbsenceBtn');
-  if(addAbsenceBtn) addAbsenceBtn.onclick = ()=> openModal(null, '부재');
+  if(addAbsenceBtn) addAbsenceBtn.onclick = ()=>{ mobileMenuOpen = false; openModal(null, '부재'); };
 
   const expandBtn = app.querySelector('#mobileExpandBtn');
   if(expandBtn) expandBtn.onclick = ()=>{ setMobileImmersive(!mobileImmersive); renderApp(); };
