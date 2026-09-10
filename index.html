@@ -870,6 +870,9 @@ function buildQuarterFeedbackText(worker, tickets, start, end){
     return lines.join('\n');
   }
 
+  // 티켓 1건의 수량(qty)을 건수에 그대로 반영 (예: 숏폼 1티켓에 3종이 묶여있으면 3건으로 집계)
+  const qtyOf = t => t.qty || 1;
+
   // 프로젝트별로 묶기 (등장 순서 유지)
   const projectOrder = [];
   const byProject = {};
@@ -882,8 +885,11 @@ function buildQuarterFeedbackText(worker, tickets, start, end){
   lines.push(`${worker}${josa(worker,'은','는')} 이번 기간 동안 ${projectNameList} 업무를 진행하였습니다.`);
   lines.push('');
 
+  // ---- 프로젝트별 단락 ----
   projectOrder.forEach(project=>{
     const projTickets = byProject[project];
+    const projectQtyTotal = projTickets.reduce((sum,t)=> sum+qtyOf(t), 0);
+
     // 업무 유형별로 묶기 (등장 순서 유지)
     const typeOrder = [];
     const byType = {};
@@ -893,33 +899,33 @@ function buildQuarterFeedbackText(worker, tickets, start, end){
       byType[wt].push(t);
     });
 
-    const typePhrases = typeOrder.map(wt=>{
-      const titles = byType[wt].map(t=> `'${t.title}'${t.qty>1?` (${t.qty}종)`:''}`);
-      const titleList = titles.length>1
-        ? titles.slice(0,-1).join(', ') + ' 그리고 ' + titles[titles.length-1]
-        : titles[0];
-      return `${wt} 작업으로 ${titleList}`;
+    lines.push(`■ ${project} (총 ${projectQtyTotal}건)`);
+    typeOrder.forEach(wt=>{
+      const ts = byType[wt];
+      const qty = ts.reduce((sum,t)=> sum+qtyOf(t), 0);
+      const titleList = ts.map(t=> `'${t.title}'${qtyOf(t)>1?`(${qtyOf(t)}종)`:''}`).join(', ');
+      lines.push(`  - ${wt} ${qty}건: ${titleList}`);
     });
-
-    let sentence;
-    if(typePhrases.length===1){
-      sentence = `${project}에서는 ${typePhrases[0]}${josa(typePhrases[0],'을','를')} 진행했습니다.`;
-    } else {
-      const allButLast = typePhrases.slice(0,-1).join(', ');
-      const last = typePhrases[typePhrases.length-1];
-      sentence = `${project}에서는 ${allButLast}, 그리고 ${last}${josa(last,'을','를')} 진행했습니다.`;
-    }
-    lines.push(sentence);
+    lines.push('');
   });
 
-  // 상태별 집계
-  const statusCounts = {};
+  // ---- 기간 내 작업 유형별 평균 소요 영업일 ----
+  const typeOrderAll = [];
+  const byTypeAll = {};
   tickets.forEach(t=>{
-    const s = ticketStatus(t);
-    statusCounts[s] = (statusCounts[s]||0) + 1;
+    const wt = t.workType || '기타';
+    if(!byTypeAll[wt]){ byTypeAll[wt] = []; typeOrderAll.push(wt); }
+    byTypeAll[wt].push(t);
   });
-  lines.push('');
-  lines.push(`(상태별 집계: ${Object.entries(statusCounts).map(([s,c])=>`${s} ${c}건`).join(' · ')} · 총 ${tickets.length}건)`);
+
+  lines.push(`[이 기간 작업 유형별 평균 소요 영업일]`);
+  typeOrderAll.forEach(wt=>{
+    const ts = byTypeAll[wt];
+    const totalDays = ts.reduce((sum,t)=> sum+expectedWorkDays(t), 0);
+    const totalQty = ts.reduce((sum,t)=> sum+qtyOf(t), 0);
+    const avg = totalQty ? totalDays/totalQty : 0;
+    lines.push(`  - ${wt}: 평균 ${fmtDays(avg)}영업일 (총 ${totalQty}건)`);
+  });
 
   return lines.join('\n');
 }
