@@ -451,6 +451,13 @@
   }
 
   .mobile-subview-body{flex:1; overflow-y:auto; padding:12px 14px 24px;}
+  .mobile-search-filter-row{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;
+  }
+  .mobile-search-filter-row select{
+    width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 4px; font-size:10.5px;
+    font-family:inherit; background:#fff; color:var(--text); cursor:pointer;
+  }
 
   .mobile-month-header{
     flex:none; display:flex; align-items:center; justify-content:center; gap:10px; padding:2px 0 8px;
@@ -733,6 +740,9 @@ let mobileView = 'day'; // 'day' | 'month' | 'inprogress' | 'upcoming' | 'search
 let mobileBoardDate = null; // 초기화 시 오늘 날짜로 세팅 (todayISO 정의 이후)
 let mobileSearchText = '';
 let mobileSearchWorkerFilter = null;
+let mobileSearchStatusFilter = null;
+let mobileSearchProjectFilter = null;
+let mobileSearchTypeFilter = null;
 let mobileAbsenceWorkerFilter = null;
 let mobileAbsenceHideShared = false;
 let mobileMonthAnchor = null; // 모바일 월간 보기용 기준 월 (Date), 초기화 시 이번 달로 세팅
@@ -1719,7 +1729,7 @@ function renderMobileTicketCards(list){
         <span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span>
         ${statusChipHtml(status)}
       </div>
-      <div class="mobile-ticket-card-title">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</div>
+      <div class="mobile-ticket-card-title">${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType} · `:''}${escapeHtml(t.title)}${qtyBadge(t)}</div>
       <div class="mobile-ticket-card-meta">${t.assignees.join(', ')} · ${fmtShort(t.startDate)}~${fmtShort(t.endDate)}</div>
     </div>`;
   }).join('');
@@ -1738,7 +1748,7 @@ function renderMobileUpcomingCards(list){
         ${needsResourceCheck?'<span class="resource-flag-badge">❗</span>':''}
       </div>
       <div class="mobile-upcoming-workers">${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(' ')}</div>
-      <div class="mobile-ticket-card-meta">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span> ${escapeHtml(t.title)}${qtyBadge(t)}</div>
+      <div class="mobile-ticket-card-meta">${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType} · `:''}<span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span> ${escapeHtml(t.title)}${qtyBadge(t)}</div>
     </div>`;
   }).join('');
 }
@@ -1754,6 +1764,9 @@ function getFilteredMobileSearchTickets(){
   return TICKETS.filter(t=>{
     if(t.project === '부재') return false;
     if(mobileSearchWorkerFilter && !t.assignees.includes(mobileSearchWorkerFilter)) return false;
+    if(mobileSearchStatusFilter && ticketStatus(t) !== mobileSearchStatusFilter) return false;
+    if(mobileSearchProjectFilter && t.project !== mobileSearchProjectFilter) return false;
+    if(mobileSearchTypeFilter && t.workType !== mobileSearchTypeFilter) return false;
     if(q){
       const hay = [t.title, t.project, ...(t.assignees||[])].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
@@ -1774,9 +1787,24 @@ function renderMobileSearchResultsOnly(){
 }
 
 function renderMobileSearchView(){
+  const nonAbsenceProjects = PROJECTS.filter(p=> p!=='부재');
   return `
-    <div class="field" style="margin-bottom:10px;">
+    <div class="field" style="margin-bottom:8px;">
       <input type="text" id="mobileSearchInput" value="${escapeHtml(mobileSearchText)}" placeholder="제목, 프로젝트, 담당자로 검색...">
+    </div>
+    <div class="mobile-search-filter-row">
+      <select id="mobileSearchStatusSelect">
+        <option value="">상태: 전체</option>
+        ${STATUS_LIST.map(s=>`<option value="${s}" ${mobileSearchStatusFilter===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <select id="mobileSearchProjectSelect">
+        <option value="">프로젝트: 전체</option>
+        ${nonAbsenceProjects.map(p=>`<option value="${p}" ${mobileSearchProjectFilter===p?'selected':''}>${p}</option>`).join('')}
+      </select>
+      <select id="mobileSearchTypeSelect">
+        <option value="">유형: 전체</option>
+        ${WORK_TYPES.map(wt=>`<option value="${wt}" ${mobileSearchTypeFilter===wt?'selected':''}>${WORK_TYPE_ICONS[wt]} ${wt}</option>`).join('')}
+      </select>
     </div>
     <div class="pill-group" id="mobileSearchWorkerPills" style="margin-bottom:12px;">
       ${WORKERS.map(w=>`<div class="pill ${mobileSearchWorkerFilter===w?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
@@ -1976,6 +2004,27 @@ function wireMobileApp(){
       renderMobileSearchResultsOnly(); // 입력 포커스를 유지하기 위해 결과 영역만 갱신
     };
     renderMobileSearchResultsOnly();
+  }
+  const mSearchStatusSelect = app.querySelector('#mobileSearchStatusSelect');
+  if(mSearchStatusSelect){
+    mSearchStatusSelect.onchange = (e)=>{
+      mobileSearchStatusFilter = e.target.value || null;
+      renderMobileSearchResultsOnly();
+    };
+  }
+  const mSearchProjectSelect = app.querySelector('#mobileSearchProjectSelect');
+  if(mSearchProjectSelect){
+    mSearchProjectSelect.onchange = (e)=>{
+      mobileSearchProjectFilter = e.target.value || null;
+      renderMobileSearchResultsOnly();
+    };
+  }
+  const mSearchTypeSelect = app.querySelector('#mobileSearchTypeSelect');
+  if(mSearchTypeSelect){
+    mSearchTypeSelect.onchange = (e)=>{
+      mobileSearchTypeFilter = e.target.value || null;
+      renderMobileSearchResultsOnly();
+    };
   }
   app.querySelectorAll('#mobileSearchWorkerPills [data-worker]').forEach(el=>{
     el.onclick = ()=>{
