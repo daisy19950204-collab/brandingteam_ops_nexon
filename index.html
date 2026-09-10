@@ -2221,7 +2221,7 @@ function viewTitle(){
 }
 function todayLabelText(){
   const d = new Date();
-  return `오늘은 ${d.getMonth()+1}월 ${d.getDate()}일 ${DOW_LABEL[d.getDay()]}요일입니다.`;
+  return `<div style="display:inline-block; background:var(--accent); color:#fff; padding:10px 22px; border-radius:26px; font-weight:900; font-size:17px; box-shadow:0 3px 10px rgba(15,110,99,.35); letter-spacing:.3px;">📅 오늘은 ${d.getMonth()+1}월 ${d.getDate()}일 ${DOW_LABEL[d.getDay()]}요일입니다.</div>`;
 }
 function rangeNavHtml(){
   const start = anchorMonday, end = addDays(anchorMonday,13);
@@ -3835,14 +3835,19 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const e = overlay.querySelector('#fEnd').value;
     const rdField = overlay.querySelector('#fResourceDeadline');
     const rd = rdField ? rdField.value : '';
+    const satEl = overlay.querySelector('#fWeekendSat');
+    const sunEl = overlay.querySelector('#fWeekendSun');
+    const sat = satEl ? satEl.checked : false;
+    const sun = sunEl ? sunEl.checked : false;
     const el = overlay.querySelector('#daysVal');
     if(s && e && e>=s){
-      // 예상 작업일수는 '주말을 뺀 월~금 순수 작업일'로 계산
-      // 리소스 마감일이 있으면 그 다음 영업일부터 세되, 시작일~마감일이 0일이 되지 않도록
-      // 계산 시작점이 마감일을 넘어가면 시작일부터 계산한다 (같은 날짜면 1일 보장)
+      // 예상 작업일수 = 주말 뺀 월~금 순수 + 토/일 출근 체크 시 +1 (expectedWorkDays와 동일 로직)
       let effectiveStart = rd ? nextBusinessDay(rd) : s;
       if(effectiveStart > e) effectiveStart = s;
-      el.textContent = fmtDays(businessDaysBetween(effectiveStart, e)) + '일';
+      let days = businessDaysBetween(effectiveStart, e);
+      if(sat && rangeIncludesWeekday(effectiveStart, e, 6)) days += 1;
+      if(sun && rangeIncludesWeekday(effectiveStart, e, 0)) days += 1;
+      el.textContent = fmtDays(Math.max(days, 1)) + '일';
     }
     else { el.textContent = '-'; }
   }
