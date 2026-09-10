@@ -2578,12 +2578,12 @@ function cleanupActiveResize(){
 function wireBoardEmptyClick(){
   document.querySelectorAll('.day-bg[data-date]').forEach(cell=>{
     cell.onclick = ()=>{
-      openModal(null, null, cell.dataset.date, null, cell.dataset.worker || null);
+      openModal(null, null, null, null, null); // 빈 공간 클릭 시 시작일·담당자 미선택 기본
     };
   });
   document.querySelectorAll('.month-day-bg[data-date]').forEach(cell=>{
     cell.onclick = ()=>{
-      openModal(null, null, cell.dataset.date, null, monthFilterWorker || null);
+      openModal(null, null, null, null, null); // 월 보드 빈 공간 클릭 시 시작일·담당자 미선택 기본
     };
   });
 }
