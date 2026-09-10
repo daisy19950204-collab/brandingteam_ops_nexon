@@ -1112,14 +1112,19 @@ function statusChipHtml(status){
   return `<span class="status-chip ${STATUS_CHIP_CLASS[status]||'status-upcoming'}">${status}</span>`;
 }
 function actualBusinessDays(t){
-  if(!t.actualEndDate) return null;
-  return countWorkingDaysForTicket(t.startDate, t.actualEndDate, t);
+  // 완료 상태의 실제 소요는 '겹치는 일정을 나눠 계산한 영업일'로 산출한다.
+  // 완료일(actualEndDate)이 없어도 완료 상태이면 마감일을 완료일로 사용해 계산한다.
+  const end = t.actualEndDate || (ticketStatus(t)==='완료' ? t.endDate : null);
+  if(!end) return null;
+  return countWorkingDaysForTicket(t.startDate, end, t);
 }
 function expectedWorkDays(t){
   // 예상 작업일수는 '주말을 뺀 월~금 순수 작업일'을 기본으로 계산한다 (겹침/부재 보정 없음).
   // '토요일/일요일 근무' 체크가 있면 해당 주말이 실제 기간에 있을 때 +1일 반영한다.
   // 리소스 마감일이 있으면, 리소스가 준비된 다음 영업일부터 실제 제작이 시작되는 것으로 계산
-  const rangeStart = t.resourceDeadline ? nextBusinessDay(t.resourceDeadline) : t.startDate;
+  let rangeStart = t.resourceDeadline ? nextBusinessDay(t.resourceDeadline) : t.startDate;
+  // 리소스 마감일 다음 영업일이 마감일보다 늦으면(0일 방지) 시작일부터 계산
+  if(rangeStart > t.endDate) rangeStart = t.startDate;
   let days = businessDaysBetween(rangeStart, t.endDate);
   if((t.weekendSat || t.weekendWork) && rangeIncludesWeekday(rangeStart, t.endDate, 6)) days += 1;
   if((t.weekendSun || t.weekendWork) && rangeIncludesWeekday(rangeStart, t.endDate, 0)) days += 1;
@@ -2904,7 +2909,7 @@ function renderDashboard(){
       ${avgDaysAllTickets.length ? avgDaysMatrixTable(avgDaysRows(), AVG_DAYS_WORK_TYPES) : `<div class="empty-note">등록된 작업이 없습니다.</div>`}
     </div>
     <div class="card">
-      <p class="card-title">작업자별 기간 조회</p>
+      <p class="card-title">작업자별 분기 작업 조회</p>
       <p class="card-sub">담당자와 기간을 선택해 그 기간에 겹치는 모든 티켓 내용을 확인 · 분기 피드백 작성용</p>
       <div class="pill-group" id="reportWorkerPills" style="margin-bottom:12px;">
         ${WORKERS.map(w=>`<div class="pill ${reportWorker===w?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
@@ -3563,7 +3568,6 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
       <div class="modal-head">
         <h3>${t ? '티켓 수정' : (presetProject==='부재' ? '부재 등록' : '새 티켓 만들기')}${t ? '' : `<span class="new-badge">NEW</span>`}</h3>
         <div style="display:flex; align-items:center; gap:8px;">
-          ${t && deviceMode==='pc' ? `<button type="button" class="btn btn-ghost csv-download-btn" id="mCsvDownload" title="현재 티켓 내용을 CSV 파일로 내려받기">⬇ CSV</button>` : ''}
           <button class="modal-close" id="mClose">✕</button>
         </div>
       </div>
@@ -3729,7 +3733,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
         // '완료'로 처음 전환하는 순간에는 마감일을 그대로 완료일 기본값으로 채워준다.
         // 생각보다 일찍 끝난 경우에만 사용자가 이 필드를 수동으로 앞당기면 된다.
         const endVal = overlay.querySelector('#fEnd').value;
-        if(endVal) overlay.querySelector('#fActualEnd').value = endVal;
+        if(endVal){ const _aeEl = overlay.querySelector('#fActualEnd'); if(_aeEl) _aeEl.value = endVal; }
       }
       updateActualDays();
     };
@@ -3806,21 +3810,25 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const el = overlay.querySelector('#daysVal');
     if(s && e && e>=s){
       // 예상 작업일수는 '주말을 뺀 월~금 순수 작업일'로 계산
-      const effectiveStart = rd ? nextBusinessDay(rd) : s;
+      // 리소스 마감일이 있으면 그 다음 영업일부터 세되, 시작일~마감일이 0일이 되지 않도록
+      // 계산 시작점이 마감일을 넘어가면 시작일부터 계산한다 (같은 날짜면 1일 보장)
+      let effectiveStart = rd ? nextBusinessDay(rd) : s;
+      if(effectiveStart > e) effectiveStart = s;
       el.textContent = fmtDays(businessDaysBetween(effectiveStart, e)) + '일';
     }
     else { el.textContent = '-'; }
   }
   function updateActualDays(){
     const s = overlay.querySelector('#fStart').value;
-    const ae = overlay.querySelector('#fActualEnd') ? overlay.querySelector('#fActualEnd').value : '';
+    // 완료일 입력은 제거됨. 완료 상태에서는 마감일을 완료일로 사용해 겹침 계산한다.
+    const ae = (selStatus==='완료') ? overlay.querySelector('#fEnd').value : '';
     const el = overlay.querySelector('#actualDaysVal');
     if(!el) return;
     if(s && ae && ae>=s){ el.textContent = fmtDays(countWorkingDaysForTicket(s, ae, currentFormTicketDraft())) + '일'; }
     else { el.textContent = '-'; }
   }
   overlay.querySelector('#fStart').oninput = ()=>{ updateDays(); updateActualDays(); };
-  overlay.querySelector('#fEnd').oninput = updateDays;
+  overlay.querySelector('#fEnd').oninput = ()=>{ updateDays(); updateActualDays(); };
   overlay.querySelector('#fResourceDeadline').oninput = updateDays;
   const _fAe = overlay.querySelector('#fActualEnd'); if(_fAe) _fAe.oninput = updateActualDays;
   const fWeekendSatEl = overlay.querySelector('#fWeekendSat');
@@ -3922,7 +3930,9 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const title = overlay.querySelector('#fTitle').value.trim();
     const start = overlay.querySelector('#fStart').value;
     const end = overlay.querySelector('#fEnd').value;
-    const actualEnd = overlay.querySelector('#fActualEnd').value;
+    const actualEndEl = overlay.querySelector('#fActualEnd');
+    // 완료일 입력이 없는 경우(자동 계산 모드)에는 마감일을 완료일로 사용
+    const actualEnd = actualEndEl ? actualEndEl.value : (selStatus==='완료' ? end : '');
     const resourceLinks = Array.from(overlay.querySelectorAll('#resourceInputs input')).map(x=>x.value.trim()).filter(Boolean);
     const memo = resourceLinks[0] || '';
     const sb = selProject==='부재' ? '' : overlay.querySelector('#fSB').value.trim();
@@ -3973,7 +3983,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
       status: isAbsenceSave ? null : selStatus,
       workType: isAbsenceSave ? null : selWorkType,
       startDate:start, endDate:end,
-      actualEndDate: (!isAbsenceSave && selStatus==='완료') ? (actualEnd||null) : null,
+      actualEndDate: (!isAbsenceSave && selStatus==='완료') ? (actualEnd || end || null) : null,
       memo, resourceLinks: isAbsenceSave ? [] : resourceLinks, sb: isAbsenceSave ? '' : sb, resourceDeadline: (isAbsenceSave || !resourceDeadline) ? null : resourceDeadline,
       resourceCheckNeeded: isAbsenceSave ? false : !!resourceCheckNeeded,
       spec: isAbsenceSave ? '' : spec, referenceLink: isAbsenceSave ? '' : referenceLink, referenceLinks: isAbsenceSave ? [] : referenceLinks,
