@@ -20,8 +20,8 @@
     --danger:#C43E3E;
     --danger-soft:#FBE7E7;
     --weekend-bg:#EEF0F3;
-    --today-bg:#FFF4D8;
-    --today-line:#E8A934;
+    --today-bg:#DCEEEB;
+    --today-line:#0F6E63;
     --lane-h:38px;
     --shadow: 0 1px 2px rgba(20,22,26,.04), 0 4px 14px rgba(20,22,26,.06);
   }
@@ -116,7 +116,9 @@
   }
   .day-col-head:last-child{border-right:none;}
   .day-col-head.weekend{background:var(--weekend-bg);}
-  .day-col-head.today{background:var(--today-bg);}
+  .day-col-head.today{background:var(--accent); color:#fff;}
+  .day-col-head.today .dow{color:rgba(255,255,255,.85);}
+  .day-col-head.today .dnum{color:#fff;}
   .day-col-head .dow{font-size:10px; color:var(--text-faint); margin-bottom:2px;}
   .day-col-head .dnum{font-weight:700; font-size:13px;}
   .week-split{border-left:2px solid var(--border-strong) !important;}
@@ -139,7 +141,7 @@
   .month-day-bg.today{background:var(--today-bg); box-shadow:inset 1px 0 0 var(--today-line), inset -1px 0 0 var(--today-line);}
   .month-day-bg.out-month{opacity:.4;}
   .month-daynum{position:absolute; top:3px; left:6px; font-size:11px; font-weight:700; color:var(--text-dim);}
-  .month-day-bg.today .month-daynum{color:#B8790F;}
+  .month-day-bg.today .month-daynum{color:var(--accent-dark);}
   .today-badge{
     display:inline-block; margin-left:4px; background:#C43E3E; color:#fff; font-size:8.5px; font-weight:800;
     padding:1.5px 6px; border-radius:20px; vertical-align:middle; line-height:1.4;
@@ -214,7 +216,22 @@
   table.simple th{text-align:left; color:var(--text-faint); font-weight:600; font-size:11.5px; padding:6px 8px; border-bottom:1px solid var(--border);}
   table.simple td{padding:8px 8px; border-bottom:1px solid var(--border); vertical-align:middle;}
   table.simple tr:last-child td{border-bottom:none;}
-  .proj-chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; color:#fff;}
+  table.simple th.sortable-th{cursor:pointer; user-select:none; white-space:nowrap; background:rgba(15,110,99,.06); border-radius:4px 4px 0 0;}
+  table.simple th.sortable-th:hover{color:var(--text-dim); background:rgba(15,110,99,.12);}
+  table.simple th.sortable-th .sort-arrow{color:var(--accent-dark); margin-left:3px; font-size:10px;}
+  table.simple th.sortable-th .sort-arrow.inactive{color:var(--accent); opacity:.5;}
+  table.simple td.cb-cell, table.simple th.cb-cell{width:34px; padding-left:10px; padding-right:0;}
+  .ticket-select-cb, #searchSelectAll{width:15px; height:15px; cursor:pointer; margin:0;}
+  .search-results-toolbar{display:flex; align-items:center; justify-content:space-between; margin:14px 0 8px; gap:10px; flex-wrap:wrap;}
+  .csv-download-btn{display:inline-flex; align-items:center; gap:5px; padding:6px 13px; font-size:12px;}
+  .csv-download-btn:disabled{opacity:.45; cursor:not-allowed;}
+  .absence-alert-item{display:flex; align-items:center; gap:8px; font-size:14.5px; padding:12px 15px; border-radius:10px; background:var(--bg); margin-bottom:9px;}
+  .absence-alert-item:last-child{margin-bottom:0;}
+  .absence-alert-grid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  @media(max-width:820px){.absence-alert-grid{grid-template-columns:1fr;}}
+  .absence-alert-heading{font-size:14px; font-weight:800; color:var(--text-dim); margin:0 0 10px;}
+  .dday-badge{display:inline-flex; align-items:center; justify-content:center; background:var(--accent-soft); color:var(--accent-dark); font-size:12px; font-weight:800; padding:3px 9px; border-radius:20px; flex:none;}
+  .proj-chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; color:#fff; white-space:nowrap;}
   .status-chip{font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;}
   .status-progress{background:var(--accent-soft); color:var(--accent-dark);}
   .status-upcoming{background:#EAECF0; color:var(--text-dim);}
@@ -223,8 +240,18 @@
   .empty-note{color:var(--text-faint); font-size:12.5px; padding:18px 4px; text-align:center;}
   .deadline-danger{color:var(--danger); font-weight:800;}
   .qty-badge{display:inline-block; font-size:10.5px; font-weight:800; color:var(--accent-dark); background:var(--accent-soft); padding:1px 6px; border-radius:8px; vertical-align:middle;}
+  .resource-flag-badge{display:inline-flex; align-items:center; gap:3px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:20px; margin-right:6px; white-space:nowrap; vertical-align:middle;}
+  tr.tr-resource-alert td{background:var(--accent-soft);}
   .ticket-bar.tb-done{opacity:.5;}
   .ticket-bar.tb-hold{box-shadow:0 0 0 2px var(--border-strong) inset; opacity:.85;}
+  @keyframes ticketJumpFlash{
+    0%, 100% { box-shadow:0 0 0 0 rgba(232,169,52,0); filter:brightness(1); }
+    15% { box-shadow:0 0 0 5px rgba(232,169,52,.95); filter:brightness(1.3); }
+    35% { box-shadow:0 0 0 1px rgba(232,169,52,.35); filter:brightness(1.05); }
+    55% { box-shadow:0 0 0 5px rgba(232,169,52,.95); filter:brightness(1.3); }
+    75% { box-shadow:0 0 0 1px rgba(232,169,52,.3); filter:brightness(1.05); }
+  }
+  .ticket-jump-highlight{ animation:ticketJumpFlash 1.7s ease-in-out 1; z-index:6; }
   .board-summary{display:grid; grid-template-columns:1.3fr 1fr; gap:18px; margin-top:18px;}
   @media(max-width:980px){.board-summary{grid-template-columns:1fr;}}
   .mini-legend{display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--text-faint); margin-bottom:14px;}
@@ -305,6 +332,121 @@
     background:#FDECEC; color:#8A2020; border-bottom:1px solid #F3C6C6; padding:10px 20px; font-size:12.5px;
     line-height:1.5; align-items:center; justify-content:center; text-align:center; position:sticky; top:0; z-index:60;
   }
+
+  /* ---------- PC/모바일 전환 토글 ---------- */
+  .device-mode-toggle{
+    position:fixed; top:10px; left:10px; z-index:9999;
+    display:flex; gap:3px; background:#fff; border:1px solid var(--border); border-radius:20px; padding:3px;
+    box-shadow:var(--shadow);
+  }
+  .device-mode-btn{
+    border:none; background:none; padding:6px 12px; border-radius:16px; font-size:11.5px; font-weight:700;
+    cursor:pointer; color:var(--text-dim); white-space:nowrap;
+  }
+  .device-mode-btn.active{background:var(--accent); color:#fff;}
+
+  /* ---------- 모바일 미리보기(9:16 프레임) ---------- */
+  body.mobile-preview{background:#1B1D22;}
+  body.mobile-preview #app{
+    display:flex !important; align-items:center; justify-content:center; min-height:100vh; padding:32px 12px;
+  }
+  .mobile-frame{
+    width:min(430px, 92vw);
+    aspect-ratio:9/16;
+    max-height:92vh;
+    background:var(--bg);
+    border-radius:30px;
+    border:8px solid #111318;
+    box-shadow:0 24px 70px rgba(0,0,0,.55);
+    overflow:hidden;
+    position:relative;
+    display:flex; flex-direction:column;
+  }
+  .mobile-topbar{
+    flex:none; display:flex; align-items:center; justify-content:space-between;
+    padding:12px 12px 10px; background:var(--panel); border-bottom:1px solid var(--border);
+  }
+  .mobile-date-nav{display:flex; align-items:center; gap:8px;}
+  .mobile-nav-btn{
+    width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:#fff;
+    font-size:14px; color:var(--text-dim); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .mobile-nav-btn:hover{background:var(--bg);}
+  .mobile-date-label{font-size:13.5px; font-weight:800; min-width:104px; text-align:center; display:flex; align-items:center; gap:6px; justify-content:center;}
+  .mobile-today-btn{
+    border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent-dark); border-radius:12px;
+    padding:2px 8px; font-size:10.5px; font-weight:800; cursor:pointer;
+  }
+  .mobile-menu-btn{
+    width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:#fff; font-size:16px; cursor:pointer;
+  }
+  .mobile-menu-btn:hover{background:var(--bg);}
+  .mobile-board{
+    flex:1; min-height:0; display:flex; flex-direction:column; gap:7px; padding:9px 10px; overflow:hidden;
+  }
+  .mobile-worker-row{
+    flex:1; min-height:0; display:flex; flex-direction:column;
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:7px 9px;
+  }
+  .mobile-worker-head{flex:none; display:flex; align-items:center; gap:6px; margin-bottom:5px;}
+  .mobile-worker-name{font-size:12px; font-weight:800;}
+  .mobile-worker-count{margin-left:auto; font-size:10px; color:var(--text-faint); font-weight:700;}
+  .mobile-worker-chips{flex:1; min-height:0; display:flex; flex-direction:column; gap:4px; overflow-y:auto;}
+  .mobile-ticket-chip{
+    flex:none; padding:5px 8px; border-radius:7px; font-size:11px; font-weight:700; color:#2A2E35; cursor:pointer;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .mobile-chip-done{opacity:.5;}
+  .mobile-empty-chip{font-size:11px; color:var(--text-faint); padding:4px 2px;}
+  .mobile-fab-row{
+    flex:none; display:flex; gap:8px; padding:10px 12px 12px; background:var(--panel); border-top:1px solid var(--border);
+  }
+  .mobile-fab{
+    flex:1; border:none; border-radius:12px; padding:12px; font-size:13.5px; font-weight:800;
+    background:var(--accent); color:#fff; cursor:pointer;
+  }
+  .mobile-fab:hover{background:var(--accent-dark);}
+  .mobile-fab.secondary{background:#fff; color:var(--text-dim); border:1.5px solid var(--border);}
+  .mobile-fab.secondary:hover{background:var(--bg);}
+
+  .mobile-menu-overlay{
+    position:absolute; inset:0; background:rgba(20,22,26,.45); display:none;
+    align-items:flex-start; justify-content:flex-end; z-index:30;
+  }
+  .mobile-menu-overlay.open{display:flex;}
+  .mobile-menu-sheet{
+    background:#fff; margin:56px 12px 0 0; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.3);
+    width:196px; overflow:hidden;
+  }
+  .mobile-menu-item{
+    padding:13px 15px; font-size:13px; font-weight:700; color:var(--text); cursor:pointer;
+    border-bottom:1px solid var(--border);
+  }
+  .mobile-menu-item:hover{background:var(--bg);}
+  .mobile-menu-cancel{
+    padding:11px 15px; font-size:12px; color:var(--text-faint); text-align:center; cursor:pointer;
+  }
+
+  .mobile-subview{
+    position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column; z-index:25;
+  }
+  .mobile-subview-head{
+    flex:none; display:flex; align-items:center; gap:10px; padding:12px; background:var(--panel); border-bottom:1px solid var(--border);
+  }
+  .mobile-back-btn{
+    width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:#fff; font-size:15px; cursor:pointer;
+  }
+  .mobile-back-btn:hover{background:var(--bg);}
+  .mobile-subview-title{font-size:14px; font-weight:800;}
+  .mobile-subview-body{flex:1; overflow-y:auto; padding:12px 14px 24px;}
+
+  .mobile-ticket-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:11px 13px; margin-bottom:9px; cursor:pointer;
+  }
+  .mobile-ticket-card.tr-resource-alert-card{background:var(--accent-soft); border-color:var(--accent);}
+  .mobile-ticket-card-top{display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;}
+  .mobile-ticket-card-title{font-size:13px; font-weight:700; margin-bottom:4px;}
+  .mobile-ticket-card-meta{font-size:11px; color:var(--text-faint);}
 </style>
 </head>
 <body>
@@ -314,6 +456,10 @@
 </div>
 <div id="app" style="display:none;"></div>
 <div id="toast" class="toast"></div>
+<div class="device-mode-toggle" id="deviceModeToggle">
+  <button type="button" class="device-mode-btn" data-mode="pc">🖥️ PC 버전</button>
+  <button type="button" class="device-mode-btn" data-mode="mobile">📱 모바일 버전</button>
+</div>
 
 <script>
 /* ============================= 상수 ============================= */
@@ -487,10 +633,31 @@ let searchText = ''; // 티켓 검색 탭: 자유 검색어
 let searchStatusFilter = null; // 티켓 검색 탭: 상태 필터 (null=전체)
 let searchTypeFilter = null; // 티켓 검색 탭: 업무 유형 필터 (null=전체)
 let searchWorkerFilter = null; // 티켓 검색 탭: 작업자 필터 (null=전체)
+let searchSelectedIds = new Set(); // 티켓 검색 탭: 체크박스로 선택된 티켓 id 목록 (CSV 다운로드용)
+let absenceSelectedIds = new Set(); // 부재 관리 목록: 체크박스로 선택된 부재 id 목록 (CSV 다운로드용)
+let absenceSearchText = ''; // 부재 관리 페이지 전용 검색어
+let absenceWorkerFilter = null; // 부재 관리 페이지 전용 담당자 필터
+let absenceSortKey = null; // 부재 관리 목록 정렬 기준 ('title' | 'start' | 'end')
+let absenceSortDir = 'asc'; // 부재 관리 목록 정렬 방향
+let absenceHideShared = false; // 부재 관리: 공통휴가(전원 부재) 숨기기 체크박스 상태
+const ABSENCE_SORT_DEFAULT_DIR = { title:'asc', start:'asc', end:'asc' };
+let searchSortKey = null; // 티켓 검색 탭: 정렬 기준 ('title' | 'start' | 'end' | 'days')
+let searchSortDir = 'asc'; // 티켓 검색 탭: 정렬 방향 ('asc' | 'desc')
+const SEARCH_SORT_DEFAULT_DIR = { title:'asc', start:'asc', end:'desc', days:'asc' }; // 각 정렬 기준별 최초 클릭 시 기본 방향 (마감일은 최근순이 기본이라 desc)
 let editingId = null;
 let reportWorker = null; // 작업자별 기간 조회 패널 상태
 let reportStart = null;
 let reportEnd = null;
+
+/* ============================= 모바일 버전 상태 ============================= */
+let deviceMode = 'pc'; // 'pc' | 'mobile'
+let mobileMenuOpen = false;
+let mobileView = 'board'; // 'board' | 'inprogress' | 'upcoming' | 'search' | 'absence'
+let mobileBoardDate = null; // 초기화 시 오늘 날짜로 세팅 (todayISO 정의 이후)
+let mobileSearchText = '';
+let mobileSearchWorkerFilter = null;
+let mobileAbsenceWorkerFilter = null;
+let mobileAbsenceHideShared = false;
 
 /* ============================= 날짜 유틸 ============================= */
 function parseISO(s){ return new Date(s+'T00:00:00'); }
@@ -721,6 +888,74 @@ function renderResourceCell(t){
     ? `<div style="font-size:10.5px; color:var(--text-faint); margin-top:2px; white-space:nowrap;">마감 ~${fmtShort(t.resourceDeadline)}</div>`
     : '';
   return `${link}${deadlineHtml}`;
+}
+
+/* ============================= CSV 내보내기 ============================= */
+function csvEscape(val){
+  const s = String(val ?? '');
+  if(/[",\n\r]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+function downloadCSV(filename, headers, rows){
+  const lines = [headers.map(csvEscape).join(',')];
+  rows.forEach(r=> lines.push(r.map(csvEscape).join(',')));
+  // 엑셀에서 한글이 깨지지 않도록 BOM 추가
+  const csvContent = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+}
+function plainField(val){
+  if(Array.isArray(val)) return val.filter(Boolean).join(' | ');
+  return val || '';
+}
+const CSV_HEADERS = ['제목','프로젝트','업무 유형','담당자','시작일','마감일','예상 작업일수','상태','리소스','레퍼런스','SB·기획','사이즈·포맷'];
+function ticketToCSVRow(t){
+  const status = ticketStatus(t);
+  const days = expectedWorkDays(t);
+  return [
+    t.title || '',
+    t.project || '',
+    t.workType || '',
+    (t.assignees||[]).join(', '),
+    t.startDate || '',
+    t.endDate || '',
+    fmtDays(days),
+    status || '',
+    plainField((t.resourceLinks&&t.resourceLinks.length)?t.resourceLinks:t.memo),
+    plainField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink),
+    t.sb || '',
+    t.spec || ''
+  ];
+}
+function exportTicketsToCSV(tickets, filename){
+  const rows = tickets.map(ticketToCSVRow);
+  downloadCSV(filename, CSV_HEADERS, rows);
+}
+const ABSENCE_CSV_HEADERS = ['제목','담당자','시작일','마감일','상태','메모'];
+function absenceTicketToCSVRow(t){
+  return [
+    t.title || '',
+    (t.assignees||[]).join(', '),
+    t.startDate || '',
+    t.endDate || '',
+    ticketStatus(t) || '',
+    plainField(t.memo)
+  ];
+}
+function exportAbsenceTicketsToCSV(tickets, filename){
+  downloadCSV(filename, ABSENCE_CSV_HEADERS, tickets.map(absenceTicketToCSVRow));
+}
+function csvFilenameTimestamp(){
+  const d = new Date();
+  const p = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
 }
 
 /* ============================= 샘플 데이터 (실제 캘린더 화면 기반) ============================= */
@@ -972,7 +1207,37 @@ function assignLanes(ticketsForWorker, rangeStartISO, rangeEndISO){
 }
 
 /* ============================= 렌더: 레이아웃 ============================= */
+/* ============================= 티켓 위치로 이동(보드 하이라이트) ============================= */
+function jumpToTicketOnBoard(ticketId, startDateISO){
+  if(!ticketId || !startDateISO) return;
+  const d = parseISO(startDateISO);
+  currentView = 'board';
+  boardMode = 'month';
+  monthAnchor = new Date(d.getFullYear(), d.getMonth(), 1);
+  renderApp();
+  // 렌더링이 DOM에 반영된 다음 프레임에서 하이라이트를 걸어야 확실히 적용됨
+  requestAnimationFrame(()=> requestAnimationFrame(()=> highlightTicketBars(ticketId)));
+}
+function highlightTicketBars(ticketId){
+  const bars = Array.from(document.querySelectorAll('.ticket-bar[data-id="'+CSS.escape(ticketId)+'"]'));
+  if(!bars.length) return;
+  bars.forEach(bar=>{
+    bar.classList.remove('ticket-jump-highlight');
+    void bar.offsetWidth; // 강제 리플로우: 애니메이션 재시작 보장
+    bar.classList.add('ticket-jump-highlight');
+    bar.addEventListener('animationend', ()=> bar.classList.remove('ticket-jump-highlight'), {once:true});
+  });
+  bars[0].scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+}
+
 function renderApp(){
+  syncDeviceModeToggleUI();
+  document.body.classList.toggle('mobile-preview', deviceMode==='mobile');
+  if(deviceMode==='mobile'){ renderMobileApp(); return; }
+  renderPCApp();
+}
+
+function renderPCApp(){
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="sidebar">
@@ -984,6 +1249,7 @@ function renderApp(){
         ${navItem('board','🗂','일정 보드')}
         ${navItem('dashboard','📊','대시보드')}
         ${navItem('search','🔍','티켓 검색')}
+        ${navItem('absence','🌴','부재 관리')}
       </div>
       <div class="sidebar-footer">모든 데이터는 이 사이트 접속자 전원에게<br>공유되어 표시됩니다.</div>
     </div>
@@ -1021,6 +1287,308 @@ function renderApp(){
   }
   renderContent();
 }
+
+/* ============================= PC / 모바일 전환 ============================= */
+function syncDeviceModeToggleUI(){
+  document.querySelectorAll('.device-mode-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.mode === deviceMode);
+  });
+}
+function wireDeviceModeToggle(){
+  document.querySelectorAll('.device-mode-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      if(deviceMode === btn.dataset.mode) return;
+      deviceMode = btn.dataset.mode;
+      if(deviceMode === 'mobile'){
+        mobileMenuOpen = false;
+        mobileView = 'board';
+        if(!mobileBoardDate) mobileBoardDate = todayISO();
+      }
+      renderApp();
+    };
+  });
+  syncDeviceModeToggleUI();
+}
+
+/* ============================= 모바일 버전 ============================= */
+function mobileDateLabelHtml(){
+  const d = parseISO(mobileBoardDate);
+  const label = `${d.getMonth()+1}.${d.getDate()}(${DOW_LABEL[d.getDay()]})`;
+  const isToday = mobileBoardDate === todayISO();
+  return `<span>${label}</span>${isToday ? '' : `<button type="button" class="mobile-today-btn" id="mobileTodayBtn">오늘</button>`}`;
+}
+
+function renderMobileTicketChip(t){
+  const isAbsence = t.project === '부재';
+  const status = ticketStatus(t);
+  const color = isAbsence ? NO_TYPE_COLOR : (t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR);
+  const needsResourceCheck = !isAbsence && t.resourceCheckNeeded && (status==='작업중' || status==='예정');
+  return `<div class="mobile-ticket-chip ${isAbsence?'absence-bar':''} ${status==='완료'?'mobile-chip-done':''}" data-id="${t.id}" style="background:${color};" title="${escapeHtml(t.title)}">${needsResourceCheck?'❗ ':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}[${escapeHtml(t.project)}] ${escapeHtml(t.title)}</div>`;
+}
+
+function renderMobileBoardRows(){
+  const date = mobileBoardDate;
+  return WORKERS.map(w=>{
+    const dayTickets = TICKETS.filter(t=> t.assignees.includes(w) && t.startDate<=date && t.endDate>=date)
+      .sort((a,b)=>{
+        const aAbs = a.project==='부재'?0:1, bAbs = b.project==='부재'?0:1;
+        return aAbs - bAbs;
+      });
+    return `
+      <div class="mobile-worker-row">
+        <div class="mobile-worker-head">
+          ${workerDot(w)}<span class="mobile-worker-name">${escapeHtml(w)}</span>
+          <span class="mobile-worker-count">${dayTickets.length}건</span>
+        </div>
+        <div class="mobile-worker-chips">
+          ${dayTickets.length ? dayTickets.map(renderMobileTicketChip).join('') : `<div class="mobile-empty-chip">일정 없음</div>`}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderMobileTicketCards(list){
+  if(!list.length) return `<div class="empty-note">해당하는 티켓이 없습니다.</div>`;
+  return list.map(t=>{
+    const status = ticketStatus(t);
+    const needsResourceCheck = !!t.resourceCheckNeeded && (status==='작업중' || status==='예정');
+    return `<div class="mobile-ticket-card ${needsResourceCheck?'tr-resource-alert-card':''}" data-id="${t.id}">
+      <div class="mobile-ticket-card-top">
+        ${needsResourceCheck?'<span class="resource-flag-badge">❗ 리소스 확인</span>':''}
+        <span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span>
+        ${statusChipHtml(status)}
+      </div>
+      <div class="mobile-ticket-card-title">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</div>
+      <div class="mobile-ticket-card-meta">${t.assignees.join(', ')} · ${fmtShort(t.startDate)}~${fmtShort(t.endDate)}</div>
+    </div>`;
+  }).join('');
+}
+
+function wireMobileTicketCardClicks(scope){
+  scope.querySelectorAll('.mobile-ticket-card[data-id], .mobile-ticket-chip[data-id]').forEach(el=>{
+    el.onclick = ()=> openModal(el.dataset.id);
+  });
+}
+
+function getFilteredMobileSearchTickets(){
+  const q = mobileSearchText.trim().toLowerCase();
+  return TICKETS.filter(t=>{
+    if(t.project === '부재') return false;
+    if(mobileSearchWorkerFilter && !t.assignees.includes(mobileSearchWorkerFilter)) return false;
+    if(q){
+      const hay = [t.title, t.project, ...(t.assignees||[])].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  }).sort((a,b)=> a.startDate<b.startDate?-1:1);
+}
+
+function renderMobileSearchResultsOnly(){
+  const container = document.getElementById('mobileSearchResultsArea');
+  if(!container) return;
+  const filtered = getFilteredMobileSearchTickets();
+  container.innerHTML = `
+    <p style="font-size:12px; color:var(--text-dim); margin:0 0 8px;">총 ${filtered.length}건</p>
+    ${renderMobileTicketCards(filtered)}
+  `;
+  wireMobileTicketCardClicks(container);
+}
+
+function renderMobileSearchView(){
+  return `
+    <div class="field" style="margin-bottom:10px;">
+      <input type="text" id="mobileSearchInput" value="${escapeHtml(mobileSearchText)}" placeholder="제목, 프로젝트, 담당자로 검색...">
+    </div>
+    <div class="pill-group" id="mobileSearchWorkerPills" style="margin-bottom:12px;">
+      ${WORKERS.map(w=>`<div class="pill ${mobileSearchWorkerFilter===w?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
+      ${mobileSearchWorkerFilter ? `<div class="pill" id="mobileResetSearchWorker" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
+    </div>
+    <div id="mobileSearchResultsArea"></div>
+  `;
+}
+
+function mobileAbsenceAssigneeLabel(t){
+  if(!mobileAbsenceWorkerFilter) return (t.assignees||[]).join(', ');
+  if(t.assignees && t.assignees.length === WORKERS.length) return '공통휴가';
+  if(t.assignees && t.assignees.length === 1) return '개인휴가';
+  return (t.assignees||[]).join(', ');
+}
+
+function renderMobileAbsenceView(){
+  const today = todayISO();
+  const weekEnd = toISO(addDays(new Date(), 7));
+  const todaysAbsences = TICKETS.filter(t=> t.project==='부재' && t.startDate<=today && t.endDate>=today)
+    .sort((a,b)=> a.startDate<b.startDate?-1:1);
+  const upcomingAbsences = TICKETS.filter(t=> t.project==='부재' && t.startDate>today && t.startDate<=weekEnd)
+    .sort((a,b)=> a.startDate<b.startDate?-1:1);
+  const filtered = TICKETS.filter(t=>{
+    if(t.project !== '부재') return false;
+    if(mobileAbsenceHideShared && t.assignees && t.assignees.length === WORKERS.length) return false;
+    if(mobileAbsenceWorkerFilter && !t.assignees.includes(mobileAbsenceWorkerFilter)) return false;
+    return true;
+  }).sort((a,b)=> a.startDate<b.startDate?-1:1);
+
+  return `
+    <div class="card" style="margin-bottom:14px;">
+      <p class="absence-alert-heading">📍 오늘 부재</p>
+      ${todaysAbsences.length ? todaysAbsences.map(t=>`<div class="absence-alert-item">${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(', ')} <span style="color:var(--text-faint);">· ${escapeHtml(t.title)}</span></div>`).join('') : `<div class="empty-note" style="margin:0;">오늘 부재 인원이 없습니다.</div>`}
+      <p class="absence-alert-heading" style="margin-top:14px;">📅 부재 예정 (7일 이내)</p>
+      ${upcomingAbsences.length ? upcomingAbsences.map(t=>{
+        const dDay = Math.round((parseISO(t.startDate)-parseISO(today))/86400000);
+        return `<div class="absence-alert-item"><span class="dday-badge">D-${dDay}</span> ${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(', ')} <span style="color:var(--text-faint);">· ${fmtShort(t.startDate)}~${fmtShort(t.endDate)} · ${escapeHtml(t.title)}</span></div>`;
+      }).join('') : `<div class="empty-note" style="margin:0;">일주일 이내 예정된 부재가 없습니다.</div>`}
+    </div>
+    <div class="pill-group" id="mobileAbsenceWorkerPills" style="margin-bottom:10px;">
+      ${WORKERS.map(w=>`<div class="pill ${mobileAbsenceWorkerFilter===w?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
+      ${mobileAbsenceWorkerFilter ? `<div class="pill" id="mobileResetAbsenceWorker" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
+    </div>
+    <label style="display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:var(--text-dim); margin-bottom:12px; cursor:pointer;">
+      <input type="checkbox" id="mobileHideSharedCb" ${mobileAbsenceHideShared?'checked':''} style="width:15px; height:15px; margin:0;">
+      공통휴가(전 직원 부재) 숨기기
+    </label>
+    <p style="font-size:12px; color:var(--text-dim); margin:0 0 8px;">총 ${filtered.length}건</p>
+    ${filtered.length ? filtered.map(t=>`
+      <div class="mobile-ticket-card" data-id="${t.id}">
+        <div class="mobile-ticket-card-title">${escapeHtml(t.title)}</div>
+        <div class="mobile-ticket-card-meta">${escapeHtml(mobileAbsenceAssigneeLabel(t))} · ${fmtShort(t.startDate)}~${fmtShort(t.endDate)}</div>
+      </div>`).join('') : `<div class="empty-note">등록된 부재가 없습니다.</div>`}
+  `;
+}
+
+function renderMobileSubView(){
+  const titles = { inprogress:'진행중인 티켓', upcoming:'진행 예정인 티켓', search:'티켓 검색', absence:'부재 관리' };
+  let body = '';
+  if(mobileView === 'inprogress'){
+    const list = TICKETS.filter(t=> ticketStatus(t)==='작업중').sort((a,b)=> a.endDate<b.endDate?-1:1);
+    body = renderMobileTicketCards(list);
+  } else if(mobileView === 'upcoming'){
+    const list = TICKETS.filter(t=> ticketStatus(t)==='예정').sort((a,b)=> a.startDate<b.startDate?-1:1);
+    body = renderMobileTicketCards(list);
+  } else if(mobileView === 'search'){
+    body = renderMobileSearchView();
+  } else if(mobileView === 'absence'){
+    body = renderMobileAbsenceView();
+  }
+  return `
+    <div class="mobile-subview">
+      <div class="mobile-subview-head">
+        <button type="button" class="mobile-back-btn" id="mobileBackBtn">←</button>
+        <div class="mobile-subview-title">${titles[mobileView] || ''}</div>
+      </div>
+      <div class="mobile-subview-body" id="mobileSubviewBody">${body}</div>
+    </div>
+  `;
+}
+
+function renderMobileApp(){
+  if(!mobileBoardDate) mobileBoardDate = todayISO();
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="mobile-frame">
+      <div class="mobile-topbar">
+        <div class="mobile-date-nav">
+          <button type="button" class="mobile-nav-btn" id="mPrevDay">‹</button>
+          <div class="mobile-date-label">${mobileDateLabelHtml()}</div>
+          <button type="button" class="mobile-nav-btn" id="mNextDay">›</button>
+        </div>
+        <button type="button" class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+      </div>
+      <div class="mobile-board" id="mobileBoardArea">
+        ${renderMobileBoardRows()}
+      </div>
+      <div class="mobile-fab-row">
+        <button type="button" class="mobile-fab secondary" id="mobileAddAbsenceBtn">+ 부재 등록</button>
+        <button type="button" class="mobile-fab" id="mobileAddTicketBtn">+ 티켓 등록</button>
+      </div>
+      <div class="mobile-menu-overlay ${mobileMenuOpen?'open':''}" id="mobileMenuOverlay">
+        <div class="mobile-menu-sheet">
+          <div class="mobile-menu-item" data-view="inprogress">🟢 진행중인 티켓</div>
+          <div class="mobile-menu-item" data-view="upcoming">🕒 진행 예정인 티켓</div>
+          <div class="mobile-menu-item" data-view="search">🔍 티켓 검색</div>
+          <div class="mobile-menu-item" data-view="absence">🌴 부재 관리</div>
+          <div class="mobile-menu-cancel" id="mobileMenuCancel">닫기</div>
+        </div>
+      </div>
+      ${mobileView !== 'board' ? renderMobileSubView() : ''}
+    </div>
+  `;
+  wireMobileApp();
+}
+
+function wireMobileApp(){
+  const app = document.getElementById('app');
+
+  const prevBtn = app.querySelector('#mPrevDay');
+  if(prevBtn) prevBtn.onclick = ()=>{ mobileBoardDate = toISO(addDays(parseISO(mobileBoardDate), -1)); renderApp(); };
+  const nextBtn = app.querySelector('#mNextDay');
+  if(nextBtn) nextBtn.onclick = ()=>{ mobileBoardDate = toISO(addDays(parseISO(mobileBoardDate), 1)); renderApp(); };
+  const todayBtn = app.querySelector('#mobileTodayBtn');
+  if(todayBtn) todayBtn.onclick = ()=>{ mobileBoardDate = todayISO(); renderApp(); };
+
+  wireMobileTicketCardClicks(app);
+
+  const addTicketBtn = app.querySelector('#mobileAddTicketBtn');
+  if(addTicketBtn) addTicketBtn.onclick = ()=> openModal(null);
+  const addAbsenceBtn = app.querySelector('#mobileAddAbsenceBtn');
+  if(addAbsenceBtn) addAbsenceBtn.onclick = ()=> openModal(null, '부재');
+
+  const menuBtn = app.querySelector('#mobileMenuBtn');
+  if(menuBtn) menuBtn.onclick = ()=>{ mobileMenuOpen = true; renderApp(); };
+  const menuOverlay = app.querySelector('#mobileMenuOverlay');
+  if(menuOverlay){
+    menuOverlay.addEventListener('mousedown', (e)=>{ if(e.target===menuOverlay){ mobileMenuOpen = false; renderApp(); } });
+  }
+  const menuCancel = app.querySelector('#mobileMenuCancel');
+  if(menuCancel) menuCancel.onclick = ()=>{ mobileMenuOpen = false; renderApp(); };
+  app.querySelectorAll('.mobile-menu-item[data-view]').forEach(el=>{
+    el.onclick = ()=>{
+      mobileView = el.dataset.view;
+      mobileMenuOpen = false;
+      renderApp();
+    };
+  });
+
+  const backBtn = app.querySelector('#mobileBackBtn');
+  if(backBtn) backBtn.onclick = ()=>{ mobileView = 'board'; renderApp(); };
+
+  // 티켓 검색 서브뷰
+  const mSearchInput = app.querySelector('#mobileSearchInput');
+  if(mSearchInput){
+    mSearchInput.oninput = (e)=>{
+      mobileSearchText = e.target.value;
+      renderMobileSearchResultsOnly(); // 입력 포커스를 유지하기 위해 결과 영역만 갱신
+    };
+    renderMobileSearchResultsOnly();
+  }
+  app.querySelectorAll('#mobileSearchWorkerPills [data-worker]').forEach(el=>{
+    el.onclick = ()=>{
+      const w = el.dataset.worker;
+      mobileSearchWorkerFilter = (mobileSearchWorkerFilter===w) ? null : w;
+      renderApp();
+    };
+  });
+  const resetMobileSearchWorker = app.querySelector('#mobileResetSearchWorker');
+  if(resetMobileSearchWorker) resetMobileSearchWorker.onclick = ()=>{ mobileSearchWorkerFilter = null; renderApp(); };
+
+  // 부재 관리 서브뷰
+  app.querySelectorAll('#mobileAbsenceWorkerPills [data-worker]').forEach(el=>{
+    el.onclick = ()=>{
+      const w = el.dataset.worker;
+      mobileAbsenceWorkerFilter = (mobileAbsenceWorkerFilter===w) ? null : w;
+      renderApp();
+    };
+  });
+  const resetMobileAbsenceWorker = app.querySelector('#mobileResetAbsenceWorker');
+  if(resetMobileAbsenceWorker) resetMobileAbsenceWorker.onclick = ()=>{ mobileAbsenceWorkerFilter = null; renderApp(); };
+  const hideSharedCb = app.querySelector('#mobileHideSharedCb');
+  if(hideSharedCb){
+    hideSharedCb.onchange = ()=>{
+      mobileAbsenceHideShared = hideSharedCb.checked;
+      renderApp();
+    };
+  }
+}
+
 function modeToggleHtml(){
   return `
     <div class="mode-toggle">
@@ -1032,7 +1600,7 @@ function navItem(view,icon,label){
   return `<div class="nav-item ${currentView===view?'active':''}" data-view="${view}"><span class="nav-icon">${icon}</span>${label}</div>`;
 }
 function viewTitle(){
-  return {board:'일정 보드', dashboard:'대시보드', search:'티켓 검색'}[currentView];
+  return {board:'일정 보드', dashboard:'대시보드', search:'티켓 검색', absence:'부재 관리'}[currentView];
 }
 function rangeNavHtml(){
   const start = anchorMonday, end = addDays(anchorMonday,13);
@@ -1059,7 +1627,8 @@ function renderContent(){
   const el = document.getElementById('content');
   if(currentView==='board') el.innerHTML = renderBoard();
   else if(currentView==='dashboard') el.innerHTML = renderDashboard();
-  else el.innerHTML = renderSearchView();
+  else if(currentView==='search') el.innerHTML = renderSearchView();
+  else el.innerHTML = renderAbsenceView();
   attachContentHandlers();
 }
 
@@ -1143,10 +1712,10 @@ function renderTwoWeekBoard(){
       const days_bd = expectedWorkDays(t);
       const actual = actualBusinessDays(t);
 
-      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
+      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)}${isAbsence?'':` (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})`}${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
 
-      // 부재(휴가)는 원래 주말까지 이어서 표기, 그 외에는 '주말 출근 필요' 체크가 있을 때만 이어서 표기
-      const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, isAbsence);
+      // 부재를 포함한 모든 티켓은 주말(비근무일)에 바가 끊기고, '주말 출근 필요' 체크가 있을 때만 이어서 표기
+      const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, false);
 
       return segments.map((seg, segIdx)=>{
         const clip = clipRange(seg[0], seg[1], rangeStart, rangeEnd);
@@ -1266,10 +1835,10 @@ function renderMonthBoard(){
       const statusCls = status==='완료' ? 'tb-done' : status==='보류' ? 'tb-hold' : '';
       const days_bd = expectedWorkDays(t);
       const actual = actualBusinessDays(t);
-      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${t.assignees.join(',')} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
+      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${t.assignees.join(',')} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)}${isAbsence?'':` (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})`}${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
 
-      // 부재(휴가)는 원래 주말까지 이어서 표기, 그 외에는 '주말 출근 필요' 체크가 있을 때만 이어서 표기
-      const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, isAbsence);
+      // 부재를 포함한 모든 티켓은 주말(비근무일)에 바가 끊기고, '주말 출근 필요' 체크가 있을 때만 이어서 표기
+      const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, false);
 
       return segments.map((seg, segIdx)=>{
         const clip = clipRange(seg[0], seg[1], wsISO, weISO);
@@ -1317,14 +1886,15 @@ function renderBoardSummary(){
   const progressCard = `
     <div class="card">
       <p class="card-title">진행 중 티켓</p>
-      <p class="card-sub">상태가 '작업중'으로 설정된 티켓</p>
+      <p class="card-sub">상태가 '작업중'으로 설정된 티켓 · <span class="resource-flag-badge" style="margin-right:0;">❗ 리소스 확인</span> 표시는 리소스 도착 확인이 필요한 티켓입니다</p>
       ${inProgress.length ? `
       <table class="simple">
         <thead><tr><th>제목</th><th>프로젝트</th><th>담당자</th><th>기간</th><th>마감까지</th><th>리소스</th><th>레퍼런스</th></tr></thead>
         <tbody>
           ${inProgress.map(t=>{
-            return `<tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
-              <td>${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
+            const needsResourceCheck = !!t.resourceCheckNeeded;
+            return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''}" data-id="${t.id}" style="cursor:pointer;">
+              <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
               <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
               <td>${t.assignees.join(', ')}</td>
               <td>${fmtShort(t.startDate)} ~ ${fmtShort(t.endDate)}</td>
@@ -1340,15 +1910,16 @@ function renderBoardSummary(){
   const upcomingCard = `
     <div class="card">
       <p class="card-title">진행 예정인 티켓</p>
-      <p class="card-sub">상태가 '예정'으로 설정된 티켓</p>
+      <p class="card-sub">상태가 '예정'으로 설정된 티켓 · <span class="resource-flag-badge" style="margin-right:0;">❗ 리소스 확인</span> 표시는 리소스 도착 확인이 필요한 티켓입니다</p>
       ${upcoming.length ? `
       <table class="simple">
         <thead><tr><th>제목</th><th style="white-space:nowrap;">프로젝트</th><th>담당자</th><th style="white-space:nowrap;">시작까지</th><th>리소스</th><th>레퍼런스</th></tr></thead>
         <tbody>
           ${upcoming.map(t=>{
             const dday = businessDaysBetween(today, t.startDate) - 1;
-            return `<tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
-              <td>${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
+            const needsResourceCheck = !!t.resourceCheckNeeded;
+            return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''}" data-id="${t.id}" style="cursor:pointer;">
+              <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
               <td style="white-space:nowrap; min-width:58px;"><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
               <td>${t.assignees.join(', ')}</td>
               <td style="white-space:nowrap; min-width:82px;">${fmtShort(t.startDate)} (D-${Math.max(dday,0)})</td>
@@ -1442,7 +2013,7 @@ function renderDashboard(){
   if(!reportEnd) reportEnd = todayISO();
 
   const reportTickets = TICKETS
-    .filter(t=> t.assignees.includes(reportWorker) && t.startDate <= reportEnd && t.endDate >= reportStart)
+    .filter(t=> t.project!=='부재' && t.assignees.includes(reportWorker) && t.startDate <= reportEnd && t.endDate >= reportStart)
     .sort((a,b)=> a.startDate<b.startDate?-1:1);
 
   function reportTable(){
@@ -1503,6 +2074,13 @@ function renderDashboard(){
       <div class="pill-group" id="reportWorkerPills" style="margin-bottom:12px;">
         ${WORKERS.map(w=>`<div class="pill ${reportWorker===w?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
       </div>
+      <div class="pill-group" id="reportQuarterPills" style="margin-bottom:12px;">
+        ${[1,2,3,4].map(q=>{
+          const [qs, qe] = quarterRange(q, year);
+          const isSel = reportStart===qs && reportEnd===qe;
+          return `<div class="pill ${isSel?'selected':''}" data-quarter="${q}">${q}분기 (${q===1?'1~3':q===2?'4~6':q===3?'7~9':'10~12'}월)</div>`;
+        }).join('')}
+      </div>
       <div class="two-col" style="margin-bottom:14px;">
         <div class="field" style="margin-bottom:0;">
           <label>시작일</label>
@@ -1532,6 +2110,19 @@ function wireReportPanel(){
       renderContent();
     };
   });
+  const quarterPillGroup = document.getElementById('reportQuarterPills');
+  if(quarterPillGroup){
+    quarterPillGroup.querySelectorAll('.pill').forEach(p=>{
+      p.onclick = ()=>{
+        const q = parseInt(p.dataset.quarter, 10);
+        const year = new Date().getFullYear();
+        const [qStart, qEnd] = quarterRange(q, year);
+        reportStart = qStart;
+        reportEnd = qEnd;
+        renderContent();
+      };
+    });
+  }
   document.getElementById('reportStartInput').onchange = (e)=>{
     reportStart = e.target.value;
     renderContent();
@@ -1542,7 +2133,7 @@ function wireReportPanel(){
   };
   document.getElementById('reportCopyBtn').onclick = async ()=>{
     const tickets = TICKETS
-      .filter(t=> t.assignees.includes(reportWorker) && t.startDate <= reportEnd && t.endDate >= reportStart)
+      .filter(t=> t.project!=='부재' && t.assignees.includes(reportWorker) && t.startDate <= reportEnd && t.endDate >= reportStart)
       .sort((a,b)=> a.startDate<b.startDate?-1:1);
     const lines = [
       `${reportWorker} 작업 내역 (${fmtFull(reportStart)} ~ ${fmtFull(reportEnd)})`,
@@ -1581,6 +2172,7 @@ function attachContentHandlers(){
   wireBoardTypeFilter();
   wireDashboardWorkerCardNav();
   wireSearchView();
+  wireAbsenceView();
 }
 
 /* ============================= 티켓 검색 ============================= */
@@ -1599,7 +2191,7 @@ function renderSearchView(){
   return `
     <div class="card">
       <p class="card-title">전체 티켓 검색</p>
-      <p class="card-sub">제목·프로젝트·담당자로 검색하거나, 상태·업무 유형·담당자를 클릭해 필터링하세요</p>
+      <p class="card-sub">제목·프로젝트·담당자로 검색하거나, 상태·업무 유형·담당자를 클릭해 필터링하세요 (부재는 왼쪽 메뉴의 "부재 관리"에서 확인하세요)</p>
       <div class="field">
         <input type="text" id="searchInput" value="${escapeHtml(searchText)}" placeholder="제목, 프로젝트, 담당자로 검색...">
       </div>
@@ -1629,12 +2221,10 @@ function renderSearchView(){
   `;
 }
 
-function renderSearchResults(){
-  const container = document.getElementById('searchResultsContainer');
-  if(!container) return;
-
+function getFilteredSearchTickets(){
   const q = searchText.trim().toLowerCase();
   const filtered = TICKETS.filter(t=>{
+    if(t.project === '부재') return false; // 부재는 아래 별도 "부재 관리" 목록에서 관리
     if(searchStatusFilter && ticketStatus(t) !== searchStatusFilter) return false;
     if(searchTypeFilter && t.workType !== searchTypeFilter) return false;
     if(searchWorkerFilter && !t.assignees.includes(searchWorkerFilter)) return false;
@@ -1643,37 +2233,131 @@ function renderSearchResults(){
       if(!hay.includes(q)) return false;
     }
     return true;
-  }).sort((a,b)=> a.startDate<b.startDate?-1:1);
+  });
+
+  if(!searchSortKey){
+    filtered.sort((a,b)=> a.startDate<b.startDate?-1:1);
+    return filtered;
+  }
+  const dir = searchSortDir==='asc' ? 1 : -1;
+  filtered.sort((a,b)=>{
+    let cmp = 0;
+    switch(searchSortKey){
+      case 'title': cmp = (a.title||'').localeCompare((b.title||''), 'ko'); break;
+      case 'start': cmp = a.startDate<b.startDate?-1:(a.startDate>b.startDate?1:0); break;
+      case 'end': cmp = a.endDate<b.endDate?-1:(a.endDate>b.endDate?1:0); break;
+      case 'days': cmp = (expectedWorkDays(a)||0) - (expectedWorkDays(b)||0); break;
+    }
+    return cmp * dir;
+  });
+  return filtered;
+}
+
+function sortArrowHtml(key){
+  if(searchSortKey !== key) return `<span class="sort-arrow inactive">⇅</span>`;
+  return `<span class="sort-arrow">${searchSortDir==='asc'?'▲':'▼'}</span>`;
+}
+
+function renderSearchResults(){
+  const container = document.getElementById('searchResultsContainer');
+  if(!container) return;
+
+  const filtered = getFilteredSearchTickets();
+  const selectedInView = filtered.filter(t=>searchSelectedIds.has(t.id));
+  const allSelected = filtered.length>0 && selectedInView.length===filtered.length;
 
   container.innerHTML = `
-    <p style="font-size:12px; color:var(--text-dim); margin:14px 0 8px;">총 ${filtered.length}건</p>
+    <div class="search-results-toolbar">
+      <p style="font-size:12px; color:var(--text-dim); margin:0;">총 ${filtered.length}건${selectedInView.length?` · ${selectedInView.length}건 선택됨`:''}</p>
+      <button type="button" class="btn btn-ghost csv-download-btn" id="searchCsvDownloadBtn" ${selectedInView.length?'':'disabled'}>⬇ 선택 항목 CSV 다운로드</button>
+    </div>
     ${filtered.length ? `
     <table class="simple">
-      <thead><tr><th>제목</th><th>프로젝트</th><th>유형</th><th>담당자</th><th>기간</th><th>예상 작업일수</th><th>상태</th><th>리소스</th><th>SB·기획</th><th>사이즈·포맷</th><th>레퍼런스</th></tr></thead>
+      <thead><tr>
+        <th class="cb-cell"><input type="checkbox" id="searchSelectAll" ${allSelected?'checked':''}></th>
+        <th class="sortable-th" data-sort="title">제목 ${sortArrowHtml('title')}</th>
+        <th style="min-width:76px; white-space:nowrap;">프로젝트</th>
+        <th>유형</th>
+        <th style="min-width:96px;">담당자</th>
+        <th class="sortable-th" data-sort="start">시작일 ${sortArrowHtml('start')}</th>
+        <th class="sortable-th" data-sort="end">마감일 ${sortArrowHtml('end')}</th>
+        <th class="sortable-th" data-sort="days">예상 작업일수 ${sortArrowHtml('days')}</th>
+        <th>상태</th>
+        <th>리소스</th>
+        <th style="min-width:120px;">레퍼런스</th>
+        <th>SB·기획</th>
+        <th>사이즈·포맷</th>
+      </tr></thead>
       <tbody>
         ${filtered.map(t=>{
           const status = ticketStatus(t);
           const days = expectedWorkDays(t);
-          return `<tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
-            <td>${escapeHtml(t.title)}${qtyBadge(t)}</td>
-            <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
-            <td>${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType}`:'-'}</td>
-            <td>${t.assignees.join(', ')}</td>
-            <td>${fmtShort(t.startDate)} ~ ${fmtShort(t.endDate)}</td>
-            <td style="color:var(--danger); font-weight:800;">${fmtDays(days)}일</td>
-            <td>${statusChipHtml(status)}</td>
-            <td>${renderResourceCell(t)}</td>
-            <td>${renderResourceField(t.sb)}</td>
-            <td>${t.spec?escapeHtml(t.spec):'-'}</td>
-            <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
+          const checked = searchSelectedIds.has(t.id);
+          return `<tr class="ticket-row" data-id="${t.id}">
+            <td class="cb-cell" onclick="event.stopPropagation()"><input type="checkbox" class="ticket-select-cb" data-id="${t.id}" ${checked?'checked':''}></td>
+            <td style="cursor:pointer;">${escapeHtml(t.title)}${qtyBadge(t)}</td>
+            <td style="cursor:pointer;"><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
+            <td style="cursor:pointer;">${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType}`:'-'}</td>
+            <td style="cursor:pointer;">${t.assignees.join(', ')}</td>
+            <td style="cursor:pointer;">${fmtShort(t.startDate)}</td>
+            <td style="cursor:pointer;">${fmtShort(t.endDate)}</td>
+            <td style="cursor:pointer; color:var(--danger); font-weight:800;">${fmtDays(days)}일</td>
+            <td style="cursor:pointer;">${statusChipHtml(status)}</td>
+            <td style="cursor:pointer;">${renderResourceCell(t)}</td>
+            <td style="cursor:pointer;">${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
+            <td style="cursor:pointer;">${renderResourceField(t.sb)}</td>
+            <td style="cursor:pointer;">${t.spec?escapeHtml(t.spec):'-'}</td>
           </tr>`;
         }).join('')}
       </tbody>
     </table>` : `<div class="empty-note">검색 결과가 없습니다.</div>`}
   `;
+
   container.querySelectorAll('.ticket-row').forEach(el=>{
     el.addEventListener('click', ()=> openModal(el.dataset.id));
   });
+
+  container.querySelectorAll('.ticket-select-cb').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const id = cb.dataset.id;
+      if(cb.checked) searchSelectedIds.add(id); else searchSelectedIds.delete(id);
+      renderSearchResults();
+    });
+  });
+
+  const selectAllEl = container.querySelector('#searchSelectAll');
+  if(selectAllEl){
+    selectAllEl.onchange = ()=>{
+      if(selectAllEl.checked){
+        filtered.forEach(t=> searchSelectedIds.add(t.id));
+      } else {
+        filtered.forEach(t=> searchSelectedIds.delete(t.id));
+      }
+      renderSearchResults();
+    };
+  }
+
+  container.querySelectorAll('.sortable-th').forEach(th=>{
+    th.onclick = ()=>{
+      const key = th.dataset.sort;
+      if(searchSortKey === key){
+        searchSortDir = searchSortDir==='asc' ? 'desc' : 'asc';
+      } else {
+        searchSortKey = key;
+        searchSortDir = SEARCH_SORT_DEFAULT_DIR[key] || 'asc';
+      }
+      renderSearchResults();
+    };
+  });
+
+  const csvBtn = container.querySelector('#searchCsvDownloadBtn');
+  if(csvBtn){
+    csvBtn.onclick = ()=>{
+      const toExport = filtered.filter(t=>searchSelectedIds.has(t.id));
+      if(!toExport.length) return;
+      exportTicketsToCSV(toExport, `티켓검색_${csvFilenameTimestamp()}.csv`);
+    };
+  }
 }
 
 function wireSearchView(){
@@ -1716,6 +2400,239 @@ function wireSearchView(){
 
   renderSearchResults();
 }
+
+/* ============================= 부재 관리 ============================= */
+function absenceAlertsHtml(){
+  const today = todayISO();
+  const weekEnd = toISO(addDays(new Date(), 7));
+
+  const todaysAbsences = TICKETS.filter(t=> t.project==='부재' && t.startDate<=today && t.endDate>=today)
+    .sort((a,b)=> a.startDate<b.startDate?-1:1);
+  const upcomingAbsences = TICKETS.filter(t=> t.project==='부재' && t.startDate>today && t.startDate<=weekEnd)
+    .sort((a,b)=> a.startDate<b.startDate?-1:1);
+
+  const todayItem = t => `
+    <div class="absence-alert-item">
+      <span>${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(', ')}</span>
+      <span style="color:var(--text-faint);">· ${escapeHtml(t.title)}</span>
+    </div>`;
+  const upcomingItem = t => {
+    const dDay = Math.round((parseISO(t.startDate)-parseISO(today))/86400000);
+    return `
+    <div class="absence-alert-item">
+      <span class="dday-badge">D-${dDay}</span>
+      <span>${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(', ')}</span>
+      <span style="color:var(--text-faint);">· ${fmtShort(t.startDate)}~${fmtShort(t.endDate)} · ${escapeHtml(t.title)}</span>
+    </div>`;
+  };
+
+  return `
+    <div class="card">
+      <p class="card-title">부재 알림</p>
+      <p class="card-sub">오늘 기준 부재 현황과, 앞으로 일주일 이내 예정된 부재를 빠른 순서대로 보여줍니다</p>
+      <div class="absence-alert-grid">
+        <div>
+          <p class="absence-alert-heading">📍 오늘 부재 현황</p>
+          ${todaysAbsences.length ? todaysAbsences.map(todayItem).join('') : `<div class="empty-note" style="margin:0;">오늘 부재 인원이 없습니다.</div>`}
+        </div>
+        <div>
+          <p class="absence-alert-heading">📅 부재 예정 현황 (7일 이내)</p>
+          ${upcomingAbsences.length ? upcomingAbsences.map(upcomingItem).join('') : `<div class="empty-note" style="margin:0;">일주일 이내 예정된 부재가 없습니다.</div>`}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderAbsenceView(){
+  return `
+    ${absenceAlertsHtml()}
+    <div class="card">
+      <p class="card-title">부재 목록</p>
+      <p class="card-sub">연차·반차·병가 등 부재 일정만 모아서 확인하고, 선택한 항목을 CSV로 내려받으세요</p>
+      <div class="field">
+        <input type="text" id="absenceSearchInput" value="${escapeHtml(absenceSearchText)}" placeholder="제목, 담당자로 검색...">
+      </div>
+      <div class="field" style="margin-bottom:8px;">
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">담당자 <span class="hint">(클릭하여 필터)</span></label>
+        <div class="pill-group" id="absenceWorkerPills">
+          ${WORKERS.map(w=>`<div class="pill ${absenceWorkerFilter===w?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
+          ${absenceWorkerFilter ? `<div class="pill" id="resetAbsenceWorkerFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:8px;">
+        <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-size:12.5px; font-weight:600; color:var(--text-dim);">
+          <input type="checkbox" id="absenceHideSharedCb" ${absenceHideShared?'checked':''} style="width:15px; height:15px; margin:0;">
+          공통휴가(전 직원 부재) 숨기기
+        </label>
+      </div>
+      <div id="absenceResultsContainer"></div>
+    </div>
+  `;
+}
+
+function absenceAssigneeLabel(t){
+  // 담당자 필터를 걸지 않은 기본 목록에서는 누가 부재인지 바로 알 수 있도록 이름을 그대로 보여주고,
+  // 특정 담당자로 필터링했을 때만(이미 누구인지는 알고 있으므로) 공통휴가/개인휴가 구분으로 표시한다.
+  if(!absenceWorkerFilter) return (t.assignees||[]).join(', ');
+  if(t.assignees && t.assignees.length === WORKERS.length) return '공통휴가';
+  if(t.assignees && t.assignees.length === 1) return '개인휴가';
+  return (t.assignees||[]).join(', ');
+}
+
+function getFilteredAbsenceTickets(){
+  const q = absenceSearchText.trim().toLowerCase();
+  const filtered = TICKETS.filter(t=>{
+    if(t.project !== '부재') return false;
+    if(absenceHideShared && t.assignees && t.assignees.length === WORKERS.length) return false;
+    if(absenceWorkerFilter && !t.assignees.includes(absenceWorkerFilter)) return false;
+    if(q){
+      const hay = [t.title, ...(t.assignees||[]), t.memo||''].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if(!absenceSortKey){
+    filtered.sort((a,b)=> a.startDate<b.startDate?-1:1);
+    return filtered;
+  }
+  const dir = absenceSortDir==='asc' ? 1 : -1;
+  filtered.sort((a,b)=>{
+    let cmp = 0;
+    switch(absenceSortKey){
+      case 'title': cmp = (a.title||'').localeCompare((b.title||''), 'ko'); break;
+      case 'start': cmp = a.startDate<b.startDate?-1:(a.startDate>b.startDate?1:0); break;
+      case 'end': cmp = a.endDate<b.endDate?-1:(a.endDate>b.endDate?1:0); break;
+    }
+    return cmp * dir;
+  });
+  return filtered;
+}
+
+function absenceSortArrowHtml(key){
+  if(absenceSortKey !== key) return `<span class="sort-arrow inactive">⇅</span>`;
+  return `<span class="sort-arrow">${absenceSortDir==='asc'?'▲':'▼'}</span>`;
+}
+
+function renderAbsenceResults(){
+  const container = document.getElementById('absenceResultsContainer');
+  if(!container) return;
+
+  const filtered = getFilteredAbsenceTickets();
+  const selectedInView = filtered.filter(t=>absenceSelectedIds.has(t.id));
+  const allSelected = filtered.length>0 && selectedInView.length===filtered.length;
+
+  container.innerHTML = `
+    <div class="search-results-toolbar">
+      <p style="font-size:12px; color:var(--text-dim); margin:0;">총 ${filtered.length}건${selectedInView.length?` · ${selectedInView.length}건 선택됨`:''}</p>
+      <button type="button" class="btn btn-ghost csv-download-btn" id="absenceCsvDownloadBtn" ${selectedInView.length?'':'disabled'}>⬇ 선택 항목 CSV 다운로드</button>
+    </div>
+    ${filtered.length ? `
+    <table class="simple">
+      <thead><tr>
+        <th class="cb-cell"><input type="checkbox" id="absenceSelectAll" ${allSelected?'checked':''}></th>
+        <th class="sortable-th" data-sort="title">제목 ${absenceSortArrowHtml('title')}</th>
+        <th>담당자</th>
+        <th class="sortable-th" data-sort="start">시작일 ${absenceSortArrowHtml('start')}</th>
+        <th class="sortable-th" data-sort="end">마감일 ${absenceSortArrowHtml('end')}</th>
+        <th>상태</th>
+        <th>메모</th>
+      </tr></thead>
+      <tbody>
+        ${filtered.map(t=>{
+          const status = ticketStatus(t);
+          const checked = absenceSelectedIds.has(t.id);
+          return `<tr class="ticket-row" data-id="${t.id}">
+            <td class="cb-cell" onclick="event.stopPropagation()"><input type="checkbox" class="absence-select-cb" data-id="${t.id}" ${checked?'checked':''}></td>
+            <td style="cursor:pointer;">${escapeHtml(t.title)}</td>
+            <td style="cursor:pointer;">${escapeHtml(absenceAssigneeLabel(t))}</td>
+            <td style="cursor:pointer;">${fmtShort(t.startDate)}</td>
+            <td style="cursor:pointer;">${fmtShort(t.endDate)}</td>
+            <td style="cursor:pointer;">${statusChipHtml(status)}</td>
+            <td style="cursor:pointer;">${t.memo?escapeHtml(t.memo):'-'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>` : `<div class="empty-note">등록된 부재가 없습니다.</div>`}
+  `;
+
+  container.querySelectorAll('.ticket-row').forEach(el=>{
+    el.addEventListener('click', ()=> openModal(el.dataset.id));
+  });
+
+  container.querySelectorAll('.sortable-th').forEach(th=>{
+    th.onclick = ()=>{
+      const key = th.dataset.sort;
+      if(absenceSortKey === key){
+        absenceSortDir = absenceSortDir==='asc' ? 'desc' : 'asc';
+      } else {
+        absenceSortKey = key;
+        absenceSortDir = ABSENCE_SORT_DEFAULT_DIR[key] || 'asc';
+      }
+      renderAbsenceResults();
+    };
+  });
+
+  container.querySelectorAll('.absence-select-cb').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const id = cb.dataset.id;
+      if(cb.checked) absenceSelectedIds.add(id); else absenceSelectedIds.delete(id);
+      renderAbsenceResults();
+    });
+  });
+
+  const selectAllEl = container.querySelector('#absenceSelectAll');
+  if(selectAllEl){
+    selectAllEl.onchange = ()=>{
+      if(selectAllEl.checked){
+        filtered.forEach(t=> absenceSelectedIds.add(t.id));
+      } else {
+        filtered.forEach(t=> absenceSelectedIds.delete(t.id));
+      }
+      renderAbsenceResults();
+    };
+  }
+
+  const csvBtn = container.querySelector('#absenceCsvDownloadBtn');
+  if(csvBtn){
+    csvBtn.onclick = ()=>{
+      const toExport = filtered.filter(t=>absenceSelectedIds.has(t.id));
+      if(!toExport.length) return;
+      exportAbsenceTicketsToCSV(toExport, `부재_${csvFilenameTimestamp()}.csv`);
+    };
+  }
+}
+
+function wireAbsenceView(){
+  const input = document.getElementById('absenceSearchInput');
+  if(!input) return; // 부재 관리 화면이 아닐 때는 존재하지 않음
+
+  input.oninput = (e)=>{
+    absenceSearchText = e.target.value;
+    renderAbsenceResults();
+  };
+  document.querySelectorAll('#absenceWorkerPills [data-worker]').forEach(el=>{
+    el.onclick = ()=>{
+      const w = el.dataset.worker;
+      absenceWorkerFilter = (absenceWorkerFilter===w) ? null : w;
+      renderContent();
+    };
+  });
+  const resetWorker = document.getElementById('resetAbsenceWorkerFilter');
+  if(resetWorker) resetWorker.onclick = ()=>{ absenceWorkerFilter = null; renderContent(); };
+
+  const hideSharedCb = document.getElementById('absenceHideSharedCb');
+  if(hideSharedCb){
+    hideSharedCb.onchange = ()=>{
+      absenceHideShared = hideSharedCb.checked;
+      renderAbsenceResults();
+    };
+  }
+
+  renderAbsenceResults();
+}
+
 function wireDashboardWorkerCardNav(){
   const prevBtn = document.getElementById('workerCardPrev');
   const nextBtn = document.getElementById('workerCardNext');
@@ -1757,7 +2674,10 @@ function openModal(id, presetProject){
     <div class="modal">
       <div class="modal-head">
         <h3>${t ? '티켓 수정' : (presetProject==='부재' ? '부재 등록' : '새 티켓 만들기')}</h3>
-        <button class="modal-close" id="mClose">✕</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button type="button" class="btn btn-ghost csv-download-btn" id="mCsvDownload" title="현재 티켓 내용을 CSV 파일로 내려받기">⬇ CSV</button>
+          <button class="modal-close" id="mClose">✕</button>
+        </div>
       </div>
       <div class="modal-body">
         <div class="field" id="statusFieldWrapper">
@@ -1807,7 +2727,11 @@ function openModal(id, presetProject){
             <input type="date" id="fEnd" value="${t?t.endDate:''}">
           </div>
         </div>
-        <div class="field">
+        ${t ? `
+        <div class="field" style="margin-top:-6px; margin-bottom:14px;">
+          <button type="button" class="btn btn-ghost" id="mJumpToBoard" style="display:inline-flex; align-items:center; gap:6px; padding:7px 12px; font-size:12.5px;">📅 보드에서 일정 위치 보기</button>
+        </div>` : ''}
+        <div class="field" id="expectedDaysFieldWrapper">
           <div class="computed-days" id="computedDays" style="justify-content:space-between;">
             <span>예상 작업일수(영업일): <b id="daysVal">-</b></span>
             <span id="weekendWorkFieldWrapper" style="display:flex; align-items:center; gap:10px; font-size:12px; font-weight:600; color:var(--text-dim); white-space:nowrap;">
@@ -1830,6 +2754,12 @@ function openModal(id, presetProject){
         <div class="field" id="specFieldWrapper">
           <label>사이즈 · 포맷 · 구성 <span class="hint">(선택)</span></label>
           <textarea id="fSpec" rows="5" placeholder="작업 사이즈, 포맷, 어떤 내용인지 상세 내용을 적어주세요">${t?escapeHtml(t.spec||''):''}</textarea>
+        </div>
+        <div class="field" id="resourceCheckFieldWrapper" style="margin-bottom:8px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+            <input type="checkbox" id="fResourceCheckNeeded" ${t&&t.resourceCheckNeeded?'checked':''} style="width:15px; height:15px; margin:0;">
+            리소스 마감일까지 도착 확인 필요 <span class="hint">(체크하면 보드에서 눈에 띄게 표시됩니다)</span>
+          </label>
         </div>
         <div class="field" id="resourceDeadlineWrapper">
           <label>리소스 마감일 <span class="hint">(선택, 참고 자료가 준비되어야 하는 날짜)</span></label>
@@ -1873,10 +2803,12 @@ function openModal(id, presetProject){
     overlay.querySelector('#workTypeFieldWrapper').style.visibility = isAbsence ? 'hidden' : 'visible';
     overlay.querySelector('#sbFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#resourceDeadlineWrapper').style.display = isAbsence ? 'none' : 'block';
+    overlay.querySelector('#resourceCheckFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#specFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#referenceFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#statusFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#weekendWorkFieldWrapper').style.visibility = isAbsence ? 'hidden' : 'visible';
+    overlay.querySelector('#expectedDaysFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     if(isAbsence){
       overlay.querySelector('#completionField').style.display = 'none';
     } else if(selStatus==='완료'){
@@ -1996,6 +2928,38 @@ function openModal(id, presetProject){
   overlay.querySelector('#mCancel').onclick = close;
   overlay.addEventListener('mousedown', (e)=>{ if(e.target===overlay) close(); });
 
+  const jumpBtn = overlay.querySelector('#mJumpToBoard');
+  if(jumpBtn){
+    jumpBtn.onclick = ()=>{
+      const ticketId = t.id;
+      const jumpStart = overlay.querySelector('#fStart').value || t.startDate;
+      close();
+      jumpToTicketOnBoard(ticketId, jumpStart);
+    };
+  }
+
+  overlay.querySelector('#mCsvDownload').onclick = ()=>{
+    const isAbsenceDraft = selProject === '부재';
+    const draftTitle = overlay.querySelector('#fTitle').value.trim();
+    const draftStart = overlay.querySelector('#fStart').value;
+    const draftEnd = overlay.querySelector('#fEnd').value;
+    const draftResourceLinks = isAbsenceDraft ? [] : Array.from(overlay.querySelectorAll('#resourceInputs input')).map(x=>x.value.trim()).filter(Boolean);
+    const draftReferenceLinks = isAbsenceDraft ? [] : Array.from(overlay.querySelectorAll('#referenceInputs input')).map(x=>x.value.trim()).filter(Boolean);
+    const draftSB = isAbsenceDraft ? '' : (overlay.querySelector('#fSB') ? overlay.querySelector('#fSB').value.trim() : '');
+    const draftSpec = isAbsenceDraft ? '' : (overlay.querySelector('#fSpec') ? overlay.querySelector('#fSpec').value.trim() : '');
+    const draftResourceDeadline = isAbsenceDraft ? '' : (overlay.querySelector('#fResourceDeadline') ? overlay.querySelector('#fResourceDeadline').value : '');
+    const draftWeekendSat = isAbsenceDraft ? false : (overlay.querySelector('#fWeekendSat') ? overlay.querySelector('#fWeekendSat').checked : false);
+    const draftWeekendSun = isAbsenceDraft ? false : (overlay.querySelector('#fWeekendSun') ? overlay.querySelector('#fWeekendSun').checked : false);
+    const draft = {
+      title: draftTitle || '(제목 없음)', project: selProject || '', workType: isAbsenceDraft ? '' : selWorkType,
+      assignees: selAssignees, status: selStatus, startDate: draftStart, endDate: draftEnd,
+      resourceLinks: draftResourceLinks, referenceLinks: draftReferenceLinks, memo: draftResourceLinks[0]||'',
+      referenceLink: draftReferenceLinks[0]||'', sb: draftSB, spec: draftSpec,
+      resourceDeadline: draftResourceDeadline, weekendSat: draftWeekendSat, weekendSun: draftWeekendSun
+    };
+    exportTicketsToCSV([draft], `티켓_${draftTitle||'제목없음'}_${csvFilenameTimestamp()}.csv`);
+  };
+
   if(t){
     const copyLinkBtn = overlay.querySelector('#mCopyLink');
     if(copyLinkBtn){
@@ -2055,6 +3019,7 @@ function openModal(id, presetProject){
     const memo = resourceLinks[0] || '';
     const sb = selProject==='부재' ? '' : overlay.querySelector('#fSB').value.trim();
     const resourceDeadline = selProject==='부재' ? '' : overlay.querySelector('#fResourceDeadline').value;
+    const resourceCheckNeeded = selProject==='부재' ? false : (overlay.querySelector('#fResourceCheckNeeded') ? overlay.querySelector('#fResourceCheckNeeded').checked : false);
     const spec = selProject==='부재' ? '' : overlay.querySelector('#fSpec').value.trim();
     const referenceLinks = selProject==='부재' ? [] : Array.from(overlay.querySelectorAll('#referenceInputs input')).map(x=>x.value.trim()).filter(Boolean);
     const referenceLink = referenceLinks[0] || '';
@@ -2102,6 +3067,7 @@ function openModal(id, presetProject){
       startDate:start, endDate:end,
       actualEndDate: (!isAbsenceSave && selStatus==='완료') ? (actualEnd||null) : null,
       memo, resourceLinks: isAbsenceSave ? [] : resourceLinks, sb: isAbsenceSave ? '' : sb, resourceDeadline: (isAbsenceSave || !resourceDeadline) ? null : resourceDeadline,
+      resourceCheckNeeded: isAbsenceSave ? false : !!resourceCheckNeeded,
       spec: isAbsenceSave ? '' : spec, referenceLink: isAbsenceSave ? '' : referenceLink, referenceLinks: isAbsenceSave ? [] : referenceLinks,
       weekendSat: isAbsenceSave ? false : !!weekendSat, weekendSun: isAbsenceSave ? false : !!weekendSun,
       weekendWork: false, qty: isAbsenceSave ? 1 : qty, updatedAt:now
@@ -2160,6 +3126,8 @@ function openTicketFromSharedUrl(){
 }
 
 /* ============================= 초기화 ============================= */
+wireDeviceModeToggle();
+
 (async function init(){
   const loadingText = document.getElementById('loadingVeil');
   const slowHintTimer = setTimeout(()=>{
