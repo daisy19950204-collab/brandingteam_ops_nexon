@@ -378,14 +378,15 @@
   .mobile-topbar-right{flex:none; display:flex; align-items:center; gap:6px;}
   .mobile-date-nav{display:flex; align-items:center; gap:8px;}
   .mobile-nav-btn{
-    width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:#fff;
-    font-size:14px; color:var(--text-dim); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    width:28px; height:28px; border-radius:8px; border:none; background:var(--accent); color:#fff;
+    font-size:15px; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
-  .mobile-nav-btn:hover{background:var(--bg);}
+  .mobile-nav-btn:hover{background:var(--accent-dark);}
   .mobile-date-label{font-size:13.5px; font-weight:800; min-width:60px; text-align:center; display:flex; align-items:center; gap:6px; justify-content:center;}
   .mobile-today-chip{
     background:var(--accent); color:#fff; border-radius:10px; padding:1px 7px; font-size:9.5px; font-weight:800;
   }
+  .mobile-today-chip.chip-hidden{visibility:hidden;}
   .mobile-today-goto-btn{
     border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent-dark); border-radius:8px;
     padding:5px 9px; font-size:10.5px; font-weight:800; cursor:pointer; margin-left:2px;
@@ -459,28 +460,47 @@
   .mobile-month-legend-item{display:flex; align-items:center; gap:3px;}
   .mobile-month-dow-row{
     flex:none; display:grid; grid-template-columns:repeat(7,1fr); font-size:10px; color:var(--text-faint);
-    text-align:center; margin-bottom:4px;
+    text-align:center; margin-bottom:3px;
   }
-  .mobile-month-grid{
-    flex:1; min-height:0; display:grid; grid-template-columns:repeat(7,1fr); grid-template-rows:repeat(6,1fr); gap:3px;
+  .mobile-month-weeks{
+    flex:1; min-height:0; display:flex; flex-direction:column; gap:2px;
   }
-  .mobile-month-cell{
-    position:relative; border-radius:7px; background:var(--panel); border:1px solid var(--border);
-    display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; padding:3px;
-    font-size:10px; cursor:pointer;
+  .mobile-month-week{
+    flex:1; min-height:0; position:relative; display:grid;
+    grid-template-columns:repeat(7,1fr); grid-template-rows:13px repeat(4,1fr);
+    background:var(--border); gap:1px; border-radius:4px; overflow:hidden;
   }
-  .mobile-month-cell.out-month{opacity:.35;}
-  .mobile-month-cell.today{background:var(--accent); border-color:var(--accent);}
-  .mobile-month-cell.today .mmc-num{color:#fff;}
-  .mmc-num{font-weight:800; font-size:10.5px; flex:none;}
-  .mmc-worker-bars{
-    margin-top:auto; width:100%; display:flex; flex-direction:column; gap:1.5px;
+  .mmw-bg{background:var(--panel); cursor:pointer;}
+  .mmw-bg.out-month{background:var(--bg); opacity:.45;}
+  .mmw-bg.today{background:var(--accent-soft);}
+  .mmw-num{
+    font-size:8.5px; font-weight:800; color:var(--text-dim); padding:1px 0 0 3px; pointer-events:none; z-index:2;
   }
-  .mmc-worker-bar{height:3px; width:100%; border-radius:2px;}
-  .mmc-holiday-mark{
-    margin-top:auto; width:100%; text-align:center; color:var(--text-faint); font-size:13px; font-weight:900;
+  .mmw-bar{border-radius:3px; pointer-events:none; z-index:1; margin:0 1px;}
+  .mmw-holiday{
+    display:flex; align-items:center; justify-content:center; font-size:19px; pointer-events:none; z-index:1;
   }
-  .mobile-month-cell.today .mmc-holiday-mark{color:#fff;}
+
+  .mobile-day-popup-backdrop{
+    position:absolute; inset:0; background:rgba(20,22,26,.55); z-index:40;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .mobile-day-popup{
+    width:92%; height:88%; background:var(--bg); border-radius:18px; box-shadow:0 20px 50px rgba(0,0,0,.4);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .mobile-day-popup-head{
+    flex:none; padding:13px; text-align:center; font-size:14px; font-weight:800;
+    background:var(--panel); border-bottom:1px solid var(--border);
+  }
+  .mobile-day-popup-body{flex:1; min-height:0; display:flex; flex-direction:column; gap:7px; padding:9px 10px; overflow-y:auto;}
+  .mobile-day-popup-close{
+    flex:none; margin:10px auto 14px; width:44px; height:44px; border-radius:50%; border:none;
+    background:var(--danger); color:#fff; font-size:17px; font-weight:800; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.25);
+  }
+  .mobile-day-popup-close:hover{background:#a83232;}
+
 
   .mobile-ticket-card{
     background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:11px 13px; margin-bottom:9px; cursor:pointer;
@@ -708,6 +728,7 @@ let mobileSearchWorkerFilter = null;
 let mobileAbsenceWorkerFilter = null;
 let mobileAbsenceHideShared = false;
 let mobileMonthAnchor = null; // 모바일 월간 보기용 기준 월 (Date), 초기화 시 이번 달로 세팅
+let mobileDayPopupDate = null; // 월간 보기에서 날짜를 탭했을 때, 그 날짜의 일별 일정을 보여주는 팝업 (null이면 닫힘)
 
 /* ============================= 날짜 유틸 ============================= */
 function parseISO(s){ return new Date(s+'T00:00:00'); }
@@ -1461,7 +1482,9 @@ function mobileDateLabelHtml(){
   const d = parseISO(mobileBoardDate);
   const label = `${d.getMonth()+1}.${d.getDate()}(${DOW_LABEL[d.getDay()]})`;
   const isToday = mobileBoardDate === todayISO();
-  return `<span>${label}</span>${isToday ? `<span class="mobile-today-chip">오늘</span>` : ''}`;
+  // '오늘' 칩은 항상 자리를 차지하도록 렌더링하고 today가 아닐 때만 안 보이게 해서,
+  // 오늘로 이동했을 때 폭이 바뀌어 우측 화살표가 밀리는 현상을 막는다.
+  return `<span>${label}</span><span class="mobile-today-chip ${isToday?'':'chip-hidden'}">오늘</span>`;
 }
 
 // 모바일 일간 보드에서, 주말 출근 체크가 안 된 일반 티켓은 주말에는 표시하지 않는다 (부재는 예외 없이 항상 표시)
@@ -1478,8 +1501,8 @@ function renderMobileTicketChip(t){
   return `<div class="mobile-ticket-chip ${isAbsence?'absence-bar':''} ${status==='완료'?'mobile-chip-done':''}" data-id="${t.id}" style="background:${color};" title="${escapeHtml(t.title)}">${needsResourceCheck?'❗ ':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}[${escapeHtml(t.project)}] ${escapeHtml(t.title)}</div>`;
 }
 
-function renderMobileBoardRows(){
-  const date = mobileBoardDate;
+function renderMobileBoardRows(dateISO){
+  const date = dateISO || mobileBoardDate;
   const dateObj = parseISO(date);
   return WORKERS.map(w=>{
     const dayTickets = TICKETS.filter(t=> t.assignees.includes(w) && t.startDate<=date && t.endDate>=date && isTicketVisibleOnMobileDate(t, dateObj))
@@ -1516,29 +1539,58 @@ function renderMobileMonthGrid(){
   const startOfGrid = addDays(firstOfMonth, -firstOfMonth.getDay());
   const today = todayISO();
 
-  const cells = [];
+  const weeks = [];
   let cur = startOfGrid;
-  for(let i=0;i<42;i++){
-    const iso = toISO(cur);
-    const inMonth = cur.getMonth()===month;
-    const cls = ['mobile-month-cell'];
-    if(!inMonth) cls.push('out-month');
-    if(iso===today) cls.push('today');
-
-    const isHoliday = mobileIsCompanyWideHoliday(iso);
-    const bodyHtml = isHoliday
-      ? `<span class="mmc-holiday-mark" title="전체 휴가(공휴일)">✓</span>`
-      : `<span class="mmc-worker-bars">${WORKERS.map(w=>{
-          const active = mobileWorkerHasWorkOnDate(w, iso, cur);
-          return `<span class="mmc-worker-bar" style="background:${active?WORKER_COLORS[w]:'transparent'};"></span>`;
-        }).join('')}</span>`;
-
-    cells.push(`<div class="${cls.join(' ')}" data-date="${iso}">
-      <span class="mmc-num">${cur.getDate()}</span>
-      ${bodyHtml}
-    </div>`);
-    cur = addDays(cur, 1);
+  for(let w=0; w<6; w++){
+    const week = [];
+    for(let d=0; d<7; d++){ week.push(cur); cur = addDays(cur, 1); }
+    weeks.push(week);
   }
+
+  const weeksHtml = weeks.map(week=>{
+    // 날짜별 배경 셀 (탭하면 그 날짜의 일별 일정 팝업이 뜸)
+    const bgCells = week.map((d,i)=>{
+      const iso = toISO(d);
+      const inMonth = d.getMonth()===month;
+      const cls = ['mmw-bg'];
+      if(!inMonth) cls.push('out-month');
+      if(iso===today) cls.push('today');
+      return `<div class="${cls.join(' ')}" data-date="${iso}" style="grid-column:${i+1}; grid-row:1 / span 5;"></div>`;
+    }).join('');
+
+    const numCells = week.map((d,i)=> `<div class="mmw-num" style="grid-column:${i+1}; grid-row:1;">${d.getDate()}</div>`).join('');
+
+    // 전체 휴가(공휴일)인 날은 색상 바 대신 큰 야자수 아이콘
+    const holidayCells = week.map((d,i)=>{
+      const iso = toISO(d);
+      if(!mobileIsCompanyWideHoliday(iso)) return '';
+      return `<div class="mmw-holiday" style="grid-column:${i+1}; grid-row:2 / span 4;" title="전체 휴가">🌴</div>`;
+    }).join('');
+
+    // 담당자별로 이 주(week) 안에서 연속된 근무일 구간을 찾아 하나의 이어진 바로 표시
+    const runs = [];
+    WORKERS.forEach((w, wi)=>{
+      let runStart = null;
+      for(let i=0;i<=7;i++){
+        const d = i<7 ? week[i] : null;
+        const iso = d ? toISO(d) : null;
+        const holiday = d ? mobileIsCompanyWideHoliday(iso) : true;
+        const active = d && !holiday && mobileWorkerHasWorkOnDate(w, iso, d);
+        if(active){
+          if(runStart===null) runStart = i;
+        } else if(runStart!==null){
+          runs.push({wi, start:runStart, end:i-1});
+          runStart = null;
+        }
+      }
+    });
+    const barsHtml = runs.map(r=>{
+      const color = WORKER_COLORS[WORKERS[r.wi]] || '#999';
+      return `<div class="mmw-bar" style="grid-column:${r.start+1} / ${r.end+2}; grid-row:${2+r.wi}; background:${color};"></div>`;
+    }).join('');
+
+    return `<div class="mobile-month-week">${bgCells}${barsHtml}${holidayCells}${numCells}</div>`;
+  }).join('');
 
   return `
     <div class="mobile-month-header">
@@ -1548,10 +1600,25 @@ function renderMobileMonthGrid(){
     </div>
     <div class="mobile-month-legend">
       ${WORKERS.map(w=>`<span class="mobile-month-legend-item">${workerDot(w)}${w}</span>`).join('')}
-      <span class="mobile-month-legend-item"><span class="mmc-holiday-mark" style="position:static; display:inline-block;">✓</span>전체 휴가</span>
+      <span class="mobile-month-legend-item">🌴 전체 휴가</span>
     </div>
     <div class="mobile-month-dow-row">${DOW_LABEL.map(d=>`<div>${d}</div>`).join('')}</div>
-    <div class="mobile-month-grid">${cells.join('')}</div>
+    <div class="mobile-month-weeks">${weeksHtml}</div>
+  `;
+}
+
+function renderMobileDayPopup(){
+  if(!mobileDayPopupDate) return '';
+  const d = parseISO(mobileDayPopupDate);
+  const label = `${d.getMonth()+1}.${d.getDate()}(${DOW_LABEL[d.getDay()]})`;
+  return `
+    <div class="mobile-day-popup-backdrop" id="mobileDayPopupBackdrop">
+      <div class="mobile-day-popup">
+        <div class="mobile-day-popup-head">${label} 일정</div>
+        <div class="mobile-day-popup-body">${renderMobileBoardRows(mobileDayPopupDate)}</div>
+        <button type="button" class="mobile-day-popup-close" id="mobileDayPopupClose">✕</button>
+      </div>
+    </div>
   `;
 }
 
@@ -1748,6 +1815,7 @@ function renderMobileApp(){
           <div class="mobile-menu-cancel" id="mobileMenuCancel">닫기</div>
         </div>
       </div>
+      ${renderMobileDayPopup()}
     </div>
   `;
   wireMobileApp();
@@ -1775,13 +1843,18 @@ function wireMobileApp(){
     mobileMonthAnchor = new Date(a.getFullYear(), a.getMonth()+1, 1);
     renderApp();
   };
-  app.querySelectorAll('.mobile-month-cell[data-date]').forEach(cell=>{
+  app.querySelectorAll('.mmw-bg[data-date]').forEach(cell=>{
     cell.onclick = ()=>{
-      mobileBoardDate = cell.dataset.date;
-      mobileView = 'day';
+      mobileDayPopupDate = cell.dataset.date;
       renderApp();
     };
   });
+  const popupBackdrop = app.querySelector('#mobileDayPopupBackdrop');
+  if(popupBackdrop){
+    popupBackdrop.addEventListener('mousedown', (e)=>{ if(e.target===popupBackdrop){ mobileDayPopupDate = null; renderApp(); } });
+  }
+  const popupClose = app.querySelector('#mobileDayPopupClose');
+  if(popupClose) popupClose.onclick = ()=>{ mobileDayPopupDate = null; renderApp(); };
 
   wireMobileTicketCardClicks(app);
 
