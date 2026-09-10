@@ -2829,13 +2829,18 @@ function renderDashboard(){
       <thead><tr>
         <th>${rowHeader}</th>
         ${types.map(wt=>`<th>${WORK_TYPE_ICONS[wt]} ${wt}</th>`).join('')}
+        <th style="background:var(--accent-soft); color:var(--accent-dark); white-space:nowrap;">총 티켓 수</th>
       </tr></thead>
       <tbody>
-        ${rows.map(r=>`
+        ${rows.map(r=>{
+          const rowTotal = types.reduce((s,wt)=> s + (parseInt(r.counts[wt],10)||0), 0);
+          return `
           <tr>
             <td><b>${r.label}</b></td>
             ${types.map(wt=>`<td>${r.counts[wt]||'-'}</td>`).join('')}
-          </tr>`).join('')}
+            <td style="background:var(--accent-soft); color:var(--accent-dark); font-weight:800; text-align:center;">${rowTotal}</td>
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>`;
   }
@@ -2897,6 +2902,7 @@ function renderDashboard(){
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:2px;">
         <p class="card-title" style="margin-bottom:0;">작업자별 · 유형별 티켓 수</p>
+        <span style="background:var(--accent); color:#fff; font-weight:800; font-size:12.5px; padding:4px 12px; border-radius:16px; white-space:nowrap;">총 ${workerTickets.reduce((s,t)=>s+(t.qty||1),0)}건</span>
         <div class="range-nav" style="gap:4px;">
           <button class="range-btn" id="workerCardPrev">‹</button>
           <div class="range-label" style="min-width:auto; width:auto; font-size:12.5px; white-space:nowrap;">${workerMonthLabel}</div>
@@ -2909,6 +2915,7 @@ function renderDashboard(){
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:2px;">
         <p class="card-title" style="margin-bottom:0;">프로젝트별 · 유형별 티켓 수</p>
+        <span style="background:var(--accent); color:#fff; font-weight:800; font-size:12.5px; padding:4px 12px; border-radius:16px; white-space:nowrap;">총 ${projectMonthTickets.reduce((s,t)=>s+(t.qty||1),0)}건</span>
         <div class="range-nav" style="gap:4px;">
           <button class="range-btn" id="projectCardPrev">‹</button>
           <div class="range-label" style="min-width:auto; width:auto; font-size:12.5px; white-space:nowrap;">${projectMonthLabel}</div>
@@ -3847,7 +3854,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
       let days = businessDaysBetween(effectiveStart, e);
       if(sat && rangeIncludesWeekday(effectiveStart, e, 6)) days += 1;
       if(sun && rangeIncludesWeekday(effectiveStart, e, 0)) days += 1;
-      el.textContent = fmtDays(Math.max(days, 1)) + '일';
+      el.textContent = fmtDays(days) + '일'; // 주말만 있는 기간에 주말 근무 체크 없으면 0일
     }
     else { el.textContent = '-'; }
   }
