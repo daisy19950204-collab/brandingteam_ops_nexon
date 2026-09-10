@@ -363,21 +363,40 @@
     position:relative;
     display:flex; flex-direction:column;
   }
+  /* ---------- 모바일 전체화면(몰입) 모드: 여백/테두리/PC·모바일 전환 버튼 없이 화면에 딱 맞춤 ---------- */
+  body.mobile-immersive{overflow:hidden; position:fixed; inset:0; width:100%; height:100%;}
+  body.mobile-immersive .device-mode-toggle{display:none;}
+  body.mobile-immersive #app{padding:0 !important;}
+  .mobile-frame.immersive{
+    width:100vw; height:100vh; max-height:none; aspect-ratio:auto;
+    border-radius:0; border:none; box-shadow:none;
+  }
   .mobile-topbar{
     flex:none; display:flex; align-items:center; justify-content:space-between;
     padding:12px 12px 10px; background:var(--panel); border-bottom:1px solid var(--border);
   }
+  .mobile-topbar-right{flex:none; display:flex; align-items:center; gap:6px;}
   .mobile-date-nav{display:flex; align-items:center; gap:8px;}
   .mobile-nav-btn{
     width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:#fff;
     font-size:14px; color:var(--text-dim); display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   .mobile-nav-btn:hover{background:var(--bg);}
-  .mobile-date-label{font-size:13.5px; font-weight:800; min-width:104px; text-align:center; display:flex; align-items:center; gap:6px; justify-content:center;}
-  .mobile-today-btn{
-    border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent-dark); border-radius:12px;
-    padding:2px 8px; font-size:10.5px; font-weight:800; cursor:pointer;
+  .mobile-date-label{font-size:13.5px; font-weight:800; min-width:60px; text-align:center; display:flex; align-items:center; gap:6px; justify-content:center;}
+  .mobile-today-chip{
+    background:var(--accent); color:#fff; border-radius:10px; padding:1px 7px; font-size:9.5px; font-weight:800;
   }
+  .mobile-today-goto-btn{
+    border:1px solid var(--accent); background:var(--accent-soft); color:var(--accent-dark); border-radius:8px;
+    padding:5px 9px; font-size:10.5px; font-weight:800; cursor:pointer; margin-left:2px;
+  }
+  .mobile-today-goto-btn:hover{background:var(--accent); color:#fff;}
+  .mobile-expand-btn{
+    width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:#fff; font-size:15px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; color:var(--text-dim);
+  }
+  .mobile-expand-btn:hover{background:var(--bg);}
+  .mobile-expand-btn.active{background:var(--accent); border-color:var(--accent); color:#fff;}
   .mobile-menu-btn{
     width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:#fff; font-size:16px; cursor:pointer;
   }
@@ -424,24 +443,20 @@
     border-bottom:1px solid var(--border);
   }
   .mobile-menu-item:hover{background:var(--bg);}
+  .mobile-menu-item.active{background:var(--accent-soft); color:var(--accent-dark);}
   .mobile-menu-cancel{
     padding:11px 15px; font-size:12px; color:var(--text-faint); text-align:center; cursor:pointer;
   }
 
   .mobile-subview-body{flex:1; overflow-y:auto; padding:12px 14px 24px;}
 
-  .mobile-board-mode-toggle{
-    flex:none; display:flex; gap:6px; margin-bottom:7px;
-  }
-  .mobile-board-mode-btn{
-    flex:1; border:1px solid var(--border); background:#fff; border-radius:8px; padding:6px 0;
-    font-size:11.5px; font-weight:700; color:var(--text-dim); cursor:pointer;
-  }
-  .mobile-board-mode-btn.active{background:var(--accent); color:#fff; border-color:var(--accent);}
-
   .mobile-month-header{
     flex:none; display:flex; align-items:center; justify-content:center; gap:16px; padding:2px 0 8px;
   }
+  .mobile-month-legend{
+    flex:none; display:flex; flex-wrap:wrap; gap:10px; margin-bottom:6px; font-size:9.5px; color:var(--text-dim); font-weight:600;
+  }
+  .mobile-month-legend-item{display:flex; align-items:center; gap:3px;}
   .mobile-month-dow-row{
     flex:none; display:grid; grid-template-columns:repeat(7,1fr); font-size:10px; color:var(--text-faint);
     text-align:center; margin-bottom:4px;
@@ -451,21 +466,21 @@
   }
   .mobile-month-cell{
     position:relative; border-radius:7px; background:var(--panel); border:1px solid var(--border);
-    display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:3px 2px;
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; padding:3px;
     font-size:10px; cursor:pointer;
   }
   .mobile-month-cell.out-month{opacity:.35;}
   .mobile-month-cell.today{background:var(--accent); border-color:var(--accent);}
   .mobile-month-cell.today .mmc-num{color:#fff;}
-  .mmc-num{font-weight:800; font-size:10.5px;}
-  .mmc-count{
-    margin-top:2px; background:var(--accent); color:#fff; font-size:8px; font-weight:800;
-    border-radius:8px; padding:0 4px; line-height:1.4;
+  .mmc-num{font-weight:800; font-size:10.5px; flex:none;}
+  .mmc-worker-bars{
+    margin-top:auto; width:100%; display:flex; flex-direction:column; gap:1.5px;
   }
-  .mobile-month-cell.today .mmc-count{background:#fff; color:var(--accent-dark);}
-  .mmc-absence-dot{
-    position:absolute; bottom:3px; right:3px; width:5px; height:5px; border-radius:50%; background:var(--text-faint);
+  .mmc-worker-bar{height:3px; width:100%; border-radius:2px;}
+  .mmc-holiday-mark{
+    margin-top:auto; width:100%; text-align:center; color:var(--text-faint); font-size:13px; font-weight:900;
   }
+  .mobile-month-cell.today .mmc-holiday-mark{color:#fff;}
 
   .mobile-ticket-card{
     background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:11px 13px; margin-bottom:9px; cursor:pointer;
@@ -685,13 +700,13 @@ let reportEnd = null;
 /* ============================= 모바일 버전 상태 ============================= */
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
-let mobileView = 'board'; // 'board' | 'inprogress' | 'upcoming' | 'search' | 'absence'
+let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
+let mobileView = 'day'; // 'day' | 'month' | 'inprogress' | 'upcoming' | 'search' | 'absence'
 let mobileBoardDate = null; // 초기화 시 오늘 날짜로 세팅 (todayISO 정의 이후)
 let mobileSearchText = '';
 let mobileSearchWorkerFilter = null;
 let mobileAbsenceWorkerFilter = null;
 let mobileAbsenceHideShared = false;
-let mobileBoardMode = 'day'; // 모바일 일정 보드: 'day' | 'month'
 let mobileMonthAnchor = null; // 모바일 월간 보기용 기준 월 (Date), 초기화 시 이번 달로 세팅
 
 /* ============================= 날짜 유틸 ============================= */
@@ -1351,6 +1366,7 @@ function highlightTicketBars(ticketId){
 function renderApp(){
   syncDeviceModeToggleUI();
   document.body.classList.toggle('mobile-preview', deviceMode==='mobile');
+  document.body.classList.toggle('mobile-immersive', deviceMode==='mobile' && mobileImmersive);
   if(deviceMode==='mobile'){ renderMobileApp(); return; }
   renderPCApp();
 }
@@ -1419,8 +1435,10 @@ function wireDeviceModeToggle(){
       deviceMode = btn.dataset.mode;
       if(deviceMode === 'mobile'){
         mobileMenuOpen = false;
-        mobileView = 'board';
+        mobileView = 'day';
         if(!mobileBoardDate) mobileBoardDate = todayISO();
+      } else {
+        setMobileImmersive(false); // PC로 돌아가면 몰입 모드는 해제
       }
       renderApp();
     };
@@ -1428,12 +1446,22 @@ function wireDeviceModeToggle(){
   syncDeviceModeToggleUI();
 }
 
+function setMobileImmersive(on){
+  mobileImmersive = on;
+  const meta = document.querySelector('meta[name="viewport"]');
+  if(meta){
+    meta.setAttribute('content', on
+      ? 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+      : 'width=device-width, initial-scale=1.0');
+  }
+}
+
 /* ============================= 모바일 버전 ============================= */
 function mobileDateLabelHtml(){
   const d = parseISO(mobileBoardDate);
   const label = `${d.getMonth()+1}.${d.getDate()}(${DOW_LABEL[d.getDay()]})`;
   const isToday = mobileBoardDate === todayISO();
-  return `<span>${label}</span>${isToday ? '' : `<button type="button" class="mobile-today-btn" id="mobileTodayBtn">오늘</button>`}`;
+  return `<span>${label}</span>${isToday ? `<span class="mobile-today-chip">오늘</span>` : ''}`;
 }
 
 // 모바일 일간 보드에서, 주말 출근 체크가 안 된 일반 티켓은 주말에는 표시하지 않는다 (부재는 예외 없이 항상 표시)
@@ -1472,6 +1500,15 @@ function renderMobileBoardRows(){
   }).join('');
 }
 
+// 그 날짜에 해당 담당자의 '작업'(부재 제외) 티켓이 있는지, 주말 출근 체크 규칙까지 반영해서 확인
+function mobileWorkerHasWorkOnDate(worker, iso, dateObj){
+  return TICKETS.some(t=> t.project!=='부재' && t.assignees.includes(worker) && t.startDate<=iso && t.endDate>=iso && isWorkingDayForTicket(dateObj, t));
+}
+// 담당자 전원이 걸린 부재(공휴일 등 전체 휴가)인지 확인
+function mobileIsCompanyWideHoliday(iso){
+  return TICKETS.some(t=> t.project==='부재' && t.assignees && t.assignees.length===WORKERS.length && t.startDate<=iso && t.endDate>=iso);
+}
+
 function renderMobileMonthGrid(){
   if(!mobileMonthAnchor) mobileMonthAnchor = new Date();
   const year = mobileMonthAnchor.getFullYear(), month = mobileMonthAnchor.getMonth();
@@ -1484,15 +1521,21 @@ function renderMobileMonthGrid(){
   for(let i=0;i<42;i++){
     const iso = toISO(cur);
     const inMonth = cur.getMonth()===month;
-    const count = TICKETS.filter(t=> t.project!=='부재' && t.startDate<=iso && t.endDate>=iso && isTicketVisibleOnMobileDate(t, cur)).length;
-    const hasAbsence = TICKETS.some(t=> t.project==='부재' && t.startDate<=iso && t.endDate>=iso);
     const cls = ['mobile-month-cell'];
     if(!inMonth) cls.push('out-month');
     if(iso===today) cls.push('today');
+
+    const isHoliday = mobileIsCompanyWideHoliday(iso);
+    const bodyHtml = isHoliday
+      ? `<span class="mmc-holiday-mark" title="전체 휴가(공휴일)">✓</span>`
+      : `<span class="mmc-worker-bars">${WORKERS.map(w=>{
+          const active = mobileWorkerHasWorkOnDate(w, iso, cur);
+          return `<span class="mmc-worker-bar" style="background:${active?WORKER_COLORS[w]:'transparent'};"></span>`;
+        }).join('')}</span>`;
+
     cells.push(`<div class="${cls.join(' ')}" data-date="${iso}">
       <span class="mmc-num">${cur.getDate()}</span>
-      ${count ? `<span class="mmc-count">${count}</span>` : ''}
-      ${hasAbsence ? `<span class="mmc-absence-dot"></span>` : ''}
+      ${bodyHtml}
     </div>`);
     cur = addDays(cur, 1);
   }
@@ -1502,6 +1545,10 @@ function renderMobileMonthGrid(){
       <button type="button" class="mobile-nav-btn" id="mPrevMonth">‹</button>
       <div class="mobile-date-label">${year}.${String(month+1).padStart(2,'0')}</div>
       <button type="button" class="mobile-nav-btn" id="mNextMonth">›</button>
+    </div>
+    <div class="mobile-month-legend">
+      ${WORKERS.map(w=>`<span class="mobile-month-legend-item">${workerDot(w)}${w}</span>`).join('')}
+      <span class="mobile-month-legend-item"><span class="mmc-holiday-mark" style="position:static; display:inline-block;">✓</span>전체 휴가</span>
     </div>
     <div class="mobile-month-dow-row">${DOW_LABEL.map(d=>`<div>${d}</div>`).join('')}</div>
     <div class="mobile-month-grid">${cells.join('')}</div>
@@ -1634,41 +1681,28 @@ function renderMobileAbsenceView(){
   `;
 }
 
-const MOBILE_VIEW_TITLES = { board:'일정 보드', inprogress:'진행중인 티켓', upcoming:'진행 예정인 티켓', search:'티켓 검색', absence:'부재 관리' };
+const MOBILE_VIEW_TITLES = { day:'일별 일정', month:'월별 일정', inprogress:'진행중인 티켓', upcoming:'진행 예정인 티켓', search:'티켓 검색', absence:'부재 관리' };
 
 function renderMobileTopbarLeft(){
-  if(mobileView === 'board'){
-    if(mobileBoardMode === 'month'){
-      return `<div class="mobile-date-label">📅 월간 보기</div>`;
-    }
+  if(mobileView === 'day'){
     return `
       <div class="mobile-date-nav">
         <button type="button" class="mobile-nav-btn" id="mPrevDay">‹</button>
         <div class="mobile-date-label">${mobileDateLabelHtml()}</div>
         <button type="button" class="mobile-nav-btn" id="mNextDay">›</button>
+        <button type="button" class="mobile-today-goto-btn" id="mobileTodayBtn">오늘로</button>
       </div>`;
   }
-  return `
-    <div class="mobile-date-nav">
-      <button type="button" class="mobile-nav-btn" id="mobileBackBtn">←</button>
-      <div class="mobile-date-label">${MOBILE_VIEW_TITLES[mobileView] || ''}</div>
-    </div>`;
-}
-
-function renderMobileBoardArea(){
-  return `
-    <div class="mobile-board" id="mobileBoardArea">
-      <div class="mobile-board-mode-toggle">
-        <button type="button" class="mobile-board-mode-btn ${mobileBoardMode==='day'?'active':''}" data-boardmode="day">일간</button>
-        <button type="button" class="mobile-board-mode-btn ${mobileBoardMode==='month'?'active':''}" data-boardmode="month">월간</button>
-      </div>
-      ${mobileBoardMode==='day' ? renderMobileBoardRows() : renderMobileMonthGrid()}
-    </div>
-  `;
+  return `<div class="mobile-date-label">${MOBILE_VIEW_TITLES[mobileView] || ''}</div>`;
 }
 
 function renderMobileMainArea(){
-  if(mobileView === 'board') return renderMobileBoardArea();
+  if(mobileView === 'day'){
+    return `<div class="mobile-board" id="mobileBoardArea">${renderMobileBoardRows()}</div>`;
+  }
+  if(mobileView === 'month'){
+    return `<div class="mobile-board" id="mobileBoardArea">${renderMobileMonthGrid()}</div>`;
+  }
   let body = '';
   if(mobileView === 'inprogress'){
     const list = TICKETS.filter(t=> ticketStatus(t)==='작업중').sort((a,b)=> a.endDate<b.endDate?-1:1);
@@ -1687,24 +1721,30 @@ function renderMobileMainArea(){
 function renderMobileApp(){
   if(!mobileBoardDate) mobileBoardDate = todayISO();
   const app = document.getElementById('app');
+  const showFab = mobileView === 'day' || mobileView === 'month';
   app.innerHTML = `
-    <div class="mobile-frame">
+    <div class="mobile-frame ${mobileImmersive?'immersive':''}">
       <div class="mobile-topbar">
         ${renderMobileTopbarLeft()}
-        <button type="button" class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div class="mobile-topbar-right">
+          <button type="button" class="mobile-expand-btn ${mobileImmersive?'active':''}" id="mobileExpandBtn" title="${mobileImmersive?'전체화면 종료':'전체화면으로 보기'}">${mobileImmersive?'⤡':'⤢'}</button>
+          <button type="button" class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        </div>
       </div>
       ${renderMobileMainArea()}
-      ${mobileView==='board' ? `
+      ${showFab ? `
       <div class="mobile-fab-row">
         <button type="button" class="mobile-fab secondary" id="mobileAddAbsenceBtn">+ 부재 등록</button>
         <button type="button" class="mobile-fab" id="mobileAddTicketBtn">+ 티켓 등록</button>
       </div>` : ''}
       <div class="mobile-menu-overlay ${mobileMenuOpen?'open':''}" id="mobileMenuOverlay">
         <div class="mobile-menu-sheet">
-          <div class="mobile-menu-item" data-view="inprogress">🟢 진행중인 티켓</div>
-          <div class="mobile-menu-item" data-view="upcoming">🕒 진행 예정인 티켓</div>
-          <div class="mobile-menu-item" data-view="search">🔍 티켓 검색</div>
-          <div class="mobile-menu-item" data-view="absence">🌴 부재 관리</div>
+          <div class="mobile-menu-item ${mobileView==='day'?'active':''}" data-view="day">📆 일별 일정</div>
+          <div class="mobile-menu-item ${mobileView==='month'?'active':''}" data-view="month">🗓 월별 일정</div>
+          <div class="mobile-menu-item ${mobileView==='inprogress'?'active':''}" data-view="inprogress">🟢 진행중인 티켓</div>
+          <div class="mobile-menu-item ${mobileView==='upcoming'?'active':''}" data-view="upcoming">🕒 진행 예정인 티켓</div>
+          <div class="mobile-menu-item ${mobileView==='search'?'active':''}" data-view="search">🔍 티켓 검색</div>
+          <div class="mobile-menu-item ${mobileView==='absence'?'active':''}" data-view="absence">🌴 부재 관리</div>
           <div class="mobile-menu-cancel" id="mobileMenuCancel">닫기</div>
         </div>
       </div>
@@ -1723,9 +1763,6 @@ function wireMobileApp(){
   const todayBtn = app.querySelector('#mobileTodayBtn');
   if(todayBtn) todayBtn.onclick = ()=>{ mobileBoardDate = todayISO(); renderApp(); };
 
-  app.querySelectorAll('.mobile-board-mode-btn').forEach(btn=>{
-    btn.onclick = ()=>{ mobileBoardMode = btn.dataset.boardmode; renderApp(); };
-  });
   const prevMonthBtn = app.querySelector('#mPrevMonth');
   if(prevMonthBtn) prevMonthBtn.onclick = ()=>{
     const a = mobileMonthAnchor || new Date();
@@ -1741,7 +1778,7 @@ function wireMobileApp(){
   app.querySelectorAll('.mobile-month-cell[data-date]').forEach(cell=>{
     cell.onclick = ()=>{
       mobileBoardDate = cell.dataset.date;
-      mobileBoardMode = 'day';
+      mobileView = 'day';
       renderApp();
     };
   });
@@ -1752,6 +1789,9 @@ function wireMobileApp(){
   if(addTicketBtn) addTicketBtn.onclick = ()=> openModal(null);
   const addAbsenceBtn = app.querySelector('#mobileAddAbsenceBtn');
   if(addAbsenceBtn) addAbsenceBtn.onclick = ()=> openModal(null, '부재');
+
+  const expandBtn = app.querySelector('#mobileExpandBtn');
+  if(expandBtn) expandBtn.onclick = ()=>{ setMobileImmersive(!mobileImmersive); renderApp(); };
 
   const menuBtn = app.querySelector('#mobileMenuBtn');
   if(menuBtn) menuBtn.onclick = ()=>{ mobileMenuOpen = true; renderApp(); };
@@ -1768,9 +1808,6 @@ function wireMobileApp(){
       renderApp();
     };
   });
-
-  const backBtn = app.querySelector('#mobileBackBtn');
-  if(backBtn) backBtn.onclick = ()=>{ mobileView = 'board'; renderApp(); };
 
   // 티켓 검색 서브뷰
   const mSearchInput = app.querySelector('#mobileSearchInput');
