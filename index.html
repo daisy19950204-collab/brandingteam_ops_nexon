@@ -1523,13 +1523,36 @@ function renderMobileBoardRows(dateISO){
   }).join('');
 }
 
-// 그 날짜에 해당 담당자의 '작업'(부재 제외) 티켓이 있는지, 주말 출근 체크 규칙까지 반영해서 확인
-function mobileWorkerHasWorkOnDate(worker, iso, dateObj){
-  return TICKETS.some(t=> t.project!=='부재' && t.assignees.includes(worker) && t.startDate<=iso && t.endDate>=iso && isWorkingDayForTicket(dateObj, t));
+// 그 날짜에 해당 담당자에게 적용되는(부재 제외, 주말 출근 체크 반영) 티켓 id 목록
+function mobileWorkerTicketIdsOnDate(worker, iso, dateObj){
+  return TICKETS.filter(t=> t.project!=='부재' && t.assignees.includes(worker) && t.startDate<=iso && t.endDate>=iso && isWorkingDayForTicket(dateObj, t)).map(t=>t.id);
 }
 // 담당자 전원이 걸린 부재(공휴일 등 전체 휴가)인지 확인
 function mobileIsCompanyWideHoliday(iso){
   return TICKETS.some(t=> t.project==='부재' && t.assignees && t.assignees.length===WORKERS.length && t.startDate<=iso && t.endDate>=iso);
+}
+// hex 색상을 밝게(+percent) 또는 어둡게(-percent) 조정
+function shadeHexColor(hex, percent){
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num>>16)&0xFF, g=(num>>8)&0xFF, b=num&0xFF;
+  if(percent >= 0){
+    r = r + (255-r)*percent/100;
+    g = g + (255-g)*percent/100;
+    b = b + (255-b)*percent/100;
+  } else {
+    const p = -percent;
+    r = r*(1-p/100);
+    g = g*(1-p/100);
+    b = b*(1-p/100);
+  }
+  const clamp = v=> Math.max(0, Math.min(255, Math.round(v)));
+  return `#${clamp(r).toString(16).padStart(2,'0')}${clamp(g).toString(16).padStart(2,'0')}${clamp(b).toString(16).padStart(2,'0')}`;
+}
+// 겹치는 티켓 수에 따라 담당자 기본색의 톤을 달리한다 (1개=연한 톤, 2개=기본 톤, 3개 이상=진한 톤)
+function mobileOverlapShade(baseColor, count){
+  if(count <= 1) return shadeHexColor(baseColor, 45);
+  if(count === 2) return baseColor;
+  return shadeHexColor(baseColor, -35);
 }
 
 function renderMobileMonthGrid(){
@@ -1567,26 +1590,37 @@ function renderMobileMonthGrid(){
       return `<div class="mmw-holiday" style="grid-column:${i+1}; grid-row:2 / span 4;" title="전체 휴가">🌴</div>`;
     }).join('');
 
-    // 담당자별로 이 주(week) 안에서 연속된 근무일 구간을 찾아 하나의 이어진 바로 표시
-    const runs = [];
+    // 담당자별로, 실제 티켓의 시작일·마감일 경계에서 바를 끊는다.
+    // 겹치는 티켓 구성(집합)이 전날과 완전히 같을 때만 이어붙이고, 하나라도 시작/종료되면 새 구간으로 분리한다.
+    const bars = [];
     WORKERS.forEach((w, wi)=>{
-      let runStart = null;
+      let segStart = null, segKey = null, segCount = 0;
+      const flush = (endIdx)=>{
+        if(segStart===null) return;
+        bars.push({wi, start:segStart, end:endIdx-1, count:segCount});
+        segStart = null; segKey = null; segCount = 0;
+      };
       for(let i=0;i<=7;i++){
         const d = i<7 ? week[i] : null;
         const iso = d ? toISO(d) : null;
         const holiday = d ? mobileIsCompanyWideHoliday(iso) : true;
-        const active = d && !holiday && mobileWorkerHasWorkOnDate(w, iso, d);
-        if(active){
-          if(runStart===null) runStart = i;
-        } else if(runStart!==null){
-          runs.push({wi, start:runStart, end:i-1});
-          runStart = null;
+        const ids = (d && !holiday) ? mobileWorkerTicketIdsOnDate(w, iso, d) : [];
+        const key = ids.length ? ids.slice().sort().join(',') : null;
+        if(key===null){
+          flush(i);
+        } else if(segKey===null){
+          segStart = i; segKey = key; segCount = ids.length;
+        } else if(key!==segKey){
+          flush(i);
+          segStart = i; segKey = key; segCount = ids.length;
         }
+        // key===segKey인 경우: 같은 티켓 구성이 계속 이어지는 중이므로 구간을 그대로 유지
       }
     });
-    const barsHtml = runs.map(r=>{
-      const color = WORKER_COLORS[WORKERS[r.wi]] || '#999';
-      return `<div class="mmw-bar" style="grid-column:${r.start+1} / ${r.end+2}; grid-row:${2+r.wi}; background:${color};"></div>`;
+    const barsHtml = bars.map(r=>{
+      const base = WORKER_COLORS[WORKERS[r.wi]] || '#999';
+      const color = mobileOverlapShade(base, r.count);
+      return `<div class="mmw-bar" style="grid-column:${r.start+1} / ${r.end+2}; grid-row:${2+r.wi}; background:${color};" title="${r.count}건 겹침"></div>`;
     }).join('');
 
     return `<div class="mobile-month-week">${bgCells}${barsHtml}${holidayCells}${numCells}</div>`;
