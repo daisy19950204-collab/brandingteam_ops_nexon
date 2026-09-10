@@ -480,6 +480,7 @@
   .mmw-holiday{
     display:flex; align-items:center; justify-content:center; font-size:19px; pointer-events:none; z-index:1;
   }
+  .mmw-holiday.mmw-holiday-lane{font-size:11px;}
 
   .mobile-day-popup-backdrop{
     position:absolute; inset:0; background:rgba(20,22,26,.55); z-index:40;
@@ -490,14 +491,14 @@
     display:flex; flex-direction:column; overflow:hidden;
   }
   .mobile-day-popup-head{
-    flex:none; padding:13px; text-align:center; font-size:14px; font-weight:800;
-    background:var(--panel); border-bottom:1px solid var(--border);
+    flex:none; padding:12px 10px 12px 14px; display:flex; align-items:center; justify-content:space-between;
+    font-size:14px; font-weight:800; background:var(--panel); border-bottom:1px solid var(--border);
   }
   .mobile-day-popup-body{flex:1; min-height:0; display:flex; flex-direction:column; gap:7px; padding:9px 10px; overflow-y:auto;}
   .mobile-day-popup-close{
-    flex:none; margin:10px auto 14px; width:44px; height:44px; border-radius:50%; border:none;
-    background:var(--danger); color:#fff; font-size:17px; font-weight:800; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.25);
+    flex:none; width:32px; height:32px; border-radius:50%; border:none;
+    background:var(--danger); color:#fff; font-size:15px; font-weight:800; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,.25);
   }
   .mobile-day-popup-close:hover{background:#a83232;}
 
@@ -1531,6 +1532,14 @@ function mobileWorkerTicketIdsOnDate(worker, iso, dateObj){
 function mobileIsCompanyWideHoliday(iso){
   return TICKETS.some(t=> t.project==='부재' && t.assignees && t.assignees.length===WORKERS.length && t.startDate<=iso && t.endDate>=iso);
 }
+// 제목이 '오전/오후 휴가·반차' 같은 반차(半日)인지 확인 (반차가 아니면 전일 휴가로 간주)
+function isHalfDayAbsenceTitle(title){
+  return /(오전|오후)\s*(휴가|반차)/.test(title || '');
+}
+// 해당 담당자가 그 날짜에 '전일(하루 종일)' 개인 부재인지 확인 (반차는 제외, 공통휴가는 별도 처리)
+function mobileWorkerFullDayAbsenceOnDate(worker, iso){
+  return TICKETS.some(t=> t.project==='부재' && t.assignees.includes(worker) && t.startDate<=iso && t.endDate>=iso && !isHalfDayAbsenceTitle(t.title));
+}
 // hex 색상을 밝게(+percent) 또는 어둡게(-percent) 조정
 function shadeHexColor(hex, percent){
   const num = parseInt(hex.slice(1), 16);
@@ -1583,15 +1592,27 @@ function renderMobileMonthGrid(){
 
     const numCells = week.map((d,i)=> `<div class="mmw-num" style="grid-column:${i+1}; grid-row:1;">${d.getDate()}</div>`).join('');
 
-    // 전체 휴가(공휴일)인 날은 색상 바 대신 큰 야자수 아이콘
+    // 전체 휴가(공휴일, 담당자 전원)는 큰 야자수 아이콘 하나로 모든 레인을 덮어 표시
     const holidayCells = week.map((d,i)=>{
       const iso = toISO(d);
       if(!mobileIsCompanyWideHoliday(iso)) return '';
       return `<div class="mmw-holiday" style="grid-column:${i+1}; grid-row:2 / span 4;" title="전체 휴가">🌴</div>`;
     }).join('');
 
+    // 개인 전일 휴가(반차 제외)는 해당 담당자 레인에만 작은 야자수 아이콘으로 표시 (공통휴가인 날은 제외 - 이미 위에서 처리됨)
+    const personalHolidayCells = [];
+    week.forEach((d,i)=>{
+      const iso = toISO(d);
+      if(mobileIsCompanyWideHoliday(iso)) return;
+      WORKERS.forEach((w, wi)=>{
+        if(mobileWorkerFullDayAbsenceOnDate(w, iso)){
+          personalHolidayCells.push(`<div class="mmw-holiday mmw-holiday-lane" style="grid-column:${i+1}; grid-row:${2+wi};" title="${escapeHtml(w)} 휴가">🌴</div>`);
+        }
+      });
+    });
+
     // 담당자별로, 실제 티켓의 시작일·마감일 경계에서 바를 끊는다.
-    // 겹치는 티켓 구성(집합)이 전날과 완전히 같을 때만 이어붙이고, 하나라도 시작/종료되면 새 구간으로 분리한다.
+    // 겹치는 티켓 구성(집합)이 전날과 완전히 같을 때만 이어붙이고, 하나라도 시작/종료되면(전일 개인 휴가로 막히는 경우 포함) 새 구간으로 분리한다.
     const bars = [];
     WORKERS.forEach((w, wi)=>{
       let segStart = null, segKey = null, segCount = 0;
@@ -1603,8 +1624,8 @@ function renderMobileMonthGrid(){
       for(let i=0;i<=7;i++){
         const d = i<7 ? week[i] : null;
         const iso = d ? toISO(d) : null;
-        const holiday = d ? mobileIsCompanyWideHoliday(iso) : true;
-        const ids = (d && !holiday) ? mobileWorkerTicketIdsOnDate(w, iso, d) : [];
+        const blocked = d ? (mobileIsCompanyWideHoliday(iso) || mobileWorkerFullDayAbsenceOnDate(w, iso)) : true;
+        const ids = (d && !blocked) ? mobileWorkerTicketIdsOnDate(w, iso, d) : [];
         const key = ids.length ? ids.slice().sort().join(',') : null;
         if(key===null){
           flush(i);
@@ -1623,7 +1644,7 @@ function renderMobileMonthGrid(){
       return `<div class="mmw-bar" style="grid-column:${r.start+1} / ${r.end+2}; grid-row:${2+r.wi}; background:${color};" title="${r.count}건 겹침"></div>`;
     }).join('');
 
-    return `<div class="mobile-month-week">${bgCells}${barsHtml}${holidayCells}${numCells}</div>`;
+    return `<div class="mobile-month-week">${bgCells}${barsHtml}${personalHolidayCells.join('')}${holidayCells}${numCells}</div>`;
   }).join('');
 
   return `
@@ -1648,9 +1669,12 @@ function renderMobileDayPopup(){
   return `
     <div class="mobile-day-popup-backdrop" id="mobileDayPopupBackdrop">
       <div class="mobile-day-popup">
-        <div class="mobile-day-popup-head">${label} 일정</div>
+        <div class="mobile-day-popup-head">
+          <span style="width:32px;"></span>
+          <span>${label} 일정</span>
+          <button type="button" class="mobile-day-popup-close" id="mobileDayPopupClose">✕</button>
+        </div>
         <div class="mobile-day-popup-body">${renderMobileBoardRows(mobileDayPopupDate)}</div>
-        <button type="button" class="mobile-day-popup-close" id="mobileDayPopupClose">✕</button>
       </div>
     </div>
   `;
