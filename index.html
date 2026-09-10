@@ -621,7 +621,7 @@ const WORKERS = ['심승선','임기백','이유정','이수민'];
 const PROJECTS = ['공통','부재','서든어택','TFD','오버워치','CSO','TF','ARC','낙원','SAZ'];
 const PROJECT_COLORS = {
   '공통':'#5B6472',
-  '부재':'#9C9284',
+  '부재':'#B9A88F',
   '서든어택':'#C0392B',
   'TFD':'#7C4DBF',
   '오버워치':'#2E6FCC',
@@ -748,7 +748,7 @@ function persistenceAvailable(){
   return !!firestoreDb || storageAvailable();
 }
 const DOW_LABEL = ['일','월','화','수','목','금','토'];
-const WORK_TYPES = ['라이브','오프라인 촬영','롱폼','숏폼','기획','이미지','언리얼','etc'];
+const WORK_TYPES = ['라이브','오프라인 촬영','기획','이미지','롱폼','숏폼','언리얼','etc'];
 const WORK_TYPE_ICONS = {
   '라이브':'📡',
   '오프라인 촬영':'🎥',
@@ -767,7 +767,7 @@ const WORK_TYPE_COLORS = {
   '기획':'#F0E29A',
   '이미지':'#A9D9B8',
   '언리얼':'#CBB4E8',
-  'etc':'#C9CFD8'
+  'etc':'#D8C3A5'
 };
 const NO_TYPE_COLOR = '#DBD5CD';
 const ABSENCE_FILTER_KEY = '__ABSENCE__'; // 상단 범례의 '부재' 칩 클릭 필터용 특수 키
@@ -3174,7 +3174,7 @@ function renderSearchResults(){
             <td style="cursor:pointer;">${renderResourceCell(t)}</td>
             <td style="cursor:pointer;">${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
             <td style="cursor:pointer;">${renderResourceField(t.sb)}</td>
-            <td style="cursor:pointer;">${t.spec?escapeHtml(t.spec):'-'}</td>
+            <td style="cursor:pointer; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${t.spec?escapeHtml(t.spec):''}">${t.spec?escapeHtml(t.spec):'-'}</td>
           </tr>`;
         }).join('')}
       </tbody>
