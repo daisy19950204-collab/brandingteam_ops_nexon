@@ -751,7 +751,7 @@ function persistenceAvailable(){
   return !!firestoreDb || storageAvailable();
 }
 const DOW_LABEL = ['일','월','화','수','목','금','토'];
-const WORK_TYPES = ['라이브','오프라인 촬영','기획','이미지','롱폼','숏폼','언리얼','etc'];
+const WORK_TYPES = ['라이브','오프라인 촬영','기획','이미지','롱폼','숏폼','언리얼','회의','etc'];
 const WORK_TYPE_ICONS = {
   '라이브':'📡',
   '오프라인 촬영':'🎥',
@@ -760,6 +760,7 @@ const WORK_TYPE_ICONS = {
   '기획':'📝',
   '이미지':'🎨',
   '언리얼':'🧩',
+  '회의':'🗣️',
   'etc':'📦'
 };
 const WORK_TYPE_COLORS = {
@@ -770,6 +771,7 @@ const WORK_TYPE_COLORS = {
   '기획':'#F0E29A',
   '이미지':'#A9D9B8',
   '언리얼':'#CBB4E8',
+  '회의':'#C7D2E8',
   'etc':'#D8C3A5'
 };
 const NO_TYPE_COLOR = '#DBD5CD';
