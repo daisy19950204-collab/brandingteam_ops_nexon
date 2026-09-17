@@ -542,6 +542,60 @@
   .save-status.as-mobile .save-status-badge{min-width:16px; height:16px; font-size:9.5px; padding:0 4px;}
   .save-status.as-mobile .save-panel{left:auto; right:0; transform:none; width:min(320px, 84vw);}
 
+  /* ---------- 저장 진행 팝업 ---------- */
+  .save-progress-backdrop{
+    position:fixed; inset:0; z-index:20000; background:rgba(20,22,26,.5);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+  }
+  .save-progress{
+    width:min(340px, 92vw); background:#fff; border-radius:16px; padding:22px 20px 18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35); text-align:center;
+    border:2px solid var(--accent); animation:spPop .18s ease-out;
+  }
+  .save-progress.is-done{border-color:var(--accent);}
+  .save-progress.is-fail{border-color:var(--danger);}
+  @keyframes spPop{from{transform:scale(.94); opacity:0;} to{transform:scale(1); opacity:1;}}
+  .sp-spinner{
+    width:38px; height:38px; margin:0 auto 12px; border-radius:50%;
+    border:4px solid var(--accent-soft); border-top-color:var(--accent);
+    animation:spSpin .8s linear infinite;
+  }
+  @keyframes spSpin{to{transform:rotate(360deg);}}
+  .sp-check{width:38px; height:38px; margin:0 auto 12px; border-radius:50%; background:var(--accent-soft);
+    display:flex; align-items:center; justify-content:center; font-size:21px;}
+  .sp-check::after{content:'✅';}
+  .sp-warn{width:38px; height:38px; margin:0 auto 12px; border-radius:50%; background:var(--danger-soft);
+    display:flex; align-items:center; justify-content:center; font-size:21px;}
+  .sp-warn::after{content:'⚠️';}
+  .sp-title{font-size:16.5px; font-weight:900; letter-spacing:-.4px; margin-bottom:12px;}
+  .save-progress.is-fail .sp-title{color:var(--danger);}
+  .sp-steps{display:flex; align-items:stretch; justify-content:center; gap:6px; margin-bottom:11px;}
+  .sp-step{
+    flex:1 1 0; border:1.5px solid var(--border); border-radius:9px; padding:7px 6px; background:var(--bg);
+    display:flex; flex-direction:column; gap:3px; min-width:0;
+  }
+  .sp-step span{font-size:10.5px; font-weight:800; color:var(--text-dim); white-space:nowrap;}
+  .sp-step b{font-size:11.5px; font-weight:900; white-space:nowrap;}
+  .sp-step.is-done{border-color:#8FCFC2; background:#F1FAF8;}
+  .sp-step.is-done b{color:var(--accent-dark);}
+  .sp-step.is-busy{border-color:#B9C7DE; background:#F4F7FD;}
+  .sp-step.is-busy b{color:#2E4A7D;}
+  .sp-step.is-fail{border-color:#E39A9A; background:#FDEAEA;}
+  .sp-step.is-fail b{color:var(--danger);}
+  .sp-arrow{display:flex; align-items:center; font-size:14px; font-weight:900; color:var(--text-faint);}
+  .sp-note{font-size:11.5px; line-height:1.6; color:var(--text-dim); word-break:keep-all;}
+  .sp-actions{display:flex; flex-direction:column; gap:6px; margin-top:12px;}
+  .sp-actions:empty{display:none;}
+  .sp-btn{
+    padding:10px; border-radius:9px; border:1px solid var(--border-strong); background:#fff;
+    font-size:12.5px; font-weight:800; cursor:pointer; color:var(--text); font-family:inherit;
+  }
+  .sp-btn:hover{background:var(--bg);}
+  .sp-btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .sp-btn.primary:hover{background:var(--accent-dark);}
+  .sp-btn:disabled{opacity:.6; cursor:default;}
+
   /* ---------- 충돌 내역 모달 ---------- */
   .cf-item{border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; background:var(--panel);}
   .cf-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px;}
@@ -4150,7 +4204,7 @@ function openResizePopup(t, edge){
     if(newStart > newEnd){ showToast('시작일은 마감일보다 늦을 수 없습니다.'); return; }
     const idx = TICKETS.findIndex(x=>x.id===t.id);
     if(idx>-1) TICKETS[idx] = {...TICKETS[idx], startDate:newStart, endDate:newEnd, weekendSat: draftSat, weekendSun: draftSun, updatedAt:new Date().toISOString()};
-    const ok = await persistTickets();
+    const ok = await persistWithProgress(false, '일정을 저장하는 중입니다.');
     notifySaveResult(ok, '일정을 수정했습니다.');
     close();
     renderApp();
@@ -4194,7 +4248,7 @@ function confirmResize(t, edge, newStart, newEnd){
     if(idx>-1){
       TICKETS[idx] = {...TICKETS[idx], startDate:newStart, endDate:newEnd, updatedAt:new Date().toISOString()};
     }
-    const ok = await persistTickets();
+    const ok = await persistWithProgress(false, '일정을 저장하는 중입니다.');
     notifySaveResult(ok, '일정을 수정했습니다.');
     close();
     renderApp();
@@ -5402,7 +5456,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
       if(!confirm('이 티켓을 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
       deleting = true;
       TICKETS = TICKETS.filter(x=>x.id!==t.id);
-      const ok = await persistTickets(true);
+      const ok = await persistWithProgress(true, '티켓을 삭제하는 중입니다.');
       notifySaveResult(ok, '티켓을 삭제했습니다.');
       close();
       renderApp();
@@ -5484,7 +5538,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
 
     // ★ persistTickets 는 먼저 이 브라우저에 변경분을 확실히 기록한 뒤 서버 저장을 시도한다.
     //   따라서 서버 저장이 실패해도 입력한 내용은 사라지지 않고, 자동으로 재시도된다.
-    const ok = await persistTickets();
+    const ok = await persistWithProgress(false, '티켓을 저장하는 중입니다. 완료될 때까지 잠시만 기다려주세요.');
     saving = false;
     saveBtn.disabled = false;
     saveBtn.textContent = '저장';
@@ -5515,7 +5569,121 @@ function openTicketFromSharedUrl(){
 wireDeviceModeToggle();
 wireSaveStatus();
 
+/* =====================================================================
+   저장 진행 팝업
+   - 저장이 0.35초 안에 끝나면 아예 뜨지 않는다 (평소엔 방해 없음)
+   - 느릴 때만 떠서 화면을 막고 "이 기기 → 클라우드" 진행 상황을 보여준다
+   - 완료되면 ✅ 를 보여주고 스스로 닫힌다
+   - 단, 6초가 넘으면 '닫기' 버튼을 열어준다. 서버가 죽었을 때 영원히 갇히면 안 되고,
+     이때 닫아도 변경분은 이 기기에 남아 자동으로 계속 재시도되기 때문이다.
+   ===================================================================== */
+let saveProgressEl = null;
+let saveProgressTimers = [];
+function clearProgressTimers(){ saveProgressTimers.forEach(clearTimeout); saveProgressTimers = []; }
+function hideSaveProgress(){
+  clearProgressTimers();
+  if(saveProgressEl){ saveProgressEl.remove(); saveProgressEl = null; }
+}
+function showSaveProgress(label){
+  if(saveProgressEl) return;
+  const el = document.createElement('div');
+  el.className = 'save-progress-backdrop';
+  el.id = 'saveProgressOverlay';
+  el.innerHTML = `
+    <div class="save-progress" role="alertdialog" aria-live="assertive">
+      <div class="sp-spinner" id="spSpinner"></div>
+      <div class="sp-title" id="spTitle">저장 중…</div>
+      <div class="sp-steps">
+        <div class="sp-step is-done" id="spLocal"><span>💾 이 기기</span><b>✅ 완료</b></div>
+        <div class="sp-arrow">→</div>
+        <div class="sp-step is-busy" id="spCloud"><span>☁️ 클라우드</span><b>⏳ 전송 중</b></div>
+      </div>
+      <div class="sp-note" id="spNote">${escapeHtml(label || '수정한 내용을 서버에 올리는 중입니다. 잠시만 기다려주세요.')}</div>
+      <div class="sp-actions" id="spActions"></div>
+    </div>`;
+  document.body.appendChild(el);
+  saveProgressEl = el;
+  // 6초가 지나면 탈출구를 열어준다 (갇히지 않도록)
+  saveProgressTimers.push(setTimeout(()=>{
+    const note = document.getElementById('spNote');
+    const acts = document.getElementById('spActions');
+    if(note) note.textContent = '서버 응답이 느립니다. 계속 시도 중이며, 지금 닫아도 변경 내용은 이 기기에 안전하게 남아 자동으로 다시 올라갑니다.';
+    if(acts && !acts.children.length){
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sp-btn';
+      b.textContent = '백그라운드에서 계속하기 (닫기)';
+      b.onclick = hideSaveProgress;
+      acts.appendChild(b);
+    }
+  }, 6000));
+}
+function saveProgressDone(){
+  if(!saveProgressEl) return;
+  clearProgressTimers();
+  const sp = saveProgressEl.querySelector('.save-progress');
+  if(sp) sp.classList.add('is-done');
+  const spin = document.getElementById('spSpinner');
+  if(spin) spin.className = 'sp-check';
+  const title = document.getElementById('spTitle');
+  if(title) title.textContent = '저장 완료';
+  const cloud = document.getElementById('spCloud');
+  if(cloud){ cloud.className = 'sp-step is-done'; cloud.querySelector('b').textContent = '✅ 완료'; }
+  const note = document.getElementById('spNote');
+  if(note) note.textContent = `${fmtClock(Date.now())} · 팀원 모두에게 반영되었습니다.`;
+  const acts = document.getElementById('spActions');
+  if(acts) acts.innerHTML = '';
+  saveProgressTimers.push(setTimeout(hideSaveProgress, 1100));
+}
+function saveProgressFailed(){
+  if(!saveProgressEl){ showSaveProgress(); }
+  clearProgressTimers();
+  const sp = saveProgressEl.querySelector('.save-progress');
+  if(sp) sp.classList.add('is-fail');
+  const spin = document.getElementById('spSpinner');
+  if(spin) spin.className = 'sp-warn';
+  const title = document.getElementById('spTitle');
+  if(title) title.textContent = '아직 서버에 저장되지 않았습니다';
+  const cloud = document.getElementById('spCloud');
+  if(cloud){ cloud.className = 'sp-step is-fail'; cloud.querySelector('b').textContent = '❌ 실패'; }
+  const note = document.getElementById('spNote');
+  if(note) note.textContent = '수정한 내용은 이 기기에 저장되어 있어 사라지지 않습니다. 자동으로 계속 재시도하며, 이 화면을 닫아도 됩니다.';
+  const acts = document.getElementById('spActions');
+  if(acts){
+    acts.innerHTML = '';
+    const retry = document.createElement('button');
+    retry.type = 'button'; retry.className = 'sp-btn primary'; retry.textContent = '지금 다시 시도';
+    retry.onclick = async ()=>{
+      retry.disabled = true; retry.textContent = '다시 시도 중…';
+      const ok = await flushNow();
+      if(ok) saveProgressDone();
+      else { retry.disabled = false; retry.textContent = '지금 다시 시도'; }
+    };
+    const close = document.createElement('button');
+    close.type = 'button'; close.className = 'sp-btn'; close.textContent = '나중에 (닫기)';
+    close.onclick = hideSaveProgress;
+    acts.appendChild(retry); acts.appendChild(close);
+  }
+}
+/* 저장 + 진행 팝업. 빠르면 팝업 없이 조용히 끝난다. */
+async function persistWithProgress(immediate, label){
+  const timer = setTimeout(()=>showSaveProgress(label), 350);
+  let ok = false;
+  try{
+    ok = await persistTickets(immediate);
+  } finally {
+    clearTimeout(timer);
+  }
+  if(ok){
+    if(saveProgressEl) saveProgressDone();
+  } else {
+    // 실패는 빠르게 끝나도 반드시 알린다 (조용히 넘어가면 저장된 줄 안다)
+    saveProgressFailed();
+  }
+  return ok;
+}
 function notifySaveResult(ok, successMsg){
+  if(saveProgressEl) return;            // 진행 팝업이 이미 결과를 보여주고 있으면 토스트 생략
   if(ok){ showToast(successMsg); return; }
   if(Backend.kind === 'local'){
     showToast('⚠ 서버에 저장하지 못했습니다. 이 브라우저에만 보관했습니다(다른 사람에게는 아직 안 보임). 우측 상단 저장 상태를 확인해주세요.', 6000);
