@@ -195,6 +195,30 @@
   }
   .worker-name{font-weight:700; font-size:13.5px;}
   .worker-meta{font-size:10.5px; color:var(--text-faint);}
+
+  /* ---------- 예비(미배정) 행 - PC 2주 보드 전용 ---------- */
+  .board-row.reserve-row{
+    border-bottom:2px dashed var(--border-strong);
+    background:repeating-linear-gradient(45deg, #FAFAFB, #FAFAFB 8px, #F5F6F8 8px, #F5F6F8 16px);
+  }
+  .board-row.reserve-row .worker-cell{background:#F2F3F6; border-right-color:var(--border-strong);}
+  .board-row.reserve-row .worker-name{color:var(--text-dim);}
+  .board-row.reserve-row .worker-name::before{content:'📥 ';}
+  .board-row.reserve-row .day-bg{background:transparent;}
+  .board-row.reserve-row .day-bg.weekend{background:rgba(0,0,0,.028);}
+  .ticket-bar.reserve-bar .seg-main{
+    opacity:.92; border:1.5px dashed rgba(42,46,53,.45);
+  }
+  .reserve-empty{
+    display:flex; align-items:center; justify-content:center; height:38px;
+    font-size:11px; font-weight:700; color:var(--text-faint); pointer-events:none;
+  }
+  .reserve-badge{
+    display:inline-block; padding:1px 7px; border-radius:9px; font-size:10.5px; font-weight:800;
+    background:#EDEFF3; color:var(--text-dim); border:1px dashed var(--border-strong);
+  }
+  .pill.reserve-pill{border-style:dashed;}
+  .pill.reserve-pill.selected{border-style:solid;}
   .worker-grid{
     position:relative; display:grid; grid-template-columns:repeat(14,1fr);
     grid-auto-rows:var(--lane-h);
@@ -861,6 +885,11 @@
 <script>
 /* ============================= 상수 ============================= */
 const WORKERS = ['심승선','임기백','이유정','이수민'];
+/* '예비'는 아직 담당자가 정해지지 않은 티켓을 임시로 담아두는 칸이다.
+   - WORKERS 배열에 넣지 않으므로 작업자별 통계·부하·리포트·CSV 어디에도 집계되지 않는다.
+   - PC 2주 보드에서만 맨 위에 한 줄로 표시된다. (월 보드·모바일에는 표시하지 않음) */
+const RESERVE_WORKER = '예비';
+function isReserveTicket(t){ return !!(t && t.assignees && t.assignees.includes(RESERVE_WORKER)); }
 const PROJECTS = ['공통','부재','서든어택','TFD','오버워치','CSO','TF','ARC','낙원','SAZ'];
 const PROJECT_COLORS = {
   '공통':'#5B6472',
@@ -875,7 +904,9 @@ const PROJECT_COLORS = {
   'SAZ':'#B8790F'
 };
 // 작업자별 파스텔톤 색상 (간트 바 색상, 작업자 동그라미 등에 공통 사용)
+const RESERVE_COLOR = '#B4BAC6';
 const WORKER_COLORS = {
+  '예비': RESERVE_COLOR,
   '심승선':'#F3AFAF',
   '임기백':'#F0E29A',
   '이수민':'#A9D9B8',
@@ -3810,6 +3841,63 @@ function renderTwoWeekBoard(){
       }).join('')}
     </div>`;
 
+  /* 예비(미배정) 행 - 2주 보드 전용. 아래 작업자 행들과 완전히 같은 구조·너비로 그린다. */
+  const reserveRow = (()=>{
+    const rTickets = TICKETS.filter(t=> isReserveTicket(t) && matchesBoardTypeFilter(t));
+    const {items, maxLanes} = assignLanes(rTickets, rangeStart, rangeEnd);
+    const lanes = Math.max(maxLanes, 1);
+    const rowHeight = lanes * 38 + 6;
+
+    const bgCells = days.map((d,i)=>{
+      const iso = toISO(d);
+      const cls=['day-bg'];
+      if(isWeekend(d)) cls.push('weekend');
+      if(iso===today) cls.push('today');
+      return `<div class="${cls.join(' ')}" data-date="${iso}" data-worker="${RESERVE_WORKER}" data-reserve="1" style="grid-row:1 / span ${lanes}; grid-column:${i+1}"></div>`;
+    }).join('');
+
+    const bars = items.map(({t,lane})=>{
+      const idxOf = iso => Math.round((parseISO(iso)-parseISO(rangeStart))/86400000);
+      const color = t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR;
+      const status = ticketStatus(t);
+      const statusCls = status==='완료' ? 'tb-done' : status==='보류' ? 'tb-hold' : '';
+      const title = `[미배정] ${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (담당자 배정 전 임시 보관 · 통계에 집계되지 않음)`;
+      const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, false);
+      return segments.map((seg, segIdx)=>{
+        const clip = clipRange(seg[0], seg[1], rangeStart, rangeEnd);
+        if(!clip) return '';
+        const a = idxOf(clip[0]), b = idxOf(clip[1]);
+        const isFirstSeg = segIdx===0, isLastSeg = segIdx===segments.length-1;
+        const showStartBold = isFirstSeg && t.startDate >= rangeStart && t.startDate <= rangeEnd;
+        const showEndBold = isLastSeg && t.endDate >= rangeStart && t.endDate <= rangeEnd;
+        return `
+          <div class="ticket-bar reserve-bar ${statusCls}" data-id="${t.id}" title="${escapeHtml(title)}"
+               style="grid-column:${a+1} / ${b+2}; grid-row:${lane+1};">
+            <div class="seg seg-main" style="flex:1 0 0; background:${color};">
+              ${showStartBold ? `<span class="edge-date start-edge">${fmtShort(t.startDate)}</span>` : ''}
+              <span class="seg-label" style="margin-top:9px;">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}${qtyBadge(t)}</span>
+              ${showEndBold ? `<span class="edge-date end-edge">${fmtShort(t.endDate)}</span>` : ''}
+            </div>
+            ${isFirstSeg ? `<div class="resize-handle left" data-id="${t.id}" data-edge="start" title="시작일 변경(드래그)"></div>` : ''}
+            ${isLastSeg ? `<div class="resize-handle right" data-id="${t.id}" data-edge="end" title="마감일 변경(드래그)"></div>` : ''}
+          </div>`;
+      }).join('');
+    }).join('');
+
+    return `
+      <div class="board-row reserve-row">
+        <div class="worker-cell" style="min-height:${rowHeight}px;">
+          <div class="worker-name">${RESERVE_WORKER}</div>
+          <div class="worker-meta">미배정 ${rTickets.length}건</div>
+        </div>
+        <div class="worker-grid" style="grid-auto-rows:38px; min-height:${rowHeight}px;">
+          ${bgCells}
+          ${bars}
+          ${rTickets.length ? '' : `<div class="reserve-empty" style="grid-row:1; grid-column:1 / -1;">담당자를 정하지 않은 티켓을 여기에 임시로 보관합니다 (통계 미집계)</div>`}
+        </div>
+      </div>`;
+  })();
+
   const rows = WORKERS.map(w=>{
     const wTickets = TICKETS.filter(t=>t.assignees.includes(w) && matchesBoardTypeFilter(t));
     const {items, maxLanes} = assignLanes(wTickets, rangeStart, rangeEnd);
@@ -3876,7 +3964,7 @@ function renderTwoWeekBoard(){
       </div>`;
   }).join('');
 
-  return `${legend}<div class="board">${head}${rows}</div>${renderBoardSummary()}`;
+  return `${legend}<div class="board">${head}${reserveRow}${rows}</div>${renderBoardSummary()}`;
 }
 
 function renderMonthBoard(){
@@ -4023,7 +4111,7 @@ function renderBoardSummary(){
             return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''} ${isAbsenceRow?'tr-absence':''}" data-id="${t.id}" style="cursor:pointer;">
               <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
               <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
-              <td>${t.assignees.join(', ')}</td>
+              <td>${isReserveTicket(t) ? '<span class="reserve-badge">미배정</span>' : escapeHtml(t.assignees.join(', '))}</td>
               <td>${fmtShort(t.startDate)} ~ ${fmtShort(t.endDate)}</td>
               <td>${deadlineRemainHtml(t.endDate)}</td>
               <td>${renderResourceCell(t)}</td>
@@ -4050,10 +4138,11 @@ function renderBoardSummary(){
             const assigneeLabel = (t.project==='부재' && t.assignees && t.assignees.length===WORKERS.length)
               ? 'ALL'
               : (t.assignees||[]).join(', ');
+            const assigneeHtml = isReserveTicket(t) ? '<span class="reserve-badge">미배정</span>' : escapeHtml(assigneeLabel);
             return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''} ${isAbsenceRow?'tr-absence':''}" data-id="${t.id}" style="cursor:pointer;">
               <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
               <td style="min-width:58px;"><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
-              <td>${escapeHtml(assigneeLabel)}</td>
+              <td>${assigneeHtml}</td>
               <td style="min-width:82px;">${fmtShort(t.startDate)} (D-${Math.max(dday,0)})</td>
               <td>${renderResourceCell(t)}</td>
               <td>${renderResourceField((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:t.referenceLink, '레퍼런스')}</td>
@@ -4077,7 +4166,9 @@ function cleanupActiveResize(){
 function wireBoardEmptyClick(){
   document.querySelectorAll('.day-bg[data-date]').forEach(cell=>{
     cell.onclick = ()=>{
-      openModal(null, null, null, null, null); // 빈 공간 클릭 시 시작일·담당자 미선택 기본
+      // 예비 행의 빈 칸을 누르면 담당자를 '예비'로 미리 선택해준다
+      if(cell.dataset.reserve) openModal(null, null, null, null, RESERVE_WORKER);
+      else openModal(null, null, null, null, null);
     };
   });
   document.querySelectorAll('.month-day-bg[data-date]').forEach(cell=>{
@@ -4278,20 +4369,21 @@ function renderDashboard(){
   const [workerMS, workerME] = monthRange(workerCardMonthOffset);
   const workerMonthDate = new Date(year, now.getMonth()+workerCardMonthOffset, 1);
   const workerMonthLabel = `${workerMonthDate.getFullYear()}년 ${workerMonthDate.getMonth()+1}월`;
-  const workerTickets = TICKETS.filter(t=> t.project !== '부재' && t.startDate <= workerME && t.endDate >= workerMS);
+  // ★ 예비(미배정) 티켓은 어떤 통계에도 집계하지 않는다
+  const workerTickets = TICKETS.filter(t=> !isReserveTicket(t) && t.project !== '부재' && t.startDate <= workerME && t.endDate >= workerMS);
   const workerRows = buildRows(WORKERS, t=> t.assignees, workerTickets);
 
   // ---- 프로젝트별 유형 티켓 수 (전체 프로젝트, 좌우 화살표로 월 이동) ----
   const [projectMS, projectME] = monthRange(projectCardMonthOffset);
   const projectMonthDate = new Date(year, now.getMonth()+projectCardMonthOffset, 1);
   const projectMonthLabel = `${projectMonthDate.getFullYear()}년 ${projectMonthDate.getMonth()+1}월`;
-  const projectMonthTickets = TICKETS.filter(t=> t.project !== '부재' && t.startDate <= projectME && t.endDate >= projectMS);
+  const projectMonthTickets = TICKETS.filter(t=> !isReserveTicket(t) && t.project !== '부재' && t.startDate <= projectME && t.endDate >= projectMS);
   const allProjectsExceptAbsence = PROJECTS.filter(p=> p!=='부재');
   const projectRows = buildRows(allProjectsExceptAbsence, t=> [t.project], projectMonthTickets);
 
   // ---- 작업자별 · 유형별 평균 소요 영업일 (전체 기간 기준, 부재 제외, 라이브·오프라인 촬영 제외) ----
   const AVG_DAYS_WORK_TYPES = WORK_TYPES.filter(wt=> wt!=='라이브' && wt!=='오프라인 촬영');
-  const avgDaysAllTickets = TICKETS.filter(t=> t.project !== '부재' && t.workType && AVG_DAYS_WORK_TYPES.includes(t.workType));
+  const avgDaysAllTickets = TICKETS.filter(t=> !isReserveTicket(t) && t.project !== '부재' && t.workType && AVG_DAYS_WORK_TYPES.includes(t.workType));
   function avgDaysRows(){
     return WORKERS.map(w=>{
       const counts = {};
@@ -5131,7 +5223,9 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
         <div class="field">
           <label>담당자 <span class="hint">(최대 4명까지 선택 가능)</span></label>
           <div class="pill-group" id="fAssignee">
-            ${WORKERS.map(w=>`<div class="pill ${initAssignees.includes(w)?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
+            ${(((deviceMode==='pc' && !isDedicatedAbsenceEntry) || initAssignees.includes(RESERVE_WORKER))
+                ? [RESERVE_WORKER, ...WORKERS] : WORKERS)
+              .map(w=>`<div class="pill ${w===RESERVE_WORKER?'reserve-pill':''} ${initAssignees.includes(w)?'selected':''}" data-val="${w}">${workerDot(w)}${w}</div>`).join('')}
           </div>
           <div class="form-error" id="assigneeLimitMsg" style="display:none; margin-top:8px;">담당자는 최대 4명까지 선택할 수 있습니다.</div>
         </div>
