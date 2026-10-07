@@ -187,6 +187,22 @@
   .worker-filter-pill.active{border-color:var(--accent); background:var(--accent-soft); color:var(--accent-dark);}
   .worker-filter-pill.reset{border-style:dashed; color:var(--text-faint);}
 
+  /* ---------- 작업자 표시/숨김 ---------- */
+  .worker-visibility{margin-top:-4px; align-items:center;}
+  .wv-label{font-size:11.5px; color:var(--text-faint); margin-right:2px;}
+  .wv-pill{
+    display:inline-flex; align-items:center; gap:4px; padding:4px 11px; border-radius:14px;
+    border:1.5px solid var(--border-strong); background:#fff; font-size:11.5px; font-weight:800;
+    cursor:pointer; color:var(--text); user-select:none;
+  }
+  .wv-pill:hover{background:var(--bg);}
+  .wv-pill.off{
+    background:repeating-linear-gradient(45deg,#F3F4F6,#F3F4F6 5px,#EAECEF 5px,#EAECEF 10px);
+    border-style:dashed; color:var(--text-faint); text-decoration:line-through;
+  }
+  .wv-note{font-size:10.5px; font-weight:700; color:#8A5B00; background:#FFF6E2;
+    border:1px solid #EBCE8E; border-radius:12px; padding:3px 10px;}
+
   .board-row{display:grid; grid-template-columns:132px 1fr; border-bottom:1px solid var(--border);}
   .board-row:last-child{border-bottom:none;}
   .worker-cell{
@@ -217,6 +233,9 @@
     display:inline-block; padding:1px 7px; border-radius:9px; font-size:10.5px; font-weight:800;
     background:#EDEFF3; color:var(--text-dim); border:1px dashed var(--border-strong);
   }
+  .pill.wt-pill.selected{background:var(--wt-color); border-color:var(--wt-color); color:#2A2E35; font-weight:800;}
+  .wt-count-hint{display:none; margin-top:7px; font-size:11px; font-weight:800; color:var(--accent-dark);}
+  .wt-count-hint.on{display:block;}
   .pill.reserve-pill{border-style:dashed;}
   .pill.reserve-pill.selected{border-style:solid;}
   .worker-grid{
@@ -253,6 +272,22 @@
   .new-ticket-modal{border:2.5px solid var(--danger); box-shadow:0 0 0 4px rgba(224,79,95,.18), 0 20px 60px rgba(0,0,0,.25);}
   .required-field label{color:var(--danger); font-weight:800;}
   .required-field input, .required-field select{border:2px solid var(--danger) !important;}
+  /* 칩으로 고르는 필수 항목(업무 유형·담당자)도 똑같이 빨간 테두리로 표시 */
+  .required-field .pill-group{
+    border:2px solid var(--danger); border-radius:10px; padding:7px; background:var(--danger-soft);
+  }
+  .field.compact-field{margin-bottom:12px;}
+  .pill-group.tight{gap:5px;}
+  .pill-group.tight .pill{padding:5px 10px; font-size:12px;}
+  .select-row.single{grid-template-columns:1fr;}
+  .wt-pill{display:inline-flex; align-items:center; gap:6px;}
+  .wt-qty{
+    width:42px; padding:2px 4px !important; font-size:11.5px; font-weight:800; text-align:center;
+    border:1.5px solid rgba(42,46,53,.3) !important; border-radius:6px; background:#fff; color:var(--text);
+    -moz-appearance:textfield; margin:0;
+  }
+  .wt-qty::-webkit-outer-spin-button, .wt-qty::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+  .required-field .wt-qty{border-color:rgba(42,46,53,.3) !important;}
   .new-badge{
     display:inline-flex; align-items:center; justify-content:center;
     width:34px; height:34px; border-radius:50%;
@@ -1010,6 +1045,22 @@ let SYNCED = Object.create(null);          // id -> {h:내용해시, u:updatedAt
 let PENDING_DELETES = Object.create(null); // id -> {u:updatedAt, rev:기준 리비전}  (삭제 요청했지만 서버 미반영)
 let SRV_META = Object.create(null);        // id -> {rev, srvAt}  서버가 기록한 리비전/시각 (PC 시계와 무관)
 let LAST_EDIT = null;                      // 진짜 마지막으로 수정/저장된 티켓 1건 {id, title, at, by}
+/* 공유 설정: 티켓과 별개로 클라우드에 저장되는 팀 공통 설정.
+   지금은 '숨긴 작업자' 목록만 들어 있다. 한 사람이 체크하면 모두에게 적용되고,
+   다시 풀기 전까지 새로고침·재접속해도 유지된다. */
+const SETTINGS_DOC_ID = 'settings_v1';
+const ARTIFACT_SETTINGS_KEY = 'settings_v2';
+let SETTINGS = {hiddenWorkers: [], updatedAt: ''};
+function hiddenWorkers(){ return Array.isArray(SETTINGS.hiddenWorkers) ? SETTINGS.hiddenWorkers : []; }
+function isWorkerHidden(w){ return hiddenWorkers().includes(w); }
+function visibleWorkers(){ return WORKERS.filter(w=> !isWorkerHidden(w)); }
+/* 담당자가 전부 숨김 처리된 티켓은 달력에서 감춘다 (한 명이라도 보이면 그대로 표시) */
+function isTicketHiddenByWorker(t){
+  const as = (t && t.assignees) || [];
+  if(!as.length) return false;
+  if(as.includes(RESERVE_WORKER)) return false;
+  return as.every(a=> isWorkerHidden(a));
+}
 let CONFLICTS = [];                        // 남의 수정과 부딪혀 반영되지 못한 내 수정 보관함
 const CONFLICT_MAX = 60;
 const SAVE = {
@@ -1061,7 +1112,8 @@ function saveLocalCache(){
     pendingDeletes: PENDING_DELETES,
     srvMeta: SRV_META,
     conflicts: CONFLICTS,
-    lastEdit: LAST_EDIT
+    lastEdit: LAST_EDIT,
+    settings: SETTINGS
   };
   const ok = lsSet(LS_CACHE_KEY, JSON.stringify(payload));
   if(ok) SAVE.lastLocalSaveAt = payload.savedAt;
@@ -1079,6 +1131,7 @@ function loadLocalCache(){
     SRV_META = p.srvMeta || Object.create(null);
     CONFLICTS = Array.isArray(p.conflicts) ? p.conflicts : [];
     LAST_EDIT = p.lastEdit || null;
+    if(p.settings && typeof p.settings === 'object') SETTINGS = {hiddenWorkers:[], ...p.settings};
     // 구버전 캐시 호환: 삭제 대기 값이 문자열(updatedAt)이던 형식을 객체로 승격
     Object.keys(PENDING_DELETES).forEach(id=>{
       if(typeof PENDING_DELETES[id] === 'string') PENDING_DELETES[id] = {u:PENDING_DELETES[id], rev:(SYNCED[id]&&SYNCED[id].rev)||0};
@@ -1235,6 +1288,26 @@ const FirestoreBackend = {
       }, err=>{ if(onError) onError(err); });
     }catch(e){ if(onError) onError(e); }
   },
+  async readSettings(){
+    if(!firestoreDb) return null;
+    const r = await withTimeout(firestoreDb.collection(FIREBASE_COLLECTION).doc(SETTINGS_DOC_ID).get(), 12000);
+    if(!('value' in r) || !r.value || !r.value.exists) return null;
+    return r.value.data() || null;
+  },
+  async writeSettings(obj){
+    if(!firestoreDb) return false;
+    const r = await withTimeout(firestoreDb.collection(FIREBASE_COLLECTION).doc(SETTINGS_DOC_ID).set(obj), 12000);
+    return ('value' in r);
+  },
+  subscribeSettings(cb){
+    if(!firestoreDb) return;
+    try{
+      firestoreDb.collection(FIREBASE_COLLECTION).doc(SETTINGS_DOC_ID).onSnapshot(snap=>{
+        if(snap.metadata && snap.metadata.hasPendingWrites) return;
+        if(snap.exists) cb(snap.data() || null);
+      }, ()=>{});
+    }catch(e){}
+  },
   async writeBackup(tickets){
     if(!firestoreDb) return;
     try{
@@ -1321,6 +1394,16 @@ const ArtifactBackend = {
     return {ok:true, done, conflicts};
   },
   subscribe(){ /* 실시간 없음 → 주기 폴링으로 대체 */ },
+  async readSettings(){
+    const r = await this._raw(ARTIFACT_SETTINGS_KEY);
+    if(!r.ok || !r.value) return null;
+    try{ return JSON.parse(r.value); }catch(e){ return null; }
+  },
+  async writeSettings(obj){
+    const w = await withTimeout(window.storage.set(ARTIFACT_SETTINGS_KEY, JSON.stringify(obj), true), 12000);
+    return ('value' in w) && w.value !== null;
+  },
+  subscribeSettings(){},
   async writeBackup(){}
 };
 
@@ -1336,6 +1419,9 @@ const LocalBackend = {
   async readAll(){ return {ok:true, tickets: TICKETS.map(normalizeTicket), tombstones:Object.create(null), metas:Object.create(null), localOnly:true}; },
   async writeChanges(changes){ return {ok: saveLocalCache(), done: changes, conflicts:[], error: localStorageOk ? '' : '브라우저 저장소 사용 불가'}; },
   subscribe(){},
+  async readSettings(){ return null; },
+  async writeSettings(){ return false; },
+  subscribeSettings(){},
   async writeBackup(){}
 };
 
@@ -1357,6 +1443,39 @@ function storageAvailable(){ return artifactStorageAvailable(); }
 
 const DOW_LABEL = ['일','월','화','수','목','금','토'];
 const WORK_TYPES = ['라이브','오프라인 촬영','기획','이미지','롱폼','숏폼','언리얼','회의','etc'];
+/* 업무 유형은 여러 개를 함께 고를 수 있다 (예: 롱폼 + 숏폼 + 이미지가 한 건으로 들어오는 경우).
+   - 실제 값은 workTypes 배열에 담고, 예전 데이터 호환을 위해 workType 에는 첫 번째 유형을 그대로 둔다.
+   - 통계에서는 유형 하나당 1건으로 세므로, 유형 2개짜리 티켓은 2건으로 집계된다. */
+function ticketWorkTypes(t){
+  if(t && Array.isArray(t.workTypes) && t.workTypes.length) return t.workTypes.filter(Boolean);
+  return (t && t.workType) ? [t.workType] : [];
+}
+function wtIconsOf(t){ return ticketWorkTypes(t).map(w=> WORK_TYPE_ICONS[w] || '').join(''); }
+function wtLabelOf(t){ return ticketWorkTypes(t).join(' + '); }
+function wtPrefixOf(t){ const ic = wtIconsOf(t); return ic ? ic + ' ' : ''; }
+/* 티켓 1건이 차지하는 '건수' = 업무 유형 개수 × 수량 */
+/* 업무 유형별 수량. workTypeQty = {이미지:3, 롱폼:1} 형태로 저장한다.
+   예전 데이터(유형 1개 + qty)도 그대로 읽히도록 호환 처리한다. */
+function wtQtyOf(t, wt){
+  const m = t && t.workTypeQty;
+  if(m && m[wt] != null) return Math.max(1, parseInt(m[wt], 10) || 1);
+  const wts = ticketWorkTypes(t);
+  if(wts.length <= 1) return Math.max(1, parseInt(t && t.qty, 10) || 1);
+  return 1;
+}
+/* 티켓 1건이 차지하는 총 건수 = 유형별 수량의 합 */
+function ticketUnitCount(t){
+  const wts = ticketWorkTypes(t);
+  if(!wts.length) return Math.max(1, parseInt(t && t.qty, 10) || 1);
+  return wts.reduce((sum, wt)=> sum + wtQtyOf(t, wt), 0);
+}
+/* 유형별 수량을 '이미지 3 + 롱폼 1' 처럼 적어준다 */
+function wtQtyLabelOf(t){
+  return ticketWorkTypes(t).map(wt=>{
+    const q = wtQtyOf(t, wt);
+    return q > 1 ? `${wt} ${q}` : wt;
+  }).join(' + ');
+}
 const WORK_TYPE_ICONS = {
   '라이브':'📡',
   '오프라인 촬영':'🎥',
@@ -1383,7 +1502,7 @@ const NO_TYPE_COLOR = '#DBD5CD';
 const ABSENCE_FILTER_KEY = '__ABSENCE__'; // 상단 범례의 '부재' 칩 클릭 필터용 특수 키
 function matchesBoardTypeFilter(t){
   if(!boardTypeFilters.length) return true;
-  return boardTypeFilters.some(f=> f===ABSENCE_FILTER_KEY ? t.project==='부재' : t.workType===f);
+  return boardTypeFilters.some(f=> f===ABSENCE_FILTER_KEY ? t.project==='부재' : ticketWorkTypes(t).includes(f));
 }
 
 let TICKETS = [];
@@ -1466,7 +1585,7 @@ const WEEKEND_WORK_TYPES = ['오프라인 촬영','라이브'];
 function isWorkingDayForTicket(d, t){
   const wd = d.getDay();
   if(wd!==0 && wd!==6) return true;
-  if(WEEKEND_WORK_TYPES.includes(t.workType)) return true;
+  if(ticketWorkTypes(t).some(w=> WEEKEND_WORK_TYPES.includes(w))) return true;
   if(wd===6) return !!(t.weekendSat || t.weekendWork);
   if(wd===0) return !!(t.weekendSun || t.weekendWork);
   return false;
@@ -1478,7 +1597,7 @@ function isWorkingDayForTicket(d, t){
 function isCountableDayForTicket(d, t){
   const wd = d.getDay();
   if(wd!==0 && wd!==6) return true;
-  return WEEKEND_WORK_TYPES.includes(t.workType);
+  return ticketWorkTypes(t).some(w=> WEEKEND_WORK_TYPES.includes(w));
 }
 // 영업일 계산: 라이브/오프라인 촬영은 주말도 업무일로 치고, 그 외 유형은 평일만 기본 업무일로 본다.
 // 하루 단위로 세면서, 같은 날 같은 담당자가 동시에 진행 중인 티켓이 N개면(자기 자신 포함) 그 날은 1일이 아니라 1/N일로 계산한다.
@@ -1531,7 +1650,7 @@ function countWorkingDaysForTicket(s,e,t){
   }
   // '토요일 출근'/'일요일 출근' 체크는 그 요일이 실제로 이 기간 안에 있을 때만 +1일 적용
   // (기간에 아예 없는 요일을 체크해도 날짜가 늘어나지 않도록)
-  if(!WEEKEND_WORK_TYPES.includes(t.workType)){
+  if(!ticketWorkTypes(t).some(w=> WEEKEND_WORK_TYPES.includes(w))){
     if((t.weekendSat || t.weekendWork) && rangeIncludesWeekday(s,e,6)) days += 1;
     if((t.weekendSun || t.weekendWork) && rangeIncludesWeekday(s,e,0)) days += 1;
   }
@@ -1630,22 +1749,24 @@ function buildQuarterFeedbackText(worker, tickets, start, end){
   // ---- 프로젝트별 단락 ----
   projectOrder.forEach(project=>{
     const projTickets = byProject[project];
-    const projectQtyTotal = projTickets.reduce((sum,t)=> sum+qtyOf(t), 0);
+    const projectQtyTotal = projTickets.reduce((sum,t)=> sum + ticketUnitCount(t), 0);
 
     // 업무 유형별로 묶기 (등장 순서 유지)
     const typeOrder = [];
     const byType = {};
     projTickets.forEach(t=>{
-      const wt = t.workType || '기타';
-      if(!byType[wt]){ byType[wt] = []; typeOrder.push(wt); }
-      byType[wt].push(t);
+      const wts = ticketWorkTypes(t);
+      (wts.length ? wts : ['기타']).forEach(wt=>{
+        if(!byType[wt]){ byType[wt] = []; typeOrder.push(wt); }
+        byType[wt].push(t);
+      });
     });
 
     lines.push(`■ ${project} (총 ${projectQtyTotal}건)`);
     typeOrder.forEach(wt=>{
       const ts = byType[wt];
-      const qty = ts.reduce((sum,t)=> sum+qtyOf(t), 0);
-      const titleList = ts.map(t=> `'${t.title}'${qtyOf(t)>1?`(${qtyOf(t)}종)`:''}`).join(', ');
+      const qty = ts.reduce((sum,t)=> sum + wtQtyOf(t, wt), 0);
+      const titleList = ts.map(t=> `'${t.title}'${wtQtyOf(t,wt)>1?`(${wtQtyOf(t,wt)}종)`:''}`).join(', ');
       lines.push(`  - ${wt} ${qty}건: ${titleList}`);
     });
     lines.push('');
@@ -1655,19 +1776,21 @@ function buildQuarterFeedbackText(worker, tickets, start, end){
   const typeOrderAll = [];
   const byTypeAll = {};
   tickets.forEach(t=>{
-    const wt = t.workType || '기타';
-    if(!byTypeAll[wt]){ byTypeAll[wt] = []; typeOrderAll.push(wt); }
-    byTypeAll[wt].push(t);
+    const wts = ticketWorkTypes(t);
+    (wts.length ? wts : ['기타']).forEach(wt=>{
+      if(!byTypeAll[wt]){ byTypeAll[wt] = []; typeOrderAll.push(wt); }
+      byTypeAll[wt].push(t);
+    });
   });
 
   lines.push(`[이 기간 작업 유형별 평균 소요 영업일]`);
   typeOrderAll.forEach(wt=>{
     const ts = byTypeAll[wt];
-    const totalQty = ts.reduce((sum,t)=> sum+qtyOf(t), 0);
+    const totalQty = ts.reduce((sum,t)=> sum + wtQtyOf(t, wt), 0);
     const expAvg = totalQty ? ts.reduce((sum,t)=> sum+expectedWorkDays(t), 0) / totalQty : 0;
     // 실제 소요 평균은 완료(actualEndDate 설정)된 티켓만 집계
     const doneTs = ts.filter(t=> t.actualEndDate);
-    const doneQty = doneTs.reduce((sum,t)=> sum+qtyOf(t), 0);
+    const doneQty = doneTs.reduce((sum,t)=> sum + wtQtyOf(t, wt), 0);
     const actAvg = doneQty ? doneTs.reduce((sum,t)=> sum+actualBusinessDays(t), 0) / doneQty : null;
     const actStr = actAvg===null ? '-' : fmtDays(actAvg);
     lines.push(`  - ${wt}: 예상 평균 ${fmtDays(expAvg)}영업일 / 실제 평균 ${actStr}영업일 (총 ${totalQty}건${doneQty?`, 완료 ${doneQty}건`:''})`);
@@ -1676,7 +1799,7 @@ function buildQuarterFeedbackText(worker, tickets, start, end){
   return lines.join('\n');
 }
 function qtyBadge(t){
-  const q = t.qty || 1;
+  const q = ticketUnitCount(t);
   return q > 1 ? ` <span class="qty-badge">X${q}</span>` : '';
 }
 // 영업일 표시는 소수점 첫째 자리까지만 (정수면 소수점 없이 표시)
@@ -1815,7 +1938,7 @@ function ticketToCSVRow(t){
   return [
     t.title || '',
     t.project || '',
-    t.workType || '',
+    wtLabelOf(t),
     (t.assignees||[]).join(', '),
     t.startDate || '',
     t.endDate || '',
@@ -2453,6 +2576,55 @@ async function persistTickets(immediate){
   return await flushNow();
 }
 
+/* ---------- 공유 설정(숨긴 작업자) 동기화 ---------- */
+function applySettings(obj, fromServer){
+  if(!obj || typeof obj !== 'object') return false;
+  const next = {
+    hiddenWorkers: Array.isArray(obj.hiddenWorkers) ? obj.hiddenWorkers.filter(w=> WORKERS.includes(w)) : [],
+    updatedAt: obj.updatedAt || ''
+  };
+  // 서버에서 받은 값이 내 것보다 오래됐으면 무시
+  if(fromServer && SETTINGS.updatedAt && next.updatedAt && next.updatedAt < SETTINGS.updatedAt) return false;
+  const changed = JSON.stringify(next.hiddenWorkers) !== JSON.stringify(hiddenWorkers());
+  SETTINGS = next;
+  saveLocalCache();
+  return changed;
+}
+async function loadSettings(){
+  if(!Backend || typeof Backend.readSettings !== 'function') return;
+  try{
+    const obj = await Backend.readSettings();
+    if(obj) applySettings(obj, true);
+  }catch(e){}
+}
+async function saveSettings(){
+  SETTINGS.updatedAt = new Date().toISOString();
+  saveLocalCache();
+  if(!Backend || typeof Backend.writeSettings !== 'function') return false;
+  try{
+    const ok = await Backend.writeSettings({hiddenWorkers: hiddenWorkers(), updatedAt: SETTINGS.updatedAt});
+    return !!ok;
+  }catch(e){ return false; }
+}
+/* 작업자 숨기기/보이기 토글 - 클라우드에 바로 반영된다 */
+async function toggleWorkerHidden(w){
+  const list = hiddenWorkers().slice();
+  const i = list.indexOf(w);
+  const willHide = i < 0;
+  if(willHide){
+    if(list.length >= WORKERS.length - 1){ showToast('작업자를 모두 숨길 수는 없습니다.'); return; }
+    list.push(w);
+  } else {
+    list.splice(i, 1);
+  }
+  SETTINGS.hiddenWorkers = list;
+  renderApp();
+  const ok = await saveSettings();
+  showToast(ok
+    ? (willHide ? `${w} 작업자를 달력에서 숨겼습니다. (팀 전체에 적용 · 다시 누르면 해제)` : `${w} 작업자를 다시 표시합니다.`)
+    : '⚠ 설정을 서버에 저장하지 못했습니다. 이 기기에는 적용되었고 연결되면 다시 시도합니다.');
+}
+
 /* ---------- 실시간 반영 ---------- */
 let remoteRenderTimer = null;
 function scheduleRemoteRender(){
@@ -2520,6 +2692,11 @@ function applyRemoteChange(c){
   if(conflicts) notifyConflicts(conflicts);
 }
 function startRealtime(){
+  if(typeof Backend.subscribeSettings === 'function'){
+    Backend.subscribeSettings(obj=>{
+      if(applySettings(obj, true)) scheduleRemoteRender();
+    });
+  }
   if(Backend.realtime){
     Backend.subscribe(applyRemoteChange, err=>{
       SAVE.lastError = errMsg(err);
@@ -2530,6 +2707,7 @@ function startRealtime(){
     setInterval(async ()=>{
       if(document.hidden || SAVE.pending > 0) return;
       const r = await loadFromServer();
+      await loadSettings();
       if(r.ok){ updateSaveStatusUI(); scheduleRemoteRender(); }
     }, 20000);
   }
@@ -3173,15 +3351,15 @@ function isTicketVisibleOnMobileDate(t, dateObj){
 function renderMobileTicketChip(t){
   const isAbsence = t.project === '부재';
   const status = ticketStatus(t);
-  const color = isAbsence ? NO_TYPE_COLOR : (t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR);
+  const color = isAbsence ? NO_TYPE_COLOR : (ticketWorkTypes(t).length ? (WORK_TYPE_COLORS[ticketWorkTypes(t)[0]] || '#666') : NO_TYPE_COLOR);
   const needsResourceCheck = !isAbsence && t.resourceCheckNeeded && (status==='작업중' || status==='예정');
-  return `<div class="mobile-ticket-chip ${isAbsence?'absence-bar':''} ${status==='완료'?'mobile-chip-done':''}" data-id="${t.id}" style="background:${color};" title="${escapeHtml(t.title)}">${needsResourceCheck?'❗ ':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}[${escapeHtml(t.project)}] ${escapeHtml(t.title)}</div>`;
+  return `<div class="mobile-ticket-chip ${isAbsence?'absence-bar':''} ${status==='완료'?'mobile-chip-done':''}" data-id="${t.id}" style="background:${color};" title="${escapeHtml(t.title)}">${needsResourceCheck?'❗ ':''}${wtPrefixOf(t)}[${escapeHtml(t.project)}] ${escapeHtml(t.title)}</div>`;
 }
 
 function renderMobileBoardRows(dateISO){
   const date = dateISO || mobileBoardDate;
   const dateObj = parseISO(date);
-  return WORKERS.map(w=>{
+  return visibleWorkers().map(w=>{
     const dayTickets = TICKETS.filter(t=> t.assignees.includes(w) && t.startDate<=date && t.endDate>=date && isTicketVisibleOnMobileDate(t, dateObj))
       .sort((a,b)=>{
         const aAbs = a.project==='부재'?0:1, bAbs = b.project==='부재'?0:1;
@@ -3275,12 +3453,12 @@ function renderMobileMonthGrid(){
     const holidayCells = week.map((d,i)=>{
       const iso = toISO(d);
       if(!mobileIsCompanyWideHoliday(iso)) return '';
-      return `<div class="mmw-holiday" style="grid-column:${i+1}; grid-row:2 / span 4;" title="공휴일">🌴</div>`;
+      return `<div class="mmw-holiday" style="grid-column:${i+1}; grid-row:2 / span ${Math.max(1, visibleWorkers().length)};" title="공휴일">🌴</div>`;
     }).join('');
 
     // 개인 부재(반차 제외, 공통휴가 제외): 1일이면 🌙 아이콘, 2일 이상 이어지면 검은 바 + '병가' 라벨로 표시
     const personalAbsenceCells = [];
-    WORKERS.forEach((w, wi)=>{
+    visibleWorkers().forEach((w, wi)=>{
       let runStart = null;
       const isPersonalFullDayOff = (i)=>{
         const d = week[i];
@@ -3308,7 +3486,7 @@ function renderMobileMonthGrid(){
     // 담당자별로, 실제 티켓의 시작일·마감일 경계에서 바를 끊는다.
     // 겹치는 티켓 구성(집합)이 전날과 완전히 같을 때만 이어붙이고, 하나라도 시작/종료되면(전일 개인 휴가로 막히는 경우 포함) 새 구간으로 분리한다.
     const bars = [];
-    WORKERS.forEach((w, wi)=>{
+    visibleWorkers().forEach((w, wi)=>{
       let segStart = null, segKey = null, segCount = 0;
       const flush = (endIdx)=>{
         if(segStart===null) return;
@@ -3338,7 +3516,7 @@ function renderMobileMonthGrid(){
       return `<div class="mmw-bar" style="grid-column:${r.start+1} / ${r.end+2}; grid-row:${2+r.wi}; background:${color};" title="${r.count}건 겹침"></div>`;
     }).join('');
 
-    return `<div class="mobile-month-week">${bgCells}${barsHtml}${personalAbsenceCells.join('')}${holidayCells}${numCells}</div>`;
+    return `<div class="mobile-month-week" style="grid-template-rows:13px repeat(${Math.max(1, visibleWorkers().length)},1fr);">${bgCells}${barsHtml}${personalAbsenceCells.join('')}${holidayCells}${numCells}</div>`;
   }).join('');
 
   return `
@@ -3349,7 +3527,7 @@ function renderMobileMonthGrid(){
       <button type="button" class="mobile-today-goto-btn" id="mobileThisMonthBtn">이번달</button>
     </div>
     <div class="mobile-month-legend">
-      ${WORKERS.map(w=>`<span class="mobile-month-legend-item">${workerDot(w)}${w}</span>`).join('')}
+      ${visibleWorkers().map(w=>`<span class="mobile-month-legend-item">${workerDot(w)}${w}</span>`).join('')}
       <span class="mobile-month-legend-item">🌴 공휴일</span>
       <span class="mobile-month-legend-item">🌙 개인 휴가</span>
       <span class="mobile-month-legend-item"><span style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#5A5F68;"></span> 병가/장기휴가</span>
@@ -3388,7 +3566,7 @@ function renderMobileTicketCards(list){
         <span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span>
         ${statusChipHtml(status)}
       </div>
-      <div class="mobile-ticket-card-title">${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType} · `:''}${escapeHtml(t.title)}${qtyBadge(t)}</div>
+      <div class="mobile-ticket-card-title">${wtLabelOf(t)?`${wtIconsOf(t)} ${wtLabelOf(t)} · `:''}${escapeHtml(t.title)}${qtyBadge(t)}</div>
       <div class="mobile-ticket-card-meta">${t.assignees.join(', ')} · ${fmtShort(t.startDate)}~${fmtShort(t.endDate)}</div>
     </div>`;
   }).join('');
@@ -3414,7 +3592,7 @@ function renderMobileInProgressCards(list){
         <span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span>
         ${statusChipHtml(status)}
       </div>
-      <div class="mobile-ticket-card-title">${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType} · `:''}${escapeHtml(t.title)}${qtyBadge(t)}</div>
+      <div class="mobile-ticket-card-title">${wtLabelOf(t)?`${wtIconsOf(t)} ${wtLabelOf(t)} · `:''}${escapeHtml(t.title)}${qtyBadge(t)}</div>
       <div class="mobile-ticket-card-meta">${t.assignees.join(', ')} · ${dateMeta}</div>
     </div>`;
   }).join('');
@@ -3434,7 +3612,7 @@ function renderMobileUpcomingCards(list){
         ${needsResourceCheck?'<span class="resource-flag-badge">❗</span>':''}
       </div>
       <div class="mobile-upcoming-workers">${t.assignees.map(a=>workerDot(a)+escapeHtml(a)).join(' ')}</div>
-      <div class="mobile-ticket-card-meta">${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType} · `:''}<span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span> ${escapeHtml(t.title)}${qtyBadge(t)}</div>
+      <div class="mobile-ticket-card-meta">${wtLabelOf(t)?`${wtIconsOf(t)} ${wtLabelOf(t)} · `:''}<span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span> ${escapeHtml(t.title)}${qtyBadge(t)}</div>
     </div>`;
   }).join('');
 }
@@ -3452,7 +3630,7 @@ function getFilteredMobileSearchTickets(){
     if(mobileSearchWorkerFilter && !t.assignees.includes(mobileSearchWorkerFilter)) return false;
     if(mobileSearchStatusFilter && ticketStatus(t) !== mobileSearchStatusFilter) return false;
     if(mobileSearchProjectFilter && t.project !== mobileSearchProjectFilter) return false;
-    if(mobileSearchTypeFilter && t.workType !== mobileSearchTypeFilter) return false;
+    if(mobileSearchTypeFilter && !ticketWorkTypes(t).includes(mobileSearchTypeFilter)) return false;
     if(q){
       const hay = [t.title, t.project, ...(t.assignees||[])].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
@@ -3817,7 +3995,32 @@ function boardLegendHtml(showTypeColors){
       ${boardTypeFilters.length ? `<span class="legend-chip reset-chip" id="resetBoardTypeFilter">전체 보기</span>` : ''}
     </div>`;
 }
+/* 작업자 표시/숨김 바 - PC 보드(2주·월) 상단.
+   체크 상태는 클라우드에 저장되어 팀 전체에 적용되고, 다시 풀 때까지 유지된다. */
+function workerVisibilityHtml(){
+  if(deviceMode !== 'pc') return '';
+  const hidden = hiddenWorkers();
+  return `
+    <div class="legend worker-visibility" id="workerVisibilityBar">
+      <span class="wv-label">달력 표시:</span>
+      ${WORKERS.map(w=>{
+        const off = isWorkerHidden(w);
+        return `<span class="wv-pill ${off?'off':''}" data-worker="${w}"
+                  title="${off?`${w} 작업자를 다시 표시합니다`:`${w} 작업자를 달력에서 숨깁니다 (팀 전체 적용)`}">
+                  ${off?'🙈':'👁'} ${workerDot(w)}${w}</span>`;
+      }).join('')}
+      ${hidden.length ? `<span class="wv-note">숨김 ${hidden.length}명 · 클라우드에 저장되어 다시 누를 때까지 유지됩니다</span>` : ''}
+    </div>`;
+}
+function wireWorkerVisibility(){
+  const bar = document.getElementById('workerVisibilityBar');
+  if(!bar) return;
+  bar.querySelectorAll('.wv-pill[data-worker]').forEach(el=>{
+    el.onclick = ()=> toggleWorkerHidden(el.dataset.worker);
+  });
+}
 function wireBoardTypeFilter(){
+  wireWorkerVisibility();
   const legend = document.getElementById('boardTypeLegend');
   if(!legend) return; // 보드 화면이 아닐 때는 존재하지 않음
   legend.querySelectorAll('.legend-chip[data-type]').forEach(el=>{
@@ -3875,10 +4078,10 @@ function renderTwoWeekBoard(){
 
     const bars = items.map(({t,lane})=>{
       const idxOf = iso => Math.round((parseISO(iso)-parseISO(rangeStart))/86400000);
-      const color = t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR;
+      const color = ticketWorkTypes(t).length ? (WORK_TYPE_COLORS[ticketWorkTypes(t)[0]] || '#666') : NO_TYPE_COLOR;
       const status = ticketStatus(t);
       const statusCls = status==='완료' ? 'tb-done' : status==='보류' ? 'tb-hold' : '';
-      const title = `[미배정] ${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (담당자 배정 전 임시 보관 · 통계에 집계되지 않음)`;
+      const title = `[미배정] ${t.title} · ${t.project}${wtLabelOf(t)?' · '+wtLabelOf(t):''} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)} (담당자 배정 전 임시 보관 · 통계에 집계되지 않음)`;
       const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, false);
       return segments.map((seg, segIdx)=>{
         const clip = clipRange(seg[0], seg[1], rangeStart, rangeEnd);
@@ -3892,7 +4095,7 @@ function renderTwoWeekBoard(){
                style="grid-column:${a+1} / ${b+2}; grid-row:${lane+1};">
             <div class="seg seg-main" style="flex:1 0 0; background:${color};">
               ${showStartBold ? `<span class="edge-date start-edge">${fmtShort(t.startDate)}</span>` : ''}
-              <span class="seg-label" style="margin-top:9px;">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}${qtyBadge(t)}</span>
+              <span class="seg-label" style="margin-top:9px;">${wtPrefixOf(t)}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}${qtyBadge(t)}</span>
               ${showEndBold ? `<span class="edge-date end-edge">${fmtShort(t.endDate)}</span>` : ''}
             </div>
             ${isFirstSeg ? `<div class="resize-handle left" data-id="${t.id}" data-edge="start" title="시작일 변경(드래그)"></div>` : ''}
@@ -3915,7 +4118,7 @@ function renderTwoWeekBoard(){
       </div>`;
   })();
 
-  const rows = WORKERS.map(w=>{
+  const rows = visibleWorkers().map(w=>{
     const wTickets = TICKETS.filter(t=>t.assignees.includes(w) && matchesBoardTypeFilter(t));
     const {items, maxLanes} = assignLanes(wTickets, rangeStart, rangeEnd);
     const rowHeight = maxLanes * 38 + 6;
@@ -3931,7 +4134,7 @@ function renderTwoWeekBoard(){
     const bars = items.map(({t,lane})=>{
       const idxOf = iso => Math.round((parseISO(iso)-parseISO(rangeStart))/86400000);
 
-      const color = t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR;
+      const color = ticketWorkTypes(t).length ? (WORK_TYPE_COLORS[ticketWorkTypes(t)[0]] || '#666') : NO_TYPE_COLOR;
       const chain = chains[t.id];
       const isAbsence = t.project === '부재';
       const status = ticketStatus(t);
@@ -3939,7 +4142,7 @@ function renderTwoWeekBoard(){
       const days_bd = expectedWorkDays(t);
       const actual = actualBusinessDays(t);
 
-      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)}${isAbsence?'':` (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})`}${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
+      const title = `${t.title} · ${t.project}${wtLabelOf(t)?' · '+wtLabelOf(t):''} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)}${isAbsence?'':` (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})`}${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
 
       // 부재를 포함한 모든 티켓은 주말(비근무일)에 바가 끊기고, '주말 출근 필요' 체크가 있을 때만 이어서 표기
       const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, false);
@@ -3958,7 +4161,7 @@ function renderTwoWeekBoard(){
                style="grid-column:${totalStartIdx+1} / ${totalEndIdx+2}; grid-row:${lane+1};">
             <div class="seg seg-main ${isAbsence?'absence-bar':''}" style="flex:1 0 0; background:${color};">
               ${showStartBold ? `<span class="edge-date start-edge">${fmtShort(t.startDate)}</span>` : ''}
-              <span class="seg-label" style="margin-top:9px;">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${(isAbsence && t.assignees && t.assignees.length===1) ? escapeHtml(t.assignees[0])+' ' : ''}${escapeHtml(t.title)}${qtyBadge(t)}</span>
+              <span class="seg-label" style="margin-top:9px;">${wtPrefixOf(t)}<b>[${escapeHtml(t.project)}]</b> ${(isAbsence && t.assignees && t.assignees.length===1) ? escapeHtml(t.assignees[0])+' ' : ''}${escapeHtml(t.title)}${qtyBadge(t)}</span>
               ${showEndBold ? `<span class="edge-date end-edge">${fmtShort(t.endDate)}</span>` : ''}
             </div>
             ${isFirstSeg ? `<div class="resize-handle left" data-id="${t.id}" data-edge="start" title="시작일 변경(드래그)"></div>` : ''}
@@ -3981,7 +4184,7 @@ function renderTwoWeekBoard(){
       </div>`;
   }).join('');
 
-  return `${legend}<div class="board">${head}${reserveRow}${rows}</div>${renderBoardSummary()}`;
+  return `${legend}${workerVisibilityHtml()}<div class="board">${head}${reserveRow}${rows}</div>${renderBoardSummary()}`;
 }
 
 function renderMonthBoard(){
@@ -4000,13 +4203,14 @@ function renderMonthBoard(){
   const legend = boardLegendHtml(!!monthFilterWorker);
   const ticketPool = TICKETS.filter(t=>
     (!monthFilterWorker || t.assignees.includes(monthFilterWorker)) &&
+    !isTicketHiddenByWorker(t) &&
     matchesBoardTypeFilter(t)
   );
   // 전체보기(작업자 필터 없음)에서 담당자가 2명 이상인 티켓(부재 제외)은, 한 바 안에서 색상을 나누는 대신
   // 담당자별로 완전히 분리된 바(각자 별도의 레인)로 표시되도록 담당자 수만큼 항목을 나눠준다.
   const expandedTicketPool = ticketPool.flatMap(t=>{
     if(!monthFilterWorker && t.project!=='부재' && t.assignees.length>1){
-      return t.assignees.map(a=> ({...t, assignees:[a]}));
+      return t.assignees.filter(a=> !isWorkerHidden(a)).map(a=> ({...t, assignees:[a]}));
     }
     return [t];
   });
@@ -4018,13 +4222,14 @@ function renderMonthBoard(){
   const workerFilter = `
     <div class="legend" style="margin-top:-4px;">
       <span style="font-size:11.5px; color:var(--text-faint); margin-right:2px;">작업자 필터:</span>
-      ${WORKERS.map(w=>{
+      ${visibleWorkers().map(w=>{
         const isActive = monthFilterWorker===w;
         const colorStyle = (showWorkerColorOnPills && !isActive) ? `background:${WORKER_COLORS[w]}; border-color:${WORKER_COLORS[w]}; color:#2A2E35;` : '';
         return `<span class="worker-filter-pill ${isActive?'active':''}" data-worker="${w}" style="${colorStyle}">${w}</span>`;
       }).join('')}
       ${monthFilterWorker ? `<span class="worker-filter-pill reset" id="resetWorkerFilter">전체 보기</span>` : ''}
-    </div>`;
+    </div>
+    ${workerVisibilityHtml()}`;
 
   const head = `
     <div class="month-head">
@@ -4058,13 +4263,13 @@ function renderMonthBoard(){
         ? NO_TYPE_COLOR
         : (!monthFilterWorker
             ? (WORKER_COLORS[t.assignees[0]] || NO_TYPE_COLOR)
-            : (t.workType ? (WORK_TYPE_COLORS[t.workType] || '#666') : NO_TYPE_COLOR));
+            : (ticketWorkTypes(t).length ? (WORK_TYPE_COLORS[ticketWorkTypes(t)[0]] || '#666') : NO_TYPE_COLOR));
       const chain = chains[t.id];
       const status = ticketStatus(t);
       const statusCls = status==='완료' ? 'tb-done' : status==='보류' ? 'tb-hold' : '';
       const days_bd = expectedWorkDays(t);
       const actual = actualBusinessDays(t);
-      const title = `${t.title} · ${t.project}${t.workType?' · '+t.workType:''} · ${t.assignees.join(',')} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)}${isAbsence?'':` (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})`}${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
+      const title = `${t.title} · ${t.project}${wtLabelOf(t)?' · '+wtLabelOf(t):''} · ${t.assignees.join(',')} · ${status} · ${fmtFull(t.startDate)}~${fmtFull(t.endDate)}${isAbsence?'':` (예상 ${fmtDays(days_bd)}영업일${status==='완료'&&actual!==null?`, 실제 ${fmtDays(actual)}영업일`:''})`}${t.resourceDeadline?` · 리소스 마감 ${fmtFull(t.resourceDeadline)}`:''}${t.spec?` · 사양: ${t.spec}`:''}`;
 
       // 부재를 포함한 모든 티켓은 주말(비근무일)에 바가 끊기고, '주말 출근 필요' 체크가 있을 때만 이어서 표기
       const segments = splitSegmentsByWorkDays(t.startDate, t.endDate, t, false);
@@ -4079,7 +4284,7 @@ function renderMonthBoard(){
           <div class="ticket-bar month-bar ${monthFilterWorker?'':'thin'} ${statusCls}" data-id="${t.id}" title="${escapeHtml(title)}"
                style="grid-column:${s+1} / ${e+2}; grid-row:${lane+2};">
             <div class="seg seg-main ${isAbsence?'absence-bar':''}" style="flex:1 0 0; background:${color};">
-              <span class="seg-label">${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}${qtyBadge(t)} <span class="month-bar-assignee">· ${escapeHtml(t.assignees.join(','))}</span></span>
+              <span class="seg-label">${wtPrefixOf(t)}<b>[${escapeHtml(t.project)}]</b> ${escapeHtml(t.title)}${qtyBadge(t)} <span class="month-bar-assignee">· ${escapeHtml(t.assignees.join(','))}</span></span>
             </div>
             ${segIdx===0 ? `<div class="resize-handle left" data-id="${t.id}" data-edge="start" title="시작일 변경(드래그)"></div>` : ''}
             ${isLastSeg ? `<div class="resize-handle right" data-id="${t.id}" data-edge="end" title="마감일 변경(드래그)"></div>` : ''}
@@ -4126,7 +4331,7 @@ function renderBoardSummary(){
             const needsResourceCheck = !!t.resourceCheckNeeded;
             const isAbsenceRow = t.project==='부재';
             return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''} ${isAbsenceRow?'tr-absence':''}" data-id="${t.id}" style="cursor:pointer;">
-              <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
+              <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${wtPrefixOf(t)}${escapeHtml(t.title)}${qtyBadge(t)}</td>
               <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
               <td>${isReserveTicket(t) ? '<span class="reserve-badge">미배정</span>' : escapeHtml(t.assignees.join(', '))}</td>
               <td>${fmtShort(t.startDate)} ~ ${fmtShort(t.endDate)}</td>
@@ -4157,7 +4362,7 @@ function renderBoardSummary(){
               : (t.assignees||[]).join(', ');
             const assigneeHtml = isReserveTicket(t) ? '<span class="reserve-badge">미배정</span>' : escapeHtml(assigneeLabel);
             return `<tr class="ticket-row ${needsResourceCheck?'tr-resource-alert':''} ${isAbsenceRow?'tr-absence':''}" data-id="${t.id}" style="cursor:pointer;">
-              <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${t.workType?WORK_TYPE_ICONS[t.workType]+' ':''}${escapeHtml(t.title)}${qtyBadge(t)}</td>
+              <td>${needsResourceCheck?'<span class="resource-flag-badge" title="리소스 마감일까지 도착 확인이 필요합니다">❗ 리소스 확인</span>':''}${wtPrefixOf(t)}${escapeHtml(t.title)}${qtyBadge(t)}</td>
               <td style="min-width:58px;"><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
               <td>${assigneeHtml}</td>
               <td style="min-width:82px;">${fmtShort(t.startDate)} (D-${Math.max(dday,0)})</td>
@@ -4375,8 +4580,11 @@ function renderDashboard(){
       const keys = keyFn(t);
       keys.forEach(k=>{
         if(!table[k]) return;
-        const wt = t.workType || '기타';
-        table[k][wt] = (table[k][wt]||0) + (t.qty||1);
+        // 업무 유형을 여러 개 고른 티켓은 유형마다 각각 1건으로 센다
+        const wts = ticketWorkTypes(t);
+        (wts.length ? wts : ['기타']).forEach(wt=>{
+          table[k][wt] = (table[k][wt]||0) + wtQtyOf(t, wt);
+        });
       });
     });
     return labels.map(l=> ({label:l, counts:table[l]}));
@@ -4400,20 +4608,20 @@ function renderDashboard(){
 
   // ---- 작업자별 · 유형별 평균 소요 영업일 (전체 기간 기준, 부재 제외, 라이브·오프라인 촬영 제외) ----
   const AVG_DAYS_WORK_TYPES = WORK_TYPES.filter(wt=> wt!=='라이브' && wt!=='오프라인 촬영');
-  const avgDaysAllTickets = TICKETS.filter(t=> !isReserveTicket(t) && t.project !== '부재' && t.workType && AVG_DAYS_WORK_TYPES.includes(t.workType));
+  const avgDaysAllTickets = TICKETS.filter(t=> !isReserveTicket(t) && t.project !== '부재' && ticketWorkTypes(t).some(w=> AVG_DAYS_WORK_TYPES.includes(w)));
   function avgDaysRows(){
     return WORKERS.map(w=>{
       const counts = {};
       AVG_DAYS_WORK_TYPES.forEach(wt=>{
-        const ts = avgDaysAllTickets.filter(t=> t.workType===wt && t.assignees.includes(w));
+        const ts = avgDaysAllTickets.filter(t=> ticketWorkTypes(t).includes(wt) && t.assignees.includes(w));
         if(ts.length){
           // 티켓 하나에 여러 개(수량)가 묶여 있으면 총 소요일을 수량으로 나눠 '건당' 일수로 환산해 평균에 반영
           // 예: 숏폼 5개를 5영업일 만에 처리했다면 건당 1일로 계산됨
-          const totalQty = ts.reduce((sum,t)=> sum+(t.qty||1), 0);
+          const totalQty = ts.reduce((sum,t)=> sum + wtQtyOf(t, wt), 0);
           const expAvg = totalQty ? ts.reduce((sum,t)=> sum+expectedWorkDays(t), 0) / totalQty : 0;
           // 실제 소요 평균: 완료(actualEndDate 설정)된 티켓만 집계
           const doneTs = ts.filter(t=> t.actualEndDate);
-          const doneQty = doneTs.reduce((sum,t)=> sum+(t.qty||1), 0);
+          const doneQty = doneTs.reduce((sum,t)=> sum + wtQtyOf(t, wt), 0);
           const actAvg = doneQty ? doneTs.reduce((sum,t)=> sum+actualBusinessDays(t), 0) / doneQty : null;
           counts[wt] = {exp: expAvg, act: actAvg};
         }
@@ -4487,7 +4695,7 @@ function renderDashboard(){
           return `<tr class="ticket-row" data-id="${t.id}" style="cursor:pointer;">
             <td>${escapeHtml(t.title)}${qtyBadge(t)}</td>
             <td><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
-            <td>${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType}`:'-'}</td>
+            <td>${wtLabelOf(t)?`${wtIconsOf(t)} ${wtLabelOf(t)}`:'-'}</td>
             <td>${fmtShort(t.startDate)} ~ ${fmtShort(t.endDate)}</td>
             <td>${statusChipHtml(status)}</td>
             <td>${renderResourceCell(t)}</td>
@@ -4502,7 +4710,7 @@ function renderDashboard(){
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:2px;">
         <p class="card-title" style="margin-bottom:0;">작업자별 · 유형별 티켓 수</p>
-        <span style="background:var(--accent); color:#fff; font-weight:800; font-size:12.5px; padding:4px 12px; border-radius:16px; white-space:nowrap;">총 ${workerTickets.reduce((s,t)=>s+(t.qty||1),0)}건</span>
+        <span style="background:var(--accent); color:#fff; font-weight:800; font-size:12.5px; padding:4px 12px; border-radius:16px; white-space:nowrap;">총 ${workerTickets.reduce((s,t)=>s+ticketUnitCount(t),0)}건</span>
         <div class="range-nav" style="gap:4px;">
           <button class="range-btn" id="workerCardPrev">‹</button>
           <div class="range-label" style="min-width:auto; width:auto; font-size:12.5px; white-space:nowrap;">${workerMonthLabel}</div>
@@ -4515,7 +4723,7 @@ function renderDashboard(){
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:2px;">
         <p class="card-title" style="margin-bottom:0;">프로젝트별 · 유형별 티켓 수</p>
-        <span style="background:var(--accent); color:#fff; font-weight:800; font-size:12.5px; padding:4px 12px; border-radius:16px; white-space:nowrap;">총 ${projectMonthTickets.reduce((s,t)=>s+(t.qty||1),0)}건</span>
+        <span style="background:var(--accent); color:#fff; font-weight:800; font-size:12.5px; padding:4px 12px; border-radius:16px; white-space:nowrap;">총 ${projectMonthTickets.reduce((s,t)=>s+ticketUnitCount(t),0)}건</span>
         <div class="range-nav" style="gap:4px;">
           <button class="range-btn" id="projectCardPrev">‹</button>
           <div class="range-label" style="min-width:auto; width:auto; font-size:12.5px; white-space:nowrap;">${projectMonthLabel}</div>
@@ -4710,7 +4918,7 @@ function getFilteredSearchTickets(){
   const filtered = TICKETS.filter(t=>{
     if(t.project === '부재') return false; // 부재는 아래 별도 "부재 관리" 목록에서 관리
     if(searchStatusFilters.length && !searchStatusFilters.includes(ticketStatus(t))) return false;
-    if(searchTypeFilters.length && !searchTypeFilters.includes(t.workType)) return false;
+    if(searchTypeFilters.length && !ticketWorkTypes(t).some(w=> searchTypeFilters.includes(w))) return false;
     if(searchWorkerFilters.length && !(t.assignees||[]).some(a=> searchWorkerFilters.includes(a))) return false;
     if(q){
       const hay = [t.title, t.project, ...(t.assignees||[]), t.memo||'', t.sb||'', t.spec||'', t.referenceLink||'', ...((t.resourceLinks)||[]), ...((t.referenceLinks)||[])].join(' ').toLowerCase();
@@ -4788,7 +4996,7 @@ function renderSearchResults(){
             <td class="cb-cell" onclick="event.stopPropagation()"><input type="checkbox" class="ticket-select-cb" data-id="${t.id}" ${checked?'checked':''}></td>
             <td style="cursor:pointer;">${escapeHtml(t.title)}${qtyBadge(t)}</td>
             <td style="cursor:pointer;"><span class="proj-chip" style="background:${PROJECT_COLORS[t.project]}">${t.project}</span></td>
-            <td style="cursor:pointer;">${t.workType?`${WORK_TYPE_ICONS[t.workType]} ${t.workType}`:'-'}</td>
+            <td style="cursor:pointer;">${wtLabelOf(t)?`${wtIconsOf(t)} ${wtLabelOf(t)}`:'-'}</td>
             <td style="cursor:pointer;">${t.assignees.join(', ')}</td>
             <td style="cursor:pointer;">${fmtShort(t.startDate)}</td>
             <td style="cursor:pointer;">${fmtShort(t.endDate)}</td>
@@ -5195,6 +5403,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
   const initialProject = t ? t.project : (presetProject || null);
   const isDedicatedAbsenceEntry = presetProject==='부재' && !t; // "+ 부재 등록" 버튼으로 들어온 신규 부재 등록
   const initAssignees = t ? [...(t.assignees||[])] : (presetAssignee ? [presetAssignee] : []);
+  const initWorkTypes = t ? ticketWorkTypes(t) : [];
   const overlay = document.createElement('div');
   overlay.className = 'overlay open';
   overlay.id = 'overlay';
@@ -5217,11 +5426,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
           <label>제목</label>
           <input type="text" id="fTitle" value="${t?escapeHtml(t.title):''}" placeholder="${isDedicatedAbsenceEntry?'예: 연차, 반차, 병가, 출장 등 사유를 적어주세요':'예: 시즌 밸런스 패치 작업'}">
         </div>
-        <div class="field" id="qtyFieldWrapper" style="display:${isDedicatedAbsenceEntry?'none':'block'};">
-          <label>수량 <span class="hint">(한 티켓에 여러 종/개의 작업이 묶여 있는 경우, 예: 3종이면 3)</span></label>
-          <input type="number" id="fQty" min="1" step="1" value="${t&&t.qty?t.qty:1}" style="max-width:120px;">
-        </div>
-        <div class="select-row" id="projectTypeRow" style="display:${isDedicatedAbsenceEntry?'none':'grid'};">
+        <div class="select-row single" id="projectTypeRow" style="display:${isDedicatedAbsenceEntry?'none':'grid'};">
           <div class="field ${t?'':'required-field'}" id="projectFieldWrapper">
             <label>프로젝트</label>
             <select id="fProject">
@@ -5229,15 +5434,19 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
               ${PROJECTS.filter(p=> p!=='부재' || initialProject==='부재').map(p=>`<option value="${p}" ${(t?t.project===p:presetProject===p)?'selected':''}>${p}</option>`).join('')}
             </select>
           </div>
-          <div class="field ${t?'':'required-field'}" id="workTypeFieldWrapper">
-            <label>업무 유형</label>
-            <select id="fWorkType">
-              <option value="">업무 유형 선택</option>
-              ${WORK_TYPES.map(wt=>`<option value="${wt}" ${t&&t.workType===wt?'selected':''}>${WORK_TYPE_ICONS[wt]} ${wt}</option>`).join('')}
-            </select>
-          </div>
         </div>
-        <div class="field">
+        <div class="field compact-field ${t?'':'required-field'}" id="workTypeFieldWrapper" style="display:${isDedicatedAbsenceEntry?'none':'block'};">
+          <label>업무 유형 <span class="hint">(여러 개 선택 가능 · 선택하면 오른쪽 칸에 수량을 적을 수 있습니다)</span></label>
+          <div class="pill-group tight" id="fWorkTypes">
+            ${WORK_TYPES.map(wt=>{
+              const on = initWorkTypes.includes(wt);
+              const q = on ? (t ? wtQtyOf(t, wt) : 1) : 1;
+              return `<div class="pill wt-pill ${on?'selected':''}" data-val="${wt}" style="--wt-color:${WORK_TYPE_COLORS[wt]};">${WORK_TYPE_ICONS[wt]} ${wt}<input type="number" class="wt-qty" min="1" step="1" value="${q}" data-for="${wt}" title="${wt} 수량" ${on?'':'style="display:none;"'}></div>`;
+            }).join('')}
+          </div>
+          <div class="wt-count-hint" id="wtCountHint"></div>
+        </div>
+        <div class="field compact-field ${t?'':'required-field'}" id="assigneeFieldWrapper">
           <label>담당자 <span class="hint">(최대 4명까지 선택 가능)</span></label>
           <div class="pill-group" id="fAssignee">
             ${(((deviceMode==='pc' && !isDedicatedAbsenceEntry) || initAssignees.includes(RESERVE_WORKER))
@@ -5325,11 +5534,12 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
   let selStatus = initialStatus;
   let selProject = initialProject;
   let selAssignees = [...initAssignees];
-  let selWorkType = t ? (t.workType || null) : null;
+  let selWorkTypes = [...initWorkTypes];
+  function primarySelWorkType(){ return selWorkTypes[0] || null; }
 
   function updateFieldsForProject(){
     const isAbsence = selProject === '부재';
-    overlay.querySelector('#workTypeFieldWrapper').style.visibility = isAbsence ? 'hidden' : 'visible';
+    overlay.querySelector('#workTypeFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#sbFieldWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#resourceDeadlineWrapper').style.display = isAbsence ? 'none' : 'block';
     overlay.querySelector('#resourceCheckFieldWrapper').style.display = isAbsence ? 'none' : 'block';
@@ -5394,7 +5604,64 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
       }
     };
   });
-  overlay.querySelector('#fWorkType').onchange = (e)=>{ selWorkType = e.target.value || null; updateDays(); updateActualDays(); };
+  function wtQtyInput(wt){ return overlay.querySelector(`#fWorkTypes .wt-qty[data-for="${wt}"]`); }
+  function selWorkTypeQty(wt){
+    const el = wtQtyInput(wt);
+    return Math.max(1, parseInt(el && el.value, 10) || 1);
+  }
+  function selTotalQty(){ return selWorkTypes.reduce((sum, wt)=> sum + selWorkTypeQty(wt), 0); }
+  function syncWorkTypeHint(){
+    const hint = overlay.querySelector('#wtCountHint');
+    if(!hint) return;
+    if(!selWorkTypes.length){ hint.textContent = ''; hint.classList.remove('on'); return; }
+    hint.classList.add('on');
+    const parts = selWorkTypes.map(wt=> `${wt} ${selWorkTypeQty(wt)}`);
+    hint.textContent = `${parts.join(' + ')} · 통계에 총 ${selTotalQty()}건으로 집계됩니다`;
+  }
+  overlay.querySelectorAll('#fWorkTypes .wt-pill').forEach(el=>{
+    const v = el.dataset.val;
+    const qtyEl = el.querySelector('.wt-qty');
+    el.onclick = (e)=>{
+      if(e.target === qtyEl) return;        // 수량 칸을 눌렀을 때는 선택이 풀리지 않게
+      const i = selWorkTypes.indexOf(v);
+      if(i > -1){
+        selWorkTypes.splice(i, 1);
+        if(qtyEl){ qtyEl.style.display = 'none'; qtyEl.value = 1; }   // 해제하면 수량도 1로 초기화
+      } else {
+        selWorkTypes.push(v);
+        if(qtyEl){ qtyEl.style.display = ''; if(!(parseInt(qtyEl.value,10) > 0)) qtyEl.value = 1; }  // 선택하면 기본 1개
+      }
+      el.classList.toggle('selected', selWorkTypes.includes(v));
+      syncWorkTypeHint();
+      updateDays(); updateActualDays();
+    };
+    if(qtyEl){
+      qtyEl.addEventListener('click', e=> e.stopPropagation());
+      qtyEl.addEventListener('input', ()=>{ syncWorkTypeHint(); updateDays(); updateActualDays(); });
+      qtyEl.addEventListener('blur', ()=>{ if(!(parseInt(qtyEl.value,10) > 0)) qtyEl.value = 1; syncWorkTypeHint(); });
+    }
+  });
+  syncWorkTypeHint();
+
+  /* 필수 입력 항목은 비어 있을 때만 빨간 테두리를 보여주고, 입력·선택되는 즉시 지운다 */
+  function markRequired(id, filled){
+    const el = overlay.querySelector('#' + id);
+    if(el) el.classList.toggle('required-field', !filled);
+  }
+  function refreshRequiredMarks(){
+    const isAbs = (selProject === '부재') || isDedicatedAbsenceEntry;
+    const val = sel => { const e = overlay.querySelector(sel); return e ? String(e.value).trim() : ''; };
+    markRequired('titleFieldWrapper', !!val('#fTitle'));
+    markRequired('projectFieldWrapper', !!selProject);
+    markRequired('workTypeFieldWrapper', isAbs || selWorkTypes.length > 0);
+    markRequired('assigneeFieldWrapper', selAssignees.length > 0);
+    markRequired('startDateFieldWrapper', !!val('#fStart'));
+    markRequired('endDateFieldWrapper', !!val('#fEnd'));
+  }
+  ['input','change','click'].forEach(ev=>{
+    overlay.addEventListener(ev, ()=> setTimeout(refreshRequiredMarks, 0));
+  });
+  refreshRequiredMarks();
 
   const initialResourceLinks = t ? ((t.resourceLinks&&t.resourceLinks.length)?t.resourceLinks:[t.memo||'']) : [''];
   const initialReferenceLinks = t ? ((t.referenceLinks&&t.referenceLinks.length)?t.referenceLinks:[t.referenceLink||'']) : [''];
@@ -5434,7 +5701,9 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
       id: editingId || '__draft__',
       project: selProject,
       assignees: selAssignees || [],
-      workType: selWorkType,
+      workType: primarySelWorkType(),
+      workTypes: [...selWorkTypes],
+      workTypeQty: (()=>{ const m={}; selWorkTypes.forEach(wt=> m[wt]=selWorkTypeQty(wt)); return m; })(),
       weekendSat: satEl ? satEl.checked : false,
       weekendSun: sunEl ? sunEl.checked : false
     };
@@ -5524,7 +5793,9 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const draftWeekendSat = isAbsenceDraft ? false : (overlay.querySelector('#fWeekendSat') ? overlay.querySelector('#fWeekendSat').checked : false);
     const draftWeekendSun = isAbsenceDraft ? false : (overlay.querySelector('#fWeekendSun') ? overlay.querySelector('#fWeekendSun').checked : false);
     const draft = {
-      title: draftTitle || '(제목 없음)', project: selProject || '', workType: isAbsenceDraft ? '' : selWorkType,
+      title: draftTitle || '(제목 없음)', project: selProject || '',
+      workType: isAbsenceDraft ? '' : primarySelWorkType(),
+      workTypes: isAbsenceDraft ? [] : [...selWorkTypes],
       assignees: selAssignees, status: selStatus, startDate: draftStart, endDate: draftEnd,
       resourceLinks: draftResourceLinks, referenceLinks: draftReferenceLinks, memo: draftResourceLinks[0]||'',
       referenceLink: draftReferenceLinks[0]||'', sb: draftSB, spec: draftSpec,
@@ -5593,8 +5864,9 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const referenceLink = referenceLinks[0] || '';
     const weekendSat = selProject==='부재' ? false : overlay.querySelector('#fWeekendSat').checked;
     const weekendSun = selProject==='부재' ? false : overlay.querySelector('#fWeekendSun').checked;
-    const qtyInput = overlay.querySelector('#fQty');
-    const qty = (selProject==='부재' || !qtyInput) ? 1 : Math.max(1, parseInt(qtyInput.value, 10) || 1);
+    const workTypeQty = {};
+    selWorkTypes.forEach(wt=>{ workTypeQty[wt] = selWorkTypeQty(wt); });
+    const qty = (selProject==='부재') ? 1 : Math.max(1, selTotalQty());
     const errEl = overlay.querySelector('#formError');
     const footerErrEl = overlay.querySelector('#footerError');
     const saveBtn = overlay.querySelector('#mSave');
@@ -5606,7 +5878,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     if(!start || !end) errors.push('시작일과 마감일을 모두 입력해주세요.');
     if(start && end && end < start) errors.push('마감일은 시작일보다 빠를 수 없습니다.');
     if(selStatus==='완료' && start && actualEnd && actualEnd < start) errors.push('완료일은 시작일보다 빠를 수 없습니다.');
-    if(!selWorkType && selProject!=='부재') errors.push('업무 유형을 선택해주세요.');
+    if(!selWorkTypes.length && selProject!=='부재') errors.push('업무 유형을 1개 이상 선택해주세요.');
 
     if(errors.length){
       errEl.style.display = 'block';
@@ -5631,7 +5903,9 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const payload = {
       title, project:selProject, assignees:selAssignees,
       status: isAbsenceSave ? null : selStatus,
-      workType: isAbsenceSave ? null : selWorkType,
+      workType: isAbsenceSave ? null : primarySelWorkType(),
+      workTypes: isAbsenceSave ? [] : [...selWorkTypes],
+      workTypeQty: isAbsenceSave ? {} : workTypeQty,
       startDate:start, endDate:end,
       actualEndDate: (!isAbsenceSave && selStatus==='완료') ? (actualEnd || end || null) : null,
       memo, resourceLinks: isAbsenceSave ? [] : resourceLinks, sb: isAbsenceSave ? '' : sb, resourceDeadline: (isAbsenceSave || !resourceDeadline) ? null : resourceDeadline,
@@ -5892,6 +6166,7 @@ const READ_FAIL_BANNER = err => `<span>⛔ <b>서버에서 데이터를 불러�
 
     // 3) 서버에서 읽어와 로컬 사본과 병합
     setSaveState('syncing');
+    await loadSettings();
     const r = await loadFromServer();
     clearTimeout(hardTimer);
 
