@@ -5643,6 +5643,13 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     return Math.max(1, parseInt(el && el.value, 10) || 1);
   }
   function selTotalQty(){ return selWorkTypes.reduce((sum, wt)=> sum + selWorkTypeQty(wt), 0); }
+  /* 수량이 여러 건인 티켓은 '건당 몇 일'인지 함께 보여준다
+     (대시보드의 유형별 평균이 건당 기준이라 바로 비교할 수 있도록) */
+  function perUnitSuffix(days){
+    const total = selWorkTypes.length ? selTotalQty() : 1;
+    if(total <= 1) return '';
+    return ` (건당 ${fmtDays(days / total)}일 · 총 ${total}건)`;
+  }
   function syncWorkTypeHint(){
     const hint = overlay.querySelector('#wtCountHint');
     if(!hint) return;
@@ -5651,6 +5658,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const total = selTotalQty();
     if(total <= 1){ hint.textContent = ''; hint.classList.remove('on'); return; }
     hint.textContent = `총 ${total}건`;
+    hint.classList.add('on');
   }
   overlay.querySelectorAll('#fWorkTypes .wt-pill').forEach(el=>{
     const v = el.dataset.val;
@@ -5759,7 +5767,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
       let days = businessDaysBetween(effectiveStart, e);
       if(sat && rangeIncludesWeekday(effectiveStart, e, 6)) days += 1;
       if(sun && rangeIncludesWeekday(effectiveStart, e, 0)) days += 1;
-      el.textContent = fmtDays(days) + '일'; // 주말만 있는 기간에 주말 근무 체크 없으면 0일
+      el.textContent = fmtDays(days) + '일' + perUnitSuffix(days); // 주말만 있는 기간에 주말 근무 체크 없으면 0일
     }
     else { el.textContent = '-'; }
   }
@@ -5774,7 +5782,8 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const el = overlay.querySelector('#actualDaysVal');
     if(!el) return;
     if(s && ae && ae>=s){
-      el.textContent = fmtDays(countWorkingDaysForTicket(s, ae, currentFormTicketDraft())) + '일';
+      const actualDays = countWorkingDaysForTicket(s, ae, currentFormTicketDraft());
+      el.textContent = fmtDays(actualDays) + '일' + perUnitSuffix(actualDays);
     } else { el.textContent = '-'; }
   }
   overlay.querySelector('#fStart').oninput = ()=>{ updateDays(); updateActualDays(); };
