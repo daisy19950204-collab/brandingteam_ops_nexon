@@ -4908,7 +4908,7 @@ function renderSearchView(){
         <input type="text" id="searchInput" value="${escapeHtml(searchText)}" placeholder="제목, 프로젝트, 담당자로 검색...">
       </div>
       <div class="field" style="margin-bottom:8px;">
-        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">기간 <span class="hint">(시작~종료 구간과 겹치는 티켓만 표시 · 해당 구간 CSV 추출용)</span></label>
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">기간</label>
         <div class="two-col">
           <div class="field" style="margin-bottom:0;">
             <label>시작일</label>
@@ -4921,21 +4921,21 @@ function renderSearchView(){
         </div>
       </div>
       <div class="field">
-        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">상태 <span class="hint">(클릭하여 필터 · 여러 개 동시 선택 가능)</span></label>
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">상태</label>
         <div class="pill-group" id="searchStatusPills">
           ${statusPillsHtml}
           ${searchStatusFilters.length ? `<div class="pill" id="resetStatusFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
         </div>
       </div>
       <div class="field" style="margin-bottom:8px;">
-        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">업무 유형 <span class="hint">(클릭하여 필터 · 여러 개 동시 선택 가능)</span></label>
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">업무 유형</label>
         <div class="pill-group" id="searchTypePills">
           ${typePillsHtml}
           ${searchTypeFilters.length ? `<div class="pill" id="resetTypeFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
         </div>
       </div>
       <div class="field" style="margin-bottom:8px;">
-        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">담당자 <span class="hint">(클릭하여 필터 · 여러 명 동시 선택 가능)</span></label>
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">담당자</label>
         <div class="pill-group" id="searchWorkerPills">
           ${WORKERS.map(w=>`<div class="pill ${searchWorkerFilters.includes(w)?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
           ${searchWorkerFilters.length ? `<div class="pill" id="resetWorkerSearchFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
@@ -5195,7 +5195,7 @@ function renderAbsenceView(){
         <input type="text" id="absenceSearchInput" value="${escapeHtml(absenceSearchText)}" placeholder="제목, 담당자로 검색...">
       </div>
       <div class="field" style="margin-bottom:8px;">
-        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">담당자 <span class="hint">(클릭하여 필터)</span></label>
+        <label style="font-size:11.5px; color:var(--text-faint); margin-bottom:6px; display:block;">담당자</label>
         <div class="pill-group" id="absenceWorkerPills">
           ${WORKERS.map(w=>`<div class="pill ${absenceWorkerFilter===w?'selected':''}" data-worker="${w}">${workerDot(w)}${w}</div>`).join('')}
           ${absenceWorkerFilter ? `<div class="pill" id="resetAbsenceWorkerFilter" style="border-style:dashed; color:var(--text-faint);">전체 보기</div>` : ''}
@@ -5469,7 +5469,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
           </div>
         </div>
         <div class="field compact-field ${t?'':'required-field'}" id="workTypeFieldWrapper" style="display:${isDedicatedAbsenceEntry?'none':'block'};">
-          <label>업무 유형 <span class="hint">(여러 개 선택 가능 · 선택하면 오른쪽 칸에 수량을 적을 수 있습니다)</span></label>
+          <label>업무 유형</label>
           <div class="pill-group tight" id="fWorkTypes">
             ${WORK_TYPES.map(wt=>{
               const on = initWorkTypes.includes(wt);
@@ -5480,7 +5480,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
           <div class="wt-count-hint" id="wtCountHint"></div>
         </div>
         <div class="field compact-field ${t?'':'required-field'}" id="assigneeFieldWrapper">
-          <label>담당자 <span class="hint">(최대 4명까지 선택 가능)</span></label>
+          <label>담당자</label>
           <div class="pill-group" id="fAssignee">
             ${(((deviceMode==='pc' && !isDedicatedAbsenceEntry) || initAssignees.includes(RESERVE_WORKER))
                 ? [RESERVE_WORKER, ...WORKERS] : WORKERS)
@@ -5519,7 +5519,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
         </div>
         <div class="field" id="completionField" style="display:none;">
           <div class="computed-days" id="actualDaysBox" style="background:var(--accent-soft); color:var(--accent-dark); padding:8px 11px; border-radius:7px; font-weight:700; margin-top:6px;">
-            <span>완료로 변경 시 실제 소요(영업일): <b id="actualDaysVal">-</b></span><span id="actualEndInfo" style="font-weight:500; color:var(--text-dim); font-size:11.5px; display:block; margin-top:4px;">저장된 완료일: 없음(마감일 기준 계산)</span><span style="font-weight:500; color:var(--text-faint); font-size:11px; display:block; margin-top:2px;">같은 날 다른 티켓과 겹치면 나눠서, 오전·오후 오프(반차)가 낀 날은 0.5일로 계산합니다</span>
+            <span>완료로 변경 시 실제 소요(영업일): <b id="actualDaysVal">-</b></span>
           </div>
         </div>
         <div class="field" id="specFieldWrapper">
@@ -5529,11 +5529,11 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
         <div class="field" id="resourceCheckFieldWrapper" style="margin-bottom:8px;">
           <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
             <input type="checkbox" id="fResourceCheckNeeded" ${t&&t.resourceCheckNeeded?'checked':''} style="width:15px; height:15px; margin:0;">
-            리소스 마감일까지 도착 확인 필요 <span class="hint">(체크하면 보드에서 눈에 띄게 표시됩니다)</span>
+            리소스 마감일까지 도착 확인 필요
           </label>
         </div>
         <div class="field" id="resourceDeadlineWrapper">
-          <label>리소스 마감일 <span class="hint">(선택, 참고 자료가 준비되어야 하는 날짜)</span></label>
+          <label>리소스 마감일 <span class="hint">(선택)</span></label>
           <input type="date" id="fResourceDeadline" value="${t&&t.resourceDeadline?t.resourceDeadline:''}">
         </div>
         <div class="field" id="resourceFieldWrapper">
@@ -5545,7 +5545,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
           <div id="referenceInputs"></div>
         </div>
         <div class="field" id="sbFieldWrapper">
-          <label>SB · 기획안 <span class="hint">(선택, 스토리보드/기획 문서 링크 또는 메모)</span></label>
+          <label>SB · 기획안 <span class="hint">(선택)</span></label>
           <input type="text" id="fSB" value="${t?escapeHtml(t.sb||''):''}" placeholder="예: https://... SB/기획안 링크 또는 메모">
         </div>
         <div class="form-error" id="formError"></div>
@@ -5589,7 +5589,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     const label = overlay.querySelector('#resourceFieldLabel');
     const input = overlay.querySelector('#resourceInputs input');
     if(isAbsence){
-      label.innerHTML = '비고 <span class="hint">(선택, 추가로 남길 메모)</span>';
+      label.innerHTML = '비고 <span class="hint">(선택)</span>';
       if(input) input.placeholder = '예: 인수인계 사항, 연락 가능 여부 등';
       overlay.querySelector('#addResourceLink').style.display='none';
     } else {
@@ -5648,8 +5648,9 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     if(!hint) return;
     if(!selWorkTypes.length){ hint.textContent = ''; hint.classList.remove('on'); return; }
     hint.classList.add('on');
-    const parts = selWorkTypes.map(wt=> `${wt} ${selWorkTypeQty(wt)}`);
-    hint.textContent = `${parts.join(' + ')} · 통계에 총 ${selTotalQty()}건으로 집계됩니다`;
+    const total = selTotalQty();
+    if(total <= 1){ hint.textContent = ''; hint.classList.remove('on'); return; }
+    hint.textContent = `총 ${total}건`;
   }
   overlay.querySelectorAll('#fWorkTypes .wt-pill').forEach(el=>{
     const v = el.dataset.val;
@@ -5775,16 +5776,6 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
     if(s && ae && ae>=s){
       el.textContent = fmtDays(countWorkingDaysForTicket(s, ae, currentFormTicketDraft())) + '일';
     } else { el.textContent = '-'; }
-    const infoEl = overlay.querySelector('#actualEndInfo');
-    if(infoEl){
-      if(stored && endNow && stored > endNow){
-        infoEl.textContent = '저장된 완료일: '+stored+' (마감일 '+endNow+' 초과 → 마감일 기준 계산)';
-      } else if(stored){
-        infoEl.textContent = '저장된 완료일: '+stored;
-      } else {
-        infoEl.textContent = '저장된 완료일: 없음(마감일 기준 계산)';
-      }
-    }
   }
   overlay.querySelector('#fStart').oninput = ()=>{ updateDays(); updateActualDays(); };
   overlay.querySelector('#fEnd').oninput = ()=>{ updateDays(); updateActualDays(); };
