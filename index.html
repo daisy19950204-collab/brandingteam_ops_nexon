@@ -1623,7 +1623,34 @@ function isAssigneeOnLeave(iso, assignee){
 // (담당자가 여럿인 티켓에서 일부만 부재라면, 남은 담당자가 진행할 수 있으므로 그대로 계산한다)
 function isTicketBlockedByAbsence(iso, t){
   if(t.project === '부재' || !t.assignees || !t.assignees.length) return false;
-  return t.assignees.every(a=> isAssigneeOnLeave(iso, a));
+  return t.assignees.every(a=> isAssigneeOnLeave(iso, a) && !isHalfDayLeave(iso, a));
+}
+/* ★ 반차(오전/오후 오프) 반영
+   하루를 '있다/없다'로만 보면 오전 오프가 낀 1일짜리 티켓이 0일로 계산되어버린다.
+   그래서 날짜별로 '그 날 일할 수 있는 비율'을 구해 더한다.
+   1 = 종일 근무, 0.5 = 반차(4시간), 0 = 종일 부재 */
+function isHalfDayLeave(iso, assignee){
+  const abs = TICKETS.filter(o=> o.project==='부재' && o.assignees && o.assignees.includes(assignee)
+                                 && iso>=o.startDate && iso<=o.endDate);
+  if(!abs.length) return false;
+  return abs.every(o=> isHalfDayAbsenceTitle(o.title));
+}
+function assigneeAvailabilityForDay(iso, assignee){
+  let factor = 1;
+  TICKETS.forEach(o=>{
+    if(o.project !== '부재' || !o.assignees || !o.assignees.includes(assignee)) return;
+    if(iso < o.startDate || iso > o.endDate) return;
+    const f = isHalfDayAbsenceTitle(o.title) ? 0.5 : 0;
+    if(f < factor) factor = f;
+  });
+  return factor;
+}
+// 담당자가 여럿이면 가장 여유 있는 사람 기준 (한 명이라도 종일 근무면 그 날은 1일로 본다)
+function ticketAvailabilityForDay(iso, t){
+  if(t.project === '부재' || !t.assignees || !t.assignees.length) return 1;
+  let best = 0;
+  t.assignees.forEach(a=>{ const f = assigneeAvailabilityForDay(iso, a); if(f > best) best = f; });
+  return best;
 }
 // 티켓 기간 [s,e] 안에 특정 요일(targetDow: 0=일,6=토)이 한 번이라도 있는지 확인
 function rangeIncludesWeekday(s, e, targetDow){
@@ -1643,8 +1670,10 @@ function countWorkingDaysForTicket(s,e,t){
   let days = 0, cur = new Date(sd);
   while(cur<=ed){
     const iso = toISO(cur);
-    if(isCountableDayForTicket(cur, t) && !isTicketBlockedByAbsence(iso, t)){
-      days += 1 / concurrentTicketCountForDay(iso, t);
+    if(isCountableDayForTicket(cur, t)){
+      // 반차가 낀 날은 0.5일, 종일 부재는 0일로 더해진다
+      const avail = ticketAvailabilityForDay(iso, t);
+      if(avail > 0) days += avail / concurrentTicketCountForDay(iso, t);
     }
     cur = addDays(cur,1);
   }
@@ -3386,9 +3415,13 @@ function mobileWorkerTicketIdsOnDate(worker, iso, dateObj){
 function mobileIsCompanyWideHoliday(iso){
   return TICKETS.some(t=> t.project==='부재' && t.assignees && t.assignees.length===WORKERS.length && t.startDate<=iso && t.endDate>=iso);
 }
-// 제목이 '오전/오후 휴가·반차' 같은 반차(半日)인지 확인 (반차가 아니면 전일 휴가로 간주)
+// 제목이 '오전/오후 휴가·반차·오프' 같은 반차(半日)인지 확인 (반차가 아니면 전일 휴가로 간주)
+// 예: '오전 오프', '오후 반차', '오전 휴가', '오전 OFF', '반차'
 function isHalfDayAbsenceTitle(title){
-  return /(오전|오후)\s*(휴가|반차)/.test(title || '');
+  const s = String(title || '');
+  if(/(오전|오후|AM|PM)\s*[·\-]?\s*(휴가|반차|반휴|오프|OFF|연차)/i.test(s)) return true;
+  if(/(반차|반휴|반일)/.test(s)) return true;
+  return false;
 }
 // 해당 담당자가 그 날짜에 '전일(하루 종일)' 개인 부재인지 확인 (반차는 제외, 공통휴가는 별도 처리)
 function mobileWorkerFullDayAbsenceOnDate(worker, iso){
@@ -4735,7 +4768,7 @@ function renderDashboard(){
     </div>
     <div class="card">
       <p class="card-title">담당자별 · 유형별 평균 소요 영업일</p>
-      <p class="card-sub">'예상 작업일수(월~금 순수) 평균 / 실제 소요(겹침 반영) 평균' · 전체 기간 기준 (부재·라이브·오프라인 촬영 제외, 수량 있는 티켓은 건당 일수로 환산, 실제는 완료 티켓만 집계)</p>
+      <p class="card-sub">'예상 작업일수(월~금 순수) 평균 / 실제 소요(겹침·반차 반영) 평균' · 전체 기간 기준 (부재·라이브·오프라인 촬영 제외, 수량 있는 티켓은 건당 일수로 환산, 실제는 완료 티켓만 집계)</p>
       ${avgDaysAllTickets.length ? avgDaysMatrixTable(avgDaysRows(), AVG_DAYS_WORK_TYPES) : `<div class="empty-note">등록된 작업이 없습니다.</div>`}
     </div>
     <div class="card">
@@ -5486,7 +5519,7 @@ function openModal(id, presetProject, presetStart, presetEnd, presetAssignee){
         </div>
         <div class="field" id="completionField" style="display:none;">
           <div class="computed-days" id="actualDaysBox" style="background:var(--accent-soft); color:var(--accent-dark); padding:8px 11px; border-radius:7px; font-weight:700; margin-top:6px;">
-            <span>완료로 변경 시 실제 소요(영업일): <b id="actualDaysVal">-</b></span><span id="actualEndInfo" style="font-weight:500; color:var(--text-dim); font-size:11.5px; display:block; margin-top:4px;">저장된 완료일: 없음(마감일 기준 계산)</span>
+            <span>완료로 변경 시 실제 소요(영업일): <b id="actualDaysVal">-</b></span><span id="actualEndInfo" style="font-weight:500; color:var(--text-dim); font-size:11.5px; display:block; margin-top:4px;">저장된 완료일: 없음(마감일 기준 계산)</span><span style="font-weight:500; color:var(--text-faint); font-size:11px; display:block; margin-top:2px;">같은 날 다른 티켓과 겹치면 나눠서, 오전·오후 오프(반차)가 낀 날은 0.5일로 계산합니다</span>
           </div>
         </div>
         <div class="field" id="specFieldWrapper">
