@@ -337,6 +337,53 @@
   .body-cell{white-space:pre-wrap; word-break:break-all; font-size:11.5px; line-height:1.55;}
   .body-cell a{color:var(--accent-dark); font-weight:700; text-decoration:none;}
   /* ---------- 월별 투입 MM ---------- */
+  .mm-overview{
+    border:2px solid var(--accent); border-radius:12px; padding:14px 16px; margin-bottom:16px;
+    background:linear-gradient(180deg, var(--accent-soft) 0%, #fff 60%);
+  }
+  .mm-overview-head{font-size:14px; font-weight:900; letter-spacing:-.3px; margin-bottom:11px;}
+  .mm-overview-stats{display:flex; flex-wrap:wrap; gap:10px;}
+  .mm-stat{
+    flex:1 1 130px; min-width:118px; background:#fff; border:1px solid var(--border);
+    border-radius:10px; padding:11px 13px;
+  }
+  .mm-stat b{
+    display:block; font-size:25px; font-weight:900; letter-spacing:-1px; line-height:1.1;
+    font-variant-numeric:tabular-nums; color:var(--text);
+  }
+  .mm-stat b em{font-style:normal; font-size:13px; font-weight:800; margin-left:2px; letter-spacing:0;}
+  .mm-stat span{display:block; margin-top:4px; font-size:10.5px; font-weight:700; color:var(--text-faint); line-height:1.4;}
+  .mm-stat.primary b{color:var(--accent-dark);}
+  .mm-stat.is-over b{color:var(--danger);}
+  .mm-stat.is-over span{color:var(--danger); font-weight:800;}
+  .mm-stat.is-under b{color:var(--text-dim);}
+  .mm-rank-row{display:flex; flex-wrap:wrap; gap:14px; margin-top:14px;}
+  .mm-rank-block{
+    flex:1 1 330px; min-width:0; background:#fff; border:2px solid var(--border-strong);
+    border-radius:12px; padding:13px 15px;
+  }
+  .mm-rank-title{
+    font-size:13px; font-weight:900; color:var(--text); letter-spacing:-.2px; margin-bottom:10px;
+    padding-bottom:8px; border-bottom:1px solid var(--border);
+  }
+  .mm-rank-list{display:flex; flex-direction:column; gap:7px;}
+  .mm-rank{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px;
+    background:var(--bg); border:1px solid var(--border); font-size:13px;
+  }
+  .mm-rank i{
+    display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; flex:none;
+    border-radius:50%; font-style:normal; font-size:13.5px; font-weight:900; color:#fff; background:var(--text-faint);
+  }
+  .mm-rank.rank1 i{background:#C9A227;}
+  .mm-rank.rank2 i{background:#9AA3B0;}
+  .mm-rank.rank3 i{background:#B07C4F;}
+  .mm-rank.rank1{border-color:#E0C766; background:#FFFBEC;}
+  .mm-rank em{font-style:normal; font-weight:900; font-size:14px; color:var(--text); flex:1; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .mm-rank b{font-size:17px; font-weight:900; font-variant-numeric:tabular-nums; flex:none;}
+  .mm-rank u{text-decoration:none; font-size:11px; font-weight:700; color:var(--text-faint); flex:none; min-width:92px; text-align:right;}
+  .mm-graph-num.top-type{font-size:11.5px; font-weight:800; color:var(--text-dim);}
   .mm-summary{
     display:flex; flex-wrap:wrap; gap:8px; margin-bottom:11px;
   }
@@ -386,21 +433,105 @@
   }
   .mm-typebar span{display:block; height:100%;}
   .mm-typecell{min-width:230px;}
-  .mm-over{color:var(--danger); font-weight:900;}
+  .mm-over,
+  .mm-worker-meta b.mm-over,
+  .mm-graph b.mm-over,
+  .mm-table b.mm-over{color:var(--danger) !important; font-weight:900;}
   .mm-sub{font-size:10px; font-weight:700; color:var(--text-faint);}
   .mm-chip em{font-style:normal; color:var(--text-faint); font-size:10px;}
   .mm-total td{background:var(--bg); font-weight:900;}
   .mm-worker{margin-bottom:16px;}
   .mm-worker-head{
-    display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    display:flex; align-items:baseline; justify-content:flex-start; gap:12px; flex-wrap:wrap;
     padding:8px 11px; border-radius:8px 8px 0 0; background:var(--bg); border:1px solid var(--border); border-bottom:none;
   }
   .mm-worker-name{font-size:13.5px; font-weight:900;}
   .mm-worker-meta{font-size:11.5px; font-weight:700; color:var(--text-dim);}
   .mm-worker-meta b{color:var(--accent-dark); font-size:12.5px;}
-  .mm-worker .matrix-table{border-radius:0 0 8px 8px;}
+  .mm-worker-body{
+    border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; padding:12px;
+  }
+  .mm-graph-name .proj-dot{margin-right:5px;}
   .mm-idle{font-size:11px; font-weight:700; color:var(--text-faint);}
   .mm-zero{color:var(--text-faint); opacity:.5;}
+  .mm-rollup-grid{display:grid; grid-template-columns:260px 1fr; gap:16px; align-items:start;}
+  @media (max-width:1150px){ .mm-rollup-grid{grid-template-columns:1fr;} }
+  .mm-rollup-main{min-width:0; overflow-x:auto;}
+  .mm-share-card{
+    border:1px solid var(--border); border-radius:10px; padding:12px; background:var(--bg);
+  }
+  .mm-share-title{font-size:12px; font-weight:900; margin-bottom:9px;}
+  .mm-stack{
+    display:flex; width:100%; height:18px; border-radius:9px; overflow:hidden;
+    background:var(--border); margin-bottom:10px;
+  }
+  .mm-stack span{display:block; height:100%;}
+  .mm-share-table{width:100%; border-collapse:collapse; font-size:11.5px;}
+  .mm-share-table td{padding:4px 0; border-bottom:1px solid var(--border); white-space:nowrap;}
+  .mm-share-table tr:last-child td{border-bottom:none;}
+  .mm-share-val{text-align:right; font-weight:900; font-variant-numeric:tabular-nums; width:52px;}
+  .mm-share-mm{text-align:right; color:var(--text-dim); font-weight:700; width:58px;}
+  .mm-share-total td{font-weight:900; border-top:1.5px solid var(--border-strong); padding-top:6px;}
+  .mm-share-note{margin-top:9px; font-size:10.5px; line-height:1.5; color:var(--text-faint);}
+  .mm-legend{display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px;}
+  /* 팀 전체 1.00 중 프로젝트 비중 - 큰 그래프 */
+  .mm-bigstack{
+    display:flex; width:100%; height:46px; border-radius:10px; overflow:hidden;
+    background:var(--border); border:1px solid var(--border); margin-bottom:11px;
+  }
+  .mm-bigstack span{
+    display:flex; align-items:center; justify-content:center; height:100%; min-width:3px;
+    font-size:12px; font-weight:900; color:#fff; white-space:nowrap; overflow:hidden;
+    border-right:2px solid #fff; text-shadow:0 1px 2px rgba(0,0,0,.28);
+  }
+  .mm-bigstack span:last-child{border-right:none;}
+  .mm-bigstack-legend{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:20px;}
+  .mm-bigchip{
+    display:inline-flex; align-items:center; gap:7px; padding:7px 12px; border-radius:10px;
+    background:var(--bg); border:1px solid var(--border); font-size:11.5px; white-space:nowrap;
+  }
+  .mm-bigchip i{display:inline-block; width:10px; height:10px; border-radius:3px; flex:none;}
+  .mm-bigchip em{font-style:normal; font-weight:900; color:var(--text);}
+  .mm-bigchip b{font-size:13.5px; font-weight:900; font-variant-numeric:tabular-nums;}
+  .mm-bigchip u{text-decoration:none; font-size:10.5px; font-weight:700; color:var(--text-faint);}
+  .mm-bigchip.total{background:var(--accent-soft); border-color:var(--accent);}
+  .mm-graph{display:flex; flex-direction:column; gap:9px;}
+  .mm-graph-row{display:grid; grid-template-columns:148px 1fr 56px; gap:10px; align-items:center;}
+  .mm-graph-label{
+    display:flex; align-items:baseline; justify-content:space-between; gap:8px;
+    font-size:12px; white-space:nowrap; min-width:0;
+  }
+  .mm-graph-name{font-weight:900; overflow:hidden; text-overflow:ellipsis;}
+  .mm-graph-num{font-size:13.5px; font-weight:900; font-variant-numeric:tabular-nums; flex:none;}
+  .mm-graph-track{
+    display:flex; height:26px; border-radius:7px; background:var(--bg);
+    border:1px solid var(--border); overflow:hidden;
+  }
+  .mm-graph-seg{
+    display:flex; align-items:center; justify-content:center; height:100%; min-width:3px;
+    font-size:10.5px; font-weight:800; color:#2A2E35; white-space:nowrap; overflow:hidden;
+    border-right:1px solid rgba(255,255,255,.75);
+  }
+  .mm-graph-seg:last-child{border-right:none;}
+  .mm-graph-val{text-align:right; font-variant-numeric:tabular-nums; font-size:11px; font-weight:700; color:var(--text-faint);}
+  .mm-graph-foot{
+    margin-top:4px; padding-top:9px; border-top:1px solid var(--border);
+    font-size:11.5px; font-weight:700; color:var(--text-dim); text-align:right;
+  }
+  .mm-graph-foot b{color:var(--text); font-size:13px;}
+  .mm-rollup-sub{font-size:11.5px; font-weight:800; color:var(--text-dim); margin-bottom:7px;}
+  .mm-stack-gap{width:2px; background:#fff; flex:none;}
+  .mm-mini{
+    display:flex; width:100%; height:7px; border-radius:4px; overflow:hidden;
+    background:var(--border); margin-top:4px;
+  }
+  .mm-mini span{display:block; height:100%;}
+  /* 작업자 열은 그 사람 색으로 옅게 칠해 한눈에 구분 */
+  .mm-table th.mm-wcol{
+    background:color-mix(in srgb, var(--wc) 45%, #fff); border-bottom:2px solid var(--wc);
+  }
+  .mm-table td.mm-wcol{background:color-mix(in srgb, var(--wc) 18%, #fff);}
+  .mm-table td.mm-wcol.mm-zero{background:transparent;}
   .mm-rollup-title{
     margin:18px 0 9px; font-size:12.5px; font-weight:900; padding-top:14px;
     border-top:2px solid var(--border);
@@ -1668,8 +1799,15 @@ const SEARCH_SORT_DEFAULT_DIR = { title:'asc', start:'asc', end:'desc', days:'as
 let editingId = null;
 let reportWorker = null; // 작업자별 기간 조회 패널 상태
 let reportYear = new Date().getFullYear(); // 작업자별 분기 작업 조회 연도 (2026/2027/2028)
-let mmYear = new Date().getFullYear();     // 월별 투입 MM 조회 연도
-let mmMonth = new Date().getMonth();       // 월별 투입 MM 조회 월 (0=1월)
+/* 데이터가 쌓이기 시작한 시점 - 이전 달은 선택할 수 없게 막는다 */
+const MM_MIN_YEAR = 2026;
+const MM_MIN_MONTH = 7;                    // 0=1월 → 7 = 8월
+function mmClamp(y, m){
+  if(y < MM_MIN_YEAR) return [MM_MIN_YEAR, MM_MIN_MONTH];
+  if(y === MM_MIN_YEAR && m < MM_MIN_MONTH) return [MM_MIN_YEAR, MM_MIN_MONTH];
+  return [y, m];
+}
+let [mmYear, mmMonth] = mmClamp(new Date().getFullYear(), new Date().getMonth());
 let mmShowDetail = true;                   // 프로젝트별 업무 유형 세부 표시
 let reportStart = null;
 let reportEnd = null;
@@ -1878,6 +2016,17 @@ function monthRange(offset){
 function monthRangeOf(year, month0){
   return [toISO(new Date(year, month0, 1)), toISO(new Date(year, month0+1, 0))];
 }
+/* MM 계산용 영업일에서 빼는 부재 = 병가 · 출산휴가 · 육아휴직 · 전사휴가(공휴일·전사 단위 휴무)
+   개인 휴가(오프, 연차, 반차, 건강검진 등)는 영업일에서 빼지 않는다. */
+function isMMExcludedAbsence(title){
+  return /(병가|출산|육아\s*휴직|육아\s*휴가|전사\s*휴가)/.test(String(title || ''));
+}
+function mmAvailabilityForDay(iso, worker){
+  const blocked = TICKETS.some(o=>
+    o.project === '부재' && o.assignees && o.assignees.includes(worker) &&
+    iso >= o.startDate && iso <= o.endDate && isMMExcludedAbsence(o.title));
+  return blocked ? 0 : 1;
+}
 function mmTicketsOfWorkerOnDay(iso, worker){
   return TICKETS.filter(t=>
     t.project !== '부재' &&
@@ -1906,9 +2055,9 @@ function computeMonthlyMM(year, month0){
     const iso = toISO(cur);
     const wd = cur.getDay();
     WORKERS.forEach(w=>{
-      const avail = assigneeAvailabilityForDay(iso, w);   // 1 / 0.5 / 0
+      const avail = mmAvailabilityForDay(iso, w);        // 1 또는 0
       if(wd !== 0 && wd !== 6) capacity[w] += avail;
-      if(avail <= 0) return;                              // 부재일은 제외
+      if(avail <= 0) return;                              // 병가·출산휴가·육아휴직·전사휴가만 제외
       const list = mmTicketsOfWorkerOnDay(iso, w);
       if(!list.length) return;
       workedDays[w] += avail;
@@ -1952,7 +2101,7 @@ function computeMonthlyMM(year, month0){
           mm: cap > 0 ? slot.types[x] / cap : 0
         })).sort((a,b)=> b.days - a.days)
       };
-    }).sort((a,b)=> b.days - a.days);
+    }).sort((a,b)=> (b.days - a.days) || a.project.localeCompare(b.project, 'ko'));
     return {
       worker: w,
       capacity: cap,
@@ -1971,19 +2120,21 @@ function computeMonthlyMM(year, month0){
     wk.projects.forEach(p=>{
       if(!projMap[p.project]) projMap[p.project] = {project:p.project, mm:0, days:0, byWorker:{}, types:{}, ticketCount:0};
       const row = projMap[p.project];
-      row.mm += p.mm;
+      // ★ 한 사람은 한 달에 최대 1.00 MM 이므로, 프로젝트 MM 은 '구성비'를 더한다
+      //    (동시 진행으로 일정이 겹쳐도 그 사람의 합은 1.00 을 넘지 않는다)
+      row.mm += p.share;
       row.days += p.days;
       row.ticketCount += p.ticketCount;
-      row.byWorker[wk.worker] = p.mm;
-      row.shareByWorker = row.shareByWorker || {};
-      row.shareByWorker[wk.worker] = p.share;
+      row.byWorker[wk.worker] = p.share;
+      row.loadByWorker = row.loadByWorker || {};
+      row.loadByWorker[wk.worker] = p.mm;
       p.types.forEach(x=>{ row.types[x.type] = (row.types[x.type] || 0) + x.days; });
     });
   });
   const projects = Object.values(projMap).map(r=>{
     const typeTotal = Object.values(r.types).reduce((a,b)=> a+b, 0) || 1;
     return {...r, types: Object.keys(r.types).map(x=>({type:x, days:r.types[x], ratio:r.types[x]/typeTotal})).sort((a,b)=> b.days - a.days)};
-  }).sort((a,b)=> b.mm - a.mm);
+  }).sort((a,b)=> a.project.localeCompare(b.project, 'ko'));
 
   const totalCapacity = WORKERS.reduce((sum,w)=> sum + capacity[w], 0);
   const totalScheduled = WORKERS.reduce((sum,w)=> sum + scheduled[w], 0);
@@ -2000,6 +2151,13 @@ function computeMonthlyMM(year, month0){
     utilization: totalCapacity > 0 ? totalWorked / totalCapacity : 0
   };
 }
+/* 영업일 대비 일정이 얼마나 많거나 적은지 (초과 / 미달) */
+function overLabel(capacity, scheduled){
+  const diff = (scheduled || 0) - (capacity || 0);
+  if(diff > 0.004) return {text:`초과 ${fmtDays(diff)}일`, over:true};
+  if(diff < -0.004) return {text:`미달 ${fmtDays(-diff)}일`, over:false};
+  return {text:'딱 맞음', over:false};
+}
 function fmtMM(v){ return (Math.round(v * 100) / 100).toFixed(2); }
 function fmtRatio(v){ return (Math.round(v * 1000) / 1000).toFixed(3); }
 
@@ -2010,22 +2168,22 @@ function mmMarkdown(data){
   L.push(`## ${ym} 월별 투입 MM (작업자 → 프로젝트 → 유형)`);
   L.push('');
   L.push(`- 집계 기간: ${data.ms} ~ ${data.me}`);
-  L.push(`- 인원 ${data.workerCount}명 · 가용 ${fmtDays(data.totalCapacityDays)}일(부재 제외) · 일정 ${fmtDays(data.scheduledDays)}일`);
-  L.push(`- 동시 업무 처리율 ${data.totalCapacityDays>0?(data.scheduledDays/data.totalCapacityDays*100).toFixed(1):'0.0'}% (100% = 하루 한 건씩)`);
+  L.push(`- 인원 ${data.workerCount}명 · 영업일 ${fmtDays(data.totalCapacityDays)}일(병가·출산휴가·육아휴직·전사휴가 제외) · 일정 ${fmtDays(data.scheduledDays)}일`);
+  L.push(`- 전체 ${overLabel(data.totalCapacityDays, data.scheduledDays).text} (일정일은 겹친 건을 각각 셈)`);
+  L.push(`- 총 투입 ${fmtMM(data.totalMM)}MM / 최대 ${data.workerCount}MM (한 사람 = 1MM)`);
   L.push(`- 투입일은 달력에 잡힌 일정(시작일~마감일)의 영업일 기준 · 비중 1.00 = 그 사람의 한 달 전체`);
   L.push('');
   data.workers.forEach(wk=>{
-    L.push(`### ${wk.worker} — 가용 ${fmtDays(wk.capacity)}일 · 일정 ${fmtDays(wk.scheduled)}일 · 동시 업무 처리율 ${(wk.load*100).toFixed(1)}%`);
+    L.push(`### ${wk.worker} — 영업일 ${fmtDays(wk.capacity)}일 · 일정 ${fmtDays(wk.scheduled)}일 · ${overLabel(wk.capacity, wk.scheduled).text}`);
     L.push('');
     if(!wk.projects.length){ L.push('- 일정 없음'); L.push(''); return; }
-    L.push('| 프로젝트 | 구성비(합계 1) | MM(처리율 기여) | 일정일 | 유형 세부 |');
-    L.push('|---|---:|---:|---:|---|');
+    L.push('| 프로젝트 | MM(합계 1) | 일정일 | 유형 세부 |');
+    L.push('|---|---:|---:|---|');
     wk.projects.forEach(p=>{
       const detail = p.types.map(x=> `${x.type} ${fmtRatio(x.ratio)}(${fmtDays(x.days)}일)`).join(', ');
-      L.push(`| ${p.project} | ${fmtMM(p.share)} | ${fmtMM(p.mm)} | ${fmtDays(p.days)}일 | ${detail} |`);
+      L.push(`| ${p.project} | ${fmtMM(p.share)} | ${fmtDays(p.days)}일 | ${detail} |`);
     });
-    L.push(`| **합계** | **1.00** | **${fmtMM(wk.load)}** | **${fmtDays(wk.scheduled)}일** | |`);
-    if(wk.idle > 0.004) L.push(`| (일정 없는 날) | - | ${fmtMM(wk.capacity>0?wk.idle/wk.capacity:0)} | ${fmtDays(wk.idle)}일 | |`);
+    L.push(`| **합계** | **1.00** | **${fmtDays(wk.scheduled)}일** | |`);
     L.push('');
   });
   L.push('### 프로젝트 합계 (작업자 비중 합 = 인월 MM)');
@@ -2035,7 +2193,35 @@ function mmMarkdown(data){
   data.projects.forEach(r=>{
     L.push(`| ${r.project} | ${fmtMM(r.mm)} | ${fmtRatio(r.ratio)} | ${fmtDays(r.days)}일 | ${WORKERS.map(w=> fmtMM(r.byWorker[w]||0)).join(' | ')} |`);
   });
-  L.push(`| **합계** | **${fmtMM(data.totalMM)}** | **1.000** | **${fmtDays(data.scheduledDays)}일** | ${WORKERS.map(w=> fmtMM(data.capacity[w]>0?data.scheduled[w]/data.capacity[w]:0)).join(' | ')} |`);
+  L.push(`| **합계** | **${fmtMM(data.totalMM)}** | **1.000** | **${fmtDays(data.scheduledDays)}일** | ${WORKERS.map(w=> data.scheduled[w] > 0 ? '1.00' : '0.00').join(' | ')} |`);
+  L.push('');
+  const allTypes = [];
+  data.projects.forEach(r=> r.types.forEach(x=>{ if(!allTypes.includes(x.type)) allTypes.push(x.type); }));
+  if(allTypes.length){
+    L.push('### 프로젝트별 업무 유형 구성 (각 프로젝트 = 1.00)');
+    L.push('');
+    L.push(`| 프로젝트 | ${allTypes.join(' | ')} | 합계 |`);
+    L.push(`|---|${allTypes.map(()=>'---:').join('|')}|---:|`);
+    data.projects.forEach(r=>{
+      const row = allTypes.map(t=>{
+        const x = r.types.find(y=> y.type === t);
+        return x ? fmtRatio(x.ratio) : '-';
+      });
+      L.push(`| ${r.project} | ${row.join(' | ')} | 1.000 |`);
+    });
+    L.push('');
+    L.push('### 프로젝트별 업무 유형 투입일');
+    L.push('');
+    L.push(`| 프로젝트 | ${allTypes.join(' | ')} | 합계 |`);
+    L.push(`|---|${allTypes.map(()=>'---:').join('|')}|---:|`);
+    data.projects.forEach(r=>{
+      const row = allTypes.map(t=>{
+        const x = r.types.find(y=> y.type === t);
+        return x ? fmtDays(x.days)+'일' : '-';
+      });
+      L.push(`| ${r.project} | ${row.join(' | ')} | ${fmtDays(r.days)}일 |`);
+    });
+  }
   return L.join('\n');
 }
 /* 업무 유형 비중을 100% 누적 막대그래프로 */
@@ -2049,6 +2235,9 @@ function typeBarHtml(types){
        <b>${fmtRatio(x.ratio)}</b><em>${fmtDays(x.days)}일</em></span>`).join('');
   return `<div class="mm-typebar">${seg}</div><div class="mm-detail">${legend}</div>`;
 }
+function renderMMView(){
+  return renderMMCard();
+}
 function renderMMCard(){
   const data = computeMonthlyMM(mmYear, mmMonth);
   const months = Array.from({length:12}, (_,i)=> i);
@@ -2058,84 +2247,185 @@ function renderMMCard(){
     <div class="mm-worker">
       <div class="mm-worker-head">
         <span class="mm-worker-name">${workerDot(wk.worker)}${escapeHtml(wk.worker)}</span>
-        <span class="mm-worker-meta">가용 ${fmtDays(wk.capacity)}일 · 일정 ${fmtDays(wk.scheduled)}일 · 동시 업무 처리율 <b class="${wk.load>1.005?'mm-over':''}">${(wk.load*100).toFixed(1)}%</b></span>
+        <span class="mm-worker-meta">영업일 ${fmtDays(wk.capacity)}일 · 일정 ${fmtDays(wk.scheduled)}일 · <b class="${overLabel(wk.capacity, wk.scheduled).over?'mm-over':''}">${overLabel(wk.capacity, wk.scheduled).text}</b>${wk.projects.length ? ` · MM 합계 <b>1.00</b>` : ''}</span>
       </div>
       ${wk.projects.length ? `
-      <table class="matrix-table mm-table">
-        <thead><tr><th>프로젝트</th><th>구성비 (합계 1)</th><th>MM (처리율 기여)</th><th>일정일</th><th>유형 비중 (프로젝트 안에서 합계 1)</th></tr></thead>
-        <tbody>
+      <div class="mm-worker-body">
+        <div class="mm-graph">
           ${wk.projects.map(p=>`
-            <tr>
-              <td class="mm-proj"><span class="proj-dot" style="background:${PROJECT_COLORS[p.project]||'#999'}"></span>${escapeHtml(p.project)}</td>
-              <td class="mm-ratio">
-                <div class="mm-ratio-wrap">
-                  <div class="mm-bar"><span style="width:${Math.min(100, p.share*100).toFixed(1)}%; background:${PROJECT_COLORS[p.project]||'#999'}"></span></div>
-                  <b class="mm-ratio-val">${fmtMM(p.share)}</b>
-                </div>
-              </td>
-              <td class="mm-num">${fmtMM(p.mm)}</td>
-              <td class="mm-days">${fmtDays(p.days)}일</td>
-              <td class="mm-typecell">${typeBarHtml(p.types)}</td>
-            </tr>`).join('')}
-          <tr class="mm-total">
-            <td>합계</td>
-            <td class="mm-num"><b>1.00</b></td>
-            <td class="mm-num"><b class="${wk.load>1.005?'mm-over':''}">${fmtMM(wk.load)}</b></td>
-            <td class="mm-days">${fmtDays(wk.scheduled)}일</td>
-            <td class="mm-idle">${wk.idle > 0.004 ? `일정 없는 날 ${fmtDays(wk.idle)}일 (가용의 ${fmtMM(wk.capacity>0?wk.idle/wk.capacity:0)})` : '빈 날 없음'}</td>
-          </tr>
-        </tbody>
-      </table>` : `<div class="empty-note">이 달에 잡힌 일정이 없습니다.</div>`}
+            <div class="mm-graph-row">
+              <div class="mm-graph-label" title="${escapeHtml(p.project)}">
+                <span class="mm-graph-name"><span class="proj-dot" style="background:${PROJECT_COLORS[p.project]||'#999'}"></span>${escapeHtml(p.project)}</span>
+                <b class="mm-graph-num">${fmtMM(p.share)}</b>
+              </div>
+              <div class="mm-graph-track">
+                ${p.types.map(x=>{
+                  const pct = x.ratio * 100;
+                  return `<span class="mm-graph-seg" style="width:${pct.toFixed(2)}%; background:${WORK_TYPE_COLORS[x.type]||'#9AA3B0'}"
+                            title="${escapeHtml(p.project)} · ${escapeHtml(x.type)} ${fmtRatio(x.ratio)} (${fmtDays(x.days)}일)">${pct >= 13 ? (WORK_TYPE_ICONS[x.type]||'')+' '+escapeHtml(x.type)+' '+fmtRatio(x.ratio) : ''}</span>`;
+                }).join('')}
+              </div>
+              <div class="mm-graph-val">${fmtDays(p.days)}일</div>
+            </div>`).join('')}
+        </div>
+      </div>` : `<div class="empty-note">이 달에 잡힌 일정이 없습니다.</div>`}
     </div>`).join('');
 
+  const projByShare = [...data.projects].sort((a,b)=> (b.ratio - a.ratio) || a.project.localeCompare(b.project, 'ko'));
   const projTable = data.projects.length ? `
-    <table class="matrix-table mm-table">
-      <thead><tr><th>프로젝트</th><th>투입 MM</th><th>비중(합계 1)</th><th>일정일</th>${WORKERS.map(w=>`<th>${escapeHtml(w)}</th>`).join('')}</tr></thead>
-      <tbody>
-        ${data.projects.map(r=>`
-          <tr>
-            <td class="mm-proj"><span class="proj-dot" style="background:${PROJECT_COLORS[r.project]||'#999'}"></span>${escapeHtml(r.project)}</td>
-            <td class="mm-num"><b>${fmtMM(r.mm)}</b></td>
-            <td class="mm-ratio">
-              <div class="mm-ratio-wrap">
-                <div class="mm-bar"><span style="width:${Math.min(100, r.ratio*100).toFixed(1)}%; background:${PROJECT_COLORS[r.project]||'#999'}"></span></div>
-                <b class="mm-ratio-val">${fmtRatio(r.ratio)}</b>
-              </div>
-            </td>
-            <td class="mm-days">${fmtDays(r.days)}일</td>
-            ${WORKERS.map(w=>`<td class="mm-num ${(r.byWorker[w]||0)>0.0005?'':'mm-zero'}">${fmtMM(r.byWorker[w]||0)}</td>`).join('')}
-          </tr>
-          <tr class="mm-detail-row"><td colspan="${4+WORKERS.length}">${typeBarHtml(r.types)}</td></tr>`).join('')}
-        <tr class="mm-total">
-          <td>합계</td><td class="mm-num"><b>${fmtMM(data.totalMM)}</b></td>
-          <td class="mm-num">1.000</td><td class="mm-days">${fmtDays(data.scheduledDays)}일</td>
-          ${WORKERS.map(w=>`<td class="mm-num">${fmtMM(data.capacity[w]>0?data.scheduled[w]/data.capacity[w]:0)}</td>`).join('')}
-        </tr>
-      </tbody>
-    </table>` : `<div class="empty-note">해당 달에 집계할 일정이 없습니다.</div>`;
+    <div class="mm-graph">
+      ${projByShare.map(r=>`
+        <div class="mm-graph-row">
+          <div class="mm-graph-label" title="${escapeHtml(r.project)}">
+            <span class="mm-graph-name">${escapeHtml(r.project)}</span>
+            <b class="mm-graph-num">${fmtMM(r.ratio)}</b>
+          </div>
+          <div class="mm-graph-track">
+            ${WORKERS.map(w=>{
+              const v = r.byWorker[w] || 0;
+              if(v <= 0.0005) return '';
+              const pct = v / (r.mm || 1) * 100;   // 각 줄을 100%로 꽉 채워 인원 구성비를 보여준다
+              return `<span class="mm-graph-seg" style="width:${pct.toFixed(2)}%; background:${WORKER_COLORS[w]||'#C7CCD6'}"
+                        title="${escapeHtml(r.project)} · ${escapeHtml(w)} ${fmtMM(v)}">${pct >= 13 ? escapeHtml(w)+' '+fmtMM(v) : ''}</span>`;
+            }).join('')}
+          </div>
+          <div class="mm-graph-val">${fmtDays(r.days)}일</div>
+        </div>`).join('')}
+      <div class="mm-graph-foot">합계 <b>1.00</b> · 총 ${fmtMM(data.totalMM)}MM / 최대 ${data.workerCount}MM · 일정 ${fmtDays(data.scheduledDays)}일</div>
+    </div>` : `<div class="empty-note">해당 달에 집계할 일정이 없습니다.</div>`;
 
   return `
     <div class="card" id="mmCard">
-      <p class="card-title">월별 투입 MM · 작업자별 (프로젝트별 손익 배분용)</p>
-      <p class="card-sub">작업자 → 프로젝트 → 업무 유형 · 달력에 잡힌 일정(시작일~마감일)의 영업일로 계산 · 부재(휴가·반차)는 제외<br>
-        <b>동시 업무 처리율</b> = 같은 기간에 몇 건을 동시에 맡고 있는지(100% = 하루 한 건씩 딱 맞음, 초과하면 겹쳐서 진행 중)<br>
-        <b>구성비</b> = 그 사람 일정 안에서의 비율(합계 1.00) · <b>MM</b> = 가용일 대비 소모(합이 동시 업무 처리율과 같음)</p>
       <div class="pill-group" id="mmYearPills" style="margin-bottom:8px;">
-        ${[mmYear-1, mmYear, mmYear+1].map(y=>`<div class="pill ${mmYear===y?'selected':''}" data-year="${y}">${y}년</div>`).join('')}
+        ${[mmYear-1, mmYear, mmYear+1].filter(y=> y >= MM_MIN_YEAR)
+          .map(y=>`<div class="pill ${mmYear===y?'selected':''}" data-year="${y}">${y}년</div>`).join('')}
       </div>
       <div class="pill-group" id="mmMonthPills" style="margin-bottom:12px;">
-        ${months.map(m=>`<div class="pill ${mmMonth===m?'selected':''}" data-month="${m}">${m+1}월</div>`).join('')}
+        ${months.filter(m=> !(mmYear === MM_MIN_YEAR && m < MM_MIN_MONTH))
+          .map(m=>`<div class="pill ${mmMonth===m?'selected':''}" data-month="${m}">${m+1}월</div>`).join('')}
       </div>
-      <div class="mm-summary">
-        <span>가용 <b>${fmtDays(data.totalCapacityDays)}일</b> (부재 제외)</span>
-        <span>일정 <b>${fmtDays(data.scheduledDays)}일</b></span>
-        <span>동시 업무 처리율 <b>${data.totalCapacityDays>0?(data.scheduledDays/data.totalCapacityDays*100).toFixed(1):'0.0'}%</b></span>
-        <span>총 <b>${fmtMM(data.totalMM)}MM</b></span>
+      <div class="mm-overview">
+        <div class="mm-overview-head">${mmYear}년 ${mmMonth+1}월 요약</div>
+        <div class="mm-overview-stats">
+          <div class="mm-stat primary">
+            <b>${fmtMM(data.totalMM)}<em>MM</em></b>
+            <span>총 투입 · 최대 ${data.workerCount}MM</span>
+          </div>
+          <div class="mm-stat">
+            <b>${fmtDays(data.totalCapacityDays)}<em>일</em></b>
+            <span>영업일</span>
+          </div>
+          <div class="mm-stat">
+            <b>${fmtDays(data.scheduledDays)}<em>일</em></b>
+            <span>일정일</span>
+          </div>
+          ${(()=>{
+            // 가장 많이 초과한 사람 기준 (합산·평균이 아니라 최댓값)
+            let top = null;
+            data.workers.forEach(wk=>{
+              if(wk.capacity <= 0) return;
+              const diff = wk.scheduled - wk.capacity;
+              if(!top || diff > top.diff) top = {diff, worker:wk.worker};
+            });
+            const over = top && top.diff > 0.004;
+            return `
+          <div class="mm-stat ${over?'is-over':'is-under'}">
+            <b>${over ? fmtDays(top.diff) : 0}<em>일</em></b>
+            <span>${over ? '최대 초과' : '초과 없음'}</span>
+          </div>`;
+          })()}
+          <div class="mm-stat">
+            <b>${data.projects.length}<em>개</em></b>
+            <span>진행 프로젝트</span>
+          </div>
+        </div>
+        ${(()=>{
+          const top = [...data.projects].sort((a,b)=> (b.ratio - a.ratio) || a.project.localeCompare(b.project,'ko')).slice(0,3);
+          if(!top.length) return '';
+          const typeTotals = {};
+          data.projects.forEach(r=> r.types.forEach(x=>{ typeTotals[x.type] = (typeTotals[x.type]||0) + x.days; }));
+          const topTypes = Object.keys(typeTotals).sort((a,b)=> typeTotals[b]-typeTotals[a]).slice(0,3);
+          const typeSum = Object.values(typeTotals).reduce((a,b)=>a+b,0) || 1;
+          return `
+          <div class="mm-rank-row">
+            <div class="mm-rank-block">
+              <div class="mm-rank-title">프로젝트 투입 순위</div>
+              <div class="mm-rank-list">
+                ${top.map((r,i)=>`
+                  <span class="mm-rank rank${i+1}">
+                    <i>${i+1}</i>
+                    <em>${escapeHtml(r.project)}</em>
+                    <b>${fmtRatio(r.ratio)}</b>
+                    <u>${fmtMM(r.mm)}MM · ${fmtDays(r.days)}일</u>
+                  </span>`).join('')}
+              </div>
+            </div>
+            <div class="mm-rank-block">
+              <div class="mm-rank-title">업무 유형 순위</div>
+              <div class="mm-rank-list">
+                ${topTypes.map((t,i)=>`
+                  <span class="mm-rank rank${i+1}">
+                    <i>${i+1}</i>
+                    <em>${WORK_TYPE_ICONS[t]||''} ${escapeHtml(t)}</em>
+                    <b>${fmtRatio(typeTotals[t]/typeSum)}</b>
+                    <u>${fmtDays(typeTotals[t])}일</u>
+                  </span>`).join('')}
+              </div>
+            </div>
+          </div>`;
+        })()}
       </div>
       ${hasCommon ? `<div class="mm-warn">⚠ '공통' 프로젝트에 일정이 잡혀 있습니다. 손익 배분을 위해 회의·공통 업무도 실제 프로젝트를 지정해주세요.</div>` : ''}
       ${workerBlocks}
-      <div class="mm-rollup-title">프로젝트 합계 (작업자 비중을 더한 인월 MM)</div>
+      <div class="mm-rollup-title">PD 파트 프로젝트별 MM (합산 1)</div>
+      ${(()=>{
+        const shareRows = [...data.projects].sort((a,b)=> (b.ratio - a.ratio) || a.project.localeCompare(b.project, 'ko'));
+        return `
+      <div class="mm-bigstack">${shareRows.map(r=>{
+        const pct = r.ratio * 100;
+        return `<span style="width:${pct.toFixed(2)}%; background:${PROJECT_COLORS[r.project]||'#999'}"
+                  title="${escapeHtml(r.project)} ${fmtRatio(r.ratio)} · ${fmtMM(r.mm)}MM">${pct >= 10 ? escapeHtml(r.project)+' '+fmtRatio(r.ratio) : ''}</span>`;
+      }).join('')}</div>
+      <div class="mm-bigstack-legend">
+        ${shareRows.map(r=>`
+          <span class="mm-bigchip">
+            <i style="background:${PROJECT_COLORS[r.project]||'#999'}"></i>
+            <em>${escapeHtml(r.project)}</em>
+            <b>${fmtRatio(r.ratio)}</b>
+            <u>${fmtMM(r.mm)}MM · ${fmtDays(r.days)}일</u>
+          </span>`).join('')}
+        <span class="mm-bigchip total"><em>합계</em><b>1.000</b><u>${fmtMM(data.totalMM)}MM / 최대 ${data.workerCount}MM</u></span>
+      </div>`;
+      })()}
+
+      <div class="mm-rollup-title">프로젝트별 담당 인원 MM (합산 1)</div>
+      <div class="mm-legend">${WORKERS.map(w=>`<span class="mm-chip"><i style="background:${WORKER_COLORS[w]||'#C7CCD6'}"></i>${escapeHtml(w)}</span>`).join('')}</div>
       ${projTable}
+
+      <div class="mm-rollup-title">프로젝트별 업무 유형 비중</div>
+      <div class="mm-legend">${(()=>{
+        const seen = [];
+        data.projects.forEach(r=> r.types.forEach(x=>{ if(!seen.includes(x.type)) seen.push(x.type); }));
+        return seen.map(t=>`<span class="mm-chip"><i style="background:${WORK_TYPE_COLORS[t]||'#9AA3B0'}"></i>${WORK_TYPE_ICONS[t]||''} ${escapeHtml(t)}</span>`).join('');
+      })()}</div>
+      ${data.projects.length ? `
+      <div class="mm-graph" id="mmTypeGraph">
+        ${projByShare.map(r=>`
+          <div class="mm-graph-row">
+            <div class="mm-graph-label" title="${escapeHtml(r.project)}">
+              <span class="mm-graph-name">${escapeHtml(r.project)}</span>
+              <b class="mm-graph-num top-type">${r.types.length ? (WORK_TYPE_ICONS[r.types[0].type]||'')+' '+escapeHtml(r.types[0].type) : '-'}</b>
+            </div>
+            <div class="mm-graph-track">
+              ${r.types.map(x=>{
+                const pct = x.ratio * 100;
+                return `<span class="mm-graph-seg" style="width:${pct.toFixed(2)}%; background:${WORK_TYPE_COLORS[x.type]||'#9AA3B0'}"
+                          title="${escapeHtml(r.project)} · ${escapeHtml(x.type)} ${fmtRatio(x.ratio)} (${fmtDays(x.days)}일)">${pct >= 13 ? (WORK_TYPE_ICONS[x.type]||'')+' '+escapeHtml(x.type)+' '+fmtRatio(x.ratio) : ''}</span>`;
+              }).join('')}
+            </div>
+            <div class="mm-graph-val">${fmtDays(r.days)}일</div>
+          </div>`).join('')}
+      </div>` : `<div class="empty-note">해당 달에 집계할 일정이 없습니다.</div>`}
       <div class="mm-actions">
         <button type="button" class="save-panel-btn primary" id="mmCopyMd" style="flex:0 0 auto;">📋 마크다운 복사</button>
       </div>
@@ -2146,7 +2436,11 @@ function wireMMCard(){
   const card = document.getElementById('mmCard');
   if(!card) return;
   card.querySelectorAll('#mmYearPills .pill').forEach(el=>{
-    el.onclick = ()=>{ mmYear = parseInt(el.dataset.year, 10); renderApp(); };
+    el.onclick = ()=>{
+      const [y, m] = mmClamp(parseInt(el.dataset.year, 10), mmMonth);
+      mmYear = y; mmMonth = m;
+      renderApp();
+    };
   });
   card.querySelectorAll('#mmMonthPills .pill').forEach(el=>{
     el.onclick = ()=>{ mmMonth = parseInt(el.dataset.month, 10); renderApp(); };
@@ -3759,6 +4053,7 @@ function renderPCApp(){
       <div class="nav">
         ${navItem('board','🗂','일정 보드')}
         ${navItem('dashboard','📊','대시보드')}
+        ${navItem('mm','🧮','월별 MM')}
         ${navItem('search','🔍','티켓 검색')}
         ${navItem('absence','🌴','부재 관리')}
       </div>
@@ -4457,7 +4752,7 @@ function navItem(view,icon,label){
   return `<div class="nav-item ${currentView===view?'active':''}" data-view="${view}"><span class="nav-icon">${icon}</span>${label}</div>`;
 }
 function viewTitle(){
-  return {board:'일정 보드', dashboard:'대시보드', search:'티켓 검색', absence:'부재 관리'}[currentView];
+  return {mm:'월별 MM', board:'일정 보드', dashboard:'대시보드', search:'티켓 검색', absence:'부재 관리'}[currentView];
 }
 function todayLabelText(){
   const d = new Date();
@@ -4488,7 +4783,8 @@ function monthNavHtml(){
 
 function renderContent(){
   const el = document.getElementById('content');
-  if(currentView==='board') el.innerHTML = renderBoard();
+  if(currentView==='mm') el.innerHTML = renderMMView();
+  else if(currentView==='board') el.innerHTML = renderBoard();
   else if(currentView==='dashboard') el.innerHTML = renderDashboard();
   else if(currentView==='search') el.innerHTML = renderSearchView();
   else el.innerHTML = renderAbsenceView();
@@ -5257,7 +5553,6 @@ function renderDashboard(){
       <p class="card-sub">'예상 작업일수(월~금 순수) 평균 / 실제 소요(겹침·반차 반영) 평균' · 전체 기간 기준 (부재·라이브·오프라인 촬영 제외, 수량 있는 티켓은 건당 일수로 환산, 실제는 완료 티켓만 집계)</p>
       ${avgDaysAllTickets.length ? avgDaysMatrixTable(avgDaysRows(), AVG_DAYS_WORK_TYPES) : `<div class="empty-note">등록된 작업이 없습니다.</div>`}
     </div>
-    ${renderMMCard()}
     <div class="card">
       <p class="card-title">작업자별 분기 작업 조회</p>
       <p class="card-sub">담당자와 기간을 선택해 그 기간에 겹치는 모든 티켓 내용을 확인 · 분기 피드백 작성용</p>
