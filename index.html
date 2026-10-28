@@ -2186,23 +2186,24 @@ function mmMarkdown(data){
     L.push(`| **합계** | **1.00** | **${fmtDays(wk.scheduled)}일** | |`);
     L.push('');
   });
+  const mdProjects = [...data.projects].sort((a,b)=> (b.ratio - a.ratio) || a.project.localeCompare(b.project, 'ko'));
   L.push('### 프로젝트 합계 (작업자 비중 합 = 인월 MM)');
   L.push('');
   L.push(`| 프로젝트 | 투입 MM | 비중(합계 1) | 일정일 | ${WORKERS.join(' | ')} |`);
   L.push(`|---|---:|---:|---:|${WORKERS.map(()=>'---:').join('|')}|`);
-  data.projects.forEach(r=>{
+  mdProjects.forEach(r=>{
     L.push(`| ${r.project} | ${fmtMM(r.mm)} | ${fmtRatio(r.ratio)} | ${fmtDays(r.days)}일 | ${WORKERS.map(w=> fmtMM(r.byWorker[w]||0)).join(' | ')} |`);
   });
   L.push(`| **합계** | **${fmtMM(data.totalMM)}** | **1.000** | **${fmtDays(data.scheduledDays)}일** | ${WORKERS.map(w=> data.scheduled[w] > 0 ? '1.00' : '0.00').join(' | ')} |`);
   L.push('');
   const allTypes = [];
-  data.projects.forEach(r=> r.types.forEach(x=>{ if(!allTypes.includes(x.type)) allTypes.push(x.type); }));
+  mdProjects.forEach(r=> r.types.forEach(x=>{ if(!allTypes.includes(x.type)) allTypes.push(x.type); }));
   if(allTypes.length){
     L.push('### 프로젝트별 업무 유형 구성 (각 프로젝트 = 1.00)');
     L.push('');
     L.push(`| 프로젝트 | ${allTypes.join(' | ')} | 합계 |`);
     L.push(`|---|${allTypes.map(()=>'---:').join('|')}|---:|`);
-    data.projects.forEach(r=>{
+    mdProjects.forEach(r=>{
       const row = allTypes.map(t=>{
         const x = r.types.find(y=> y.type === t);
         return x ? fmtRatio(x.ratio) : '-';
@@ -2214,7 +2215,7 @@ function mmMarkdown(data){
     L.push('');
     L.push(`| 프로젝트 | ${allTypes.join(' | ')} | 합계 |`);
     L.push(`|---|${allTypes.map(()=>'---:').join('|')}|---:|`);
-    data.projects.forEach(r=>{
+    mdProjects.forEach(r=>{
       const row = allTypes.map(t=>{
         const x = r.types.find(y=> y.type === t);
         return x ? fmtDays(x.days)+'일' : '-';
