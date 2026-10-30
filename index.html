@@ -514,6 +514,16 @@
   }
   .mm-graph-seg:last-child{border-right:none;}
   .mm-graph-val{text-align:right; font-variant-numeric:tabular-nums; font-size:11px; font-weight:700; color:var(--text-faint);}
+  .mm-graph-worker-sum{
+    display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; padding-top:9px;
+    border-top:1px dashed var(--border-strong);
+  }
+  .mm-wsum{
+    display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:14px;
+    background:var(--bg); border:1px solid var(--border); font-size:11.5px; font-weight:800; white-space:nowrap;
+  }
+  .mm-wsum i{display:inline-block; width:9px; height:9px; border-radius:3px; flex:none;}
+  .mm-wsum b{font-size:13px; font-weight:900; font-variant-numeric:tabular-nums;}
   .mm-graph-foot{
     margin-top:4px; padding-top:9px; border-top:1px solid var(--border);
     font-size:11.5px; font-weight:700; color:var(--text-dim); text-align:right;
@@ -2273,26 +2283,35 @@ function renderMMCard(){
     </div>`).join('');
 
   const projByShare = [...data.projects].sort((a,b)=> (b.ratio - a.ratio) || a.project.localeCompare(b.project, 'ko'));
+  /* 가로축 전체 = 인원수(1인 = 1.00). 그래서 한 사람의 색 조각들을
+     모든 줄에서 더하면 정확히 1.00 이 된다. */
+  const mmAxis = data.workerCount || 1;
   const projTable = data.projects.length ? `
     <div class="mm-graph">
       ${projByShare.map(r=>`
         <div class="mm-graph-row">
           <div class="mm-graph-label" title="${escapeHtml(r.project)}">
             <span class="mm-graph-name">${escapeHtml(r.project)}</span>
-            <b class="mm-graph-num">${fmtMM(r.ratio)}</b>
+            <b class="mm-graph-num">${fmtMM(r.mm)}</b>
           </div>
           <div class="mm-graph-track">
             ${WORKERS.map(w=>{
               const v = r.byWorker[w] || 0;
               if(v <= 0.0005) return '';
-              const pct = v / (r.mm || 1) * 100;   // 각 줄을 100%로 꽉 채워 인원 구성비를 보여준다
+              const pct = v / mmAxis * 100;   // 1인 = 가로축의 1/인원수
               return `<span class="mm-graph-seg" style="width:${pct.toFixed(2)}%; background:${WORKER_COLORS[w]||'#C7CCD6'}"
                         title="${escapeHtml(r.project)} · ${escapeHtml(w)} ${fmtMM(v)}">${pct >= 13 ? escapeHtml(w)+' '+fmtMM(v) : ''}</span>`;
             }).join('')}
           </div>
           <div class="mm-graph-val">${fmtDays(r.days)}일</div>
         </div>`).join('')}
-      <div class="mm-graph-foot">합계 <b>1.00</b> · 총 ${fmtMM(data.totalMM)}MM / 최대 ${data.workerCount}MM · 일정 ${fmtDays(data.scheduledDays)}일</div>
+      <div class="mm-graph-worker-sum">
+        ${WORKERS.map(w=>{
+          const sum = data.projects.reduce((a, r)=> a + (r.byWorker[w] || 0), 0);
+          return `<span class="mm-wsum"><i style="background:${WORKER_COLORS[w]||'#C7CCD6'}"></i>${escapeHtml(w)} <b>${fmtMM(sum)}</b></span>`;
+        }).join('')}
+      </div>
+      <div class="mm-graph-foot">총 <b>${fmtMM(data.totalMM)}MM</b> / 최대 ${data.workerCount}MM · 일정 ${fmtDays(data.scheduledDays)}일</div>
     </div>` : `<div class="empty-note">해당 달에 집계할 일정이 없습니다.</div>`;
 
   return `
