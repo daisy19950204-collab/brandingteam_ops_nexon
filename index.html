@@ -1118,7 +1118,7 @@
   }
   /* ---------- 모바일 주간(가로형) 보드 ---------- */
   .mw-board{display:flex; flex-direction:column; gap:3px; padding:6px;}
-  .mw-head{display:grid; grid-template-columns:46px repeat(7,1fr); gap:1px; margin-bottom:1px;}
+  .mw-head{display:grid; grid-template-columns:52px repeat(7,1fr); gap:1px; margin-bottom:1px;}
   .mw-day{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:3px 0; border-radius:5px; background:var(--bg); line-height:1.1;
@@ -1129,12 +1129,12 @@
   .mw-day.weekend em, .mw-day.weekend b{color:var(--text-dim);}
   .mw-day.today{background:var(--accent);}
   .mw-day.today em, .mw-day.today b{color:#fff;}
-  .mw-row{display:grid; grid-template-columns:46px 1fr; gap:1px; align-items:stretch;}
+  .mw-row{display:grid; grid-template-columns:52px 1fr; gap:1px; align-items:stretch;}
   .mw-name{
-    display:flex; align-items:center; gap:3px; padding:2px 4px; border-radius:5px;
-    background:var(--bg); font-size:9.5px; font-weight:800; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; padding:2px 2px; border-radius:5px;
+    background:var(--bg); font-size:11px; font-weight:900;
   }
-  .mw-name span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .mw-name span{white-space:nowrap;}
   .mw-grid{
     position:relative; display:grid; grid-template-columns:repeat(7,1fr); gap:1px;
     padding:2px 0; border-radius:5px;
@@ -1150,6 +1150,36 @@
   .mw-bar span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .mw-bar.absence{background:repeating-linear-gradient(45deg,#C7CCD6,#C7CCD6 4px,#B8BEC9 4px,#B8BEC9 8px) !important; color:#2A2E35; text-shadow:none;}
   .mw-bar.done{opacity:.55;}
+  /* ---------- 모바일 메인: 섹션 구분 ---------- */
+  .mobile-sec{margin-top:14px; padding-top:12px; border-top:2px solid var(--border);}
+  .mobile-sec-head{font-size:12.5px; font-weight:900; margin-bottom:9px; padding:0 2px;}
+  .mobile-sec-head em{font-style:normal; font-size:11px; font-weight:700; color:var(--text-faint); margin-left:5px;}
+  .weekend-sec{border-top-color:#EBCE8E;}
+  .mw-weekend-day{margin-bottom:9px;}
+  .mw-weekend-date{font-size:11px; font-weight:900; color:#8A5B00; margin-bottom:4px;}
+  .mw-weekend-chips{display:flex; flex-direction:column; gap:4px;}
+  .mw-weekend-chip{
+    display:flex; flex-direction:column; gap:2px; padding:7px 10px; border-radius:8px;
+    background:#FFF8E8; border:1px solid #EBCE8E; cursor:pointer;
+  }
+  .mw-weekend-who{font-size:10px; font-weight:800; color:#8A5B00; display:flex; align-items:center; gap:3px;}
+  .mw-weekend-title{font-size:11.5px; font-weight:800; color:var(--text);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .today-sec .mobile-worker-row{margin-bottom:12px;}
+  .mobile-sec-empty{
+    padding:10px 12px; border-radius:8px; background:var(--bg); border:1px dashed var(--border-strong);
+    font-size:11.5px; font-weight:700; color:var(--text-faint); text-align:center;
+  }
+  .absence-sec{border-top-color:#BFE3DC;}
+  .mw-abs-list{display:flex; flex-direction:column; gap:4px;}
+  .mw-abs-chip{
+    display:flex; align-items:center; gap:7px; padding:7px 10px; border-radius:8px;
+    background:#F1FAF8; border:1px solid #BFE3DC; cursor:pointer;
+  }
+  .mw-abs-who{font-size:11px; font-weight:900; color:var(--accent-dark); white-space:nowrap;}
+  .mw-abs-title{font-size:11.5px; font-weight:800; flex:1; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .mw-abs-date{font-size:10px; font-weight:700; color:var(--text-faint); white-space:nowrap;}
   .mobile-month-week{
     flex:1; min-height:0; position:relative; display:grid;
     grid-template-columns:repeat(7,1fr); grid-template-rows:13px repeat(4,1fr);
@@ -4214,17 +4244,25 @@ function mobileMondayOf(iso){
   const wd = d.getDay();                 // 0=일 … 6=토
   return toISO(addDays(d, wd === 0 ? -6 : 1 - wd));
 }
+/* 주간 보드는 항상 월~금 5칸만 보여준다 (주말은 아래 '주말 근무 예정'에서 따로 안내) */
 function mobileWeekDays(){
   const start = parseISO(mobileWeekStart || mobileMondayOf(todayISO()));
-  const all = Array.from({length:7}, (_,i)=> addDays(start, i));
+  return Array.from({length:5}, (_,i)=> addDays(start, i));
+}
+/* 이번 주 토·일에 걸린 일정 (부재 제외) */
+function mobileWeekendItems(){
+  const monday = parseISO(mobileWeekStart || mobileMondayOf(todayISO()));
   const vis = visibleWorkers();
-  // 주말(토·일)은 그 날 일정이 있을 때만 칸을 만든다
-  const hasWork = d=>{
+  const out = [];
+  [5, 6].forEach(off=>{
+    const d = addDays(monday, off);
     const iso = toISO(d);
-    return TICKETS.some(t=> t.startDate <= iso && t.endDate >= iso
-      && (t.assignees||[]).some(a=> vis.includes(a)));
-  };
-  return all.filter(d=> (d.getDay() === 0 || d.getDay() === 6) ? hasWork(d) : true);
+    const list = TICKETS.filter(t=> t.project !== '부재' && t.startDate <= iso && t.endDate >= iso
+      && (t.assignees||[]).some(a=> vis.includes(a))
+      && isWorkingDayForTicket(d, t));
+    if(list.length) out.push({date:d, iso, list});
+  });
+  return out;
 }
 function mobileWeekLabel(){
   // 주말 칸이 숨겨져도 라벨은 그 주(월~일) 전체 범위를 보여준다
@@ -4244,7 +4282,7 @@ function renderMobileWeekBoard(){
 
   const cols = days.length;
   const head = `
-    <div class="mw-head" style="grid-template-columns:46px repeat(${cols},1fr);">
+    <div class="mw-head" style="grid-template-columns:52px repeat(${cols},1fr);">
       <div class="mw-corner"></div>
       ${days.map(d=>{
         const iso = toISO(d);
@@ -4292,12 +4330,80 @@ function renderMobileWeekBoard(){
 
     return `
       <div class="mw-row">
-        <div class="mw-name">${workerDot(w)}<span>${escapeHtml(w)}</span></div>
+        <div class="mw-name"><span>${escapeHtml(w)}</span></div>
         <div class="mw-grid" style="grid-template-columns:repeat(${cols},1fr); grid-auto-rows:22px; min-height:${lanes*22+4}px;">${bg}${bars}</div>
       </div>`;
   }).join('');
 
   return `<div class="mw-board">${head}${rows}</div>`;
+}
+function renderMobileWeekendSection(){
+  const items = mobileWeekendItems();
+  const DOW = ['일','월','화','수','목','금','토'];
+  if(!items.length){
+    return `
+    <div class="mobile-sec weekend-sec">
+      <div class="mobile-sec-head">🌙 금주 주말 근무</div>
+      <div class="mobile-sec-empty">이번 주 주말 근무 없음</div>
+    </div>`;
+  }
+  return `
+    <div class="mobile-sec weekend-sec">
+      <div class="mobile-sec-head">🌙 금주 주말 근무</div>
+      ${items.map(({date, list})=>`
+        <div class="mw-weekend-day">
+          <div class="mw-weekend-date">${date.getMonth()+1}/${date.getDate()} (${DOW[date.getDay()]})</div>
+          <div class="mw-weekend-chips">
+            ${list.map(t=>`
+              <div class="mw-weekend-chip" data-id="${t.id}" title="${escapeHtml(t.title)}">
+                <span class="mw-weekend-who">${(t.assignees||[]).map(a=> workerDot(a)).join('')}${escapeHtml((t.assignees||[]).join(', '))}</span>
+                <span class="mw-weekend-title">${wtPrefixOf(t)}[${escapeHtml(t.project)}] ${escapeHtml(t.title)}</span>
+              </div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+/* 이번 주(월~일) 부재 현황 */
+function renderMobileAbsenceSection(){
+  const monday = parseISO(mobileWeekStart || mobileMondayOf(todayISO()));
+  const start = toISO(monday), end = toISO(addDays(monday, 6));
+  const vis = visibleWorkers();
+  const DOW = ['일','월','화','수','목','금','토'];
+  const list = TICKETS.filter(t=> t.project === '부재'
+      && t.endDate >= start && t.startDate <= end
+      && (t.assignees||[]).some(a=> vis.includes(a)))
+    .sort((a,b)=> a.startDate < b.startDate ? -1 : 1);
+  const fmtRange = t=>{
+    const s = t.startDate < start ? start : t.startDate;
+    const e = t.endDate > end ? end : t.endDate;
+    const sd = parseISO(s), ed = parseISO(e);
+    const one = `${sd.getMonth()+1}/${sd.getDate()}(${DOW[sd.getDay()]})`;
+    return s === e ? one : `${one} ~ ${ed.getMonth()+1}/${ed.getDate()}(${DOW[ed.getDay()]})`;
+  };
+  return `
+    <div class="mobile-sec absence-sec">
+      <div class="mobile-sec-head">🌴 금주 부재 현황</div>
+      ${list.length ? `
+        <div class="mw-abs-list">
+          ${list.map(t=>`
+            <div class="mw-abs-chip" data-id="${t.id}">
+              <span class="mw-abs-who">${escapeHtml((t.assignees||[]).length === WORKERS.length ? '전원' : (t.assignees||[]).join(', '))}</span>
+              <span class="mw-abs-title">${escapeHtml(t.title)}</span>
+              <span class="mw-abs-date">${fmtRange(t)}</span>
+            </div>`).join('')}
+        </div>`
+        : `<div class="mobile-sec-empty">이번 주 부재 없음</div>`}
+    </div>`;
+}
+function renderMobileTodaySection(){
+  const today = todayISO();
+  const d = parseISO(today);
+  const DOW = ['일','월','화','수','목','금','토'];
+  return `
+    <div class="mobile-sec today-sec">
+      <div class="mobile-sec-head">📌 오늘 업무 <em>${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]})</em></div>
+      ${renderMobileBoardRows(today)}
+    </div>`;
 }
 
 function renderMobileBoardRows(dateISO){
@@ -4566,7 +4672,7 @@ function renderMobileUpcomingCards(list){
 }
 
 function wireMobileTicketCardClicks(scope){
-  scope.querySelectorAll('.mobile-ticket-card[data-id], .mobile-ticket-chip[data-id], .mw-bar[data-id]').forEach(el=>{
+  scope.querySelectorAll('.mobile-ticket-card[data-id], .mobile-ticket-chip[data-id], .mw-bar[data-id], .mw-weekend-chip[data-id], .mw-abs-chip[data-id]').forEach(el=>{
     el.onclick = ()=> openModal(el.dataset.id);
   });
 }
@@ -4706,7 +4812,12 @@ function renderMobileTopbarLeft(){
 
 function renderMobileMainArea(){
   if(mobileView === 'week'){
-    return `<div class="mobile-board" id="mobileBoardArea">${renderMobileWeekBoard()}</div>`;
+    return `<div class="mobile-board" id="mobileBoardArea">
+      ${renderMobileWeekBoard()}
+      ${renderMobileWeekendSection()}
+      ${renderMobileAbsenceSection()}
+      ${renderMobileTodaySection()}
+    </div>`;
   }
   if(mobileView === 'day'){
     return `<div class="mobile-board" id="mobileBoardArea">${renderMobileBoardRows()}</div>`;
@@ -4746,8 +4857,7 @@ function renderMobileApp(){
       ${renderMobileMainArea()}
       <div class="mobile-menu-overlay ${mobileMenuOpen?'open':''}" id="mobileMenuOverlay">
         <div class="mobile-menu-sheet">
-          <div class="mobile-menu-item ${mobileView==='week'?'active':''}" data-view="week">📅 주간 일정</div>
-          <div class="mobile-menu-item ${mobileView==='day'?'active':''}" data-view="day">📆 일별 일정</div>
+          <div class="mobile-menu-item ${mobileView==='week'?'active':''}" data-view="week">📅 주간 · 오늘 일정</div>
           <div class="mobile-menu-item ${mobileView==='month'?'active':''}" data-view="month">🗓 월별 일정</div>
           <div class="mobile-menu-item ${mobileView==='inprogress'?'active':''}" data-view="inprogress">🟢 진행중인 티켓</div>
           <div class="mobile-menu-item ${mobileView==='upcoming'?'active':''}" data-view="upcoming">🕒 진행 예정인 티켓</div>
