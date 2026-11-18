@@ -4193,8 +4193,9 @@ function wireDeviceModeToggle(){
       deviceMode = btn.dataset.mode;
       if(deviceMode === 'mobile'){
         mobileMenuOpen = false;
-        mobileView = 'day';
-        if(!mobileBoardDate) mobileBoardDate = todayISO();
+        mobileView = 'week';                       // 모바일 전환 시 항상 메인(주간·오늘) 화면부터
+        mobileBoardDate = todayISO();
+        mobileWeekStart = mobileMondayOf(todayISO());
       } else {
         setMobileImmersive(false); // PC로 돌아가면 몰입 모드는 해제
       }
