@@ -727,6 +727,19 @@
   .toast.show{opacity:1;}
 
   .loading-veil{position:fixed; inset:0; background:var(--bg); z-index:200; display:flex; align-items:center; justify-content:center; color:var(--text-faint); font-size:13px;}
+  .update-banner{
+    position:fixed; top:0; left:0; right:0; z-index:20001;
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+    padding:10px 14px calc(10px + env(safe-area-inset-top, 0px));
+    background:#2A2E35; color:#fff; font-size:12px; font-weight:800;
+    box-shadow:0 4px 16px rgba(0,0,0,.25);
+  }
+  .update-banner b{color:#8FD6C4;}
+  .update-banner button{
+    padding:6px 13px; border-radius:7px; border:none; cursor:pointer;
+    background:var(--accent); color:#fff; font-size:11.5px; font-weight:900; font-family:inherit;
+  }
+  .update-banner button.ghost{background:transparent; color:rgba(255,255,255,.6); padding:6px 8px;}
   .storage-warning{
     background:#FDECEC; color:#8A2020; border-bottom:1px solid #F3C6C6; padding:10px 20px; font-size:12.5px;
     line-height:1.5; align-items:center; justify-content:center; text-align:center; position:sticky; top:0; z-index:60;
@@ -1069,6 +1082,9 @@
     align-items:flex-start; justify-content:flex-end; z-index:30;
   }
   .mobile-menu-overlay.open{display:flex;}
+  .mobile-menu-version{
+    padding:10px 16px 4px; font-size:10px; font-weight:700; color:var(--text-faint); text-align:right;
+  }
   .mobile-menu-sheet{
     background:#fff; margin:56px 12px 0 0; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.3);
     width:196px; overflow:hidden;
@@ -1900,6 +1916,8 @@ let reportStart = null;
 let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
+/* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
+const APP_VERSION = 'v2026.11.18-1';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -3464,14 +3482,54 @@ function applySettings(obj, fromServer){
   if(!obj || typeof obj !== 'object') return false;
   const next = {
     hiddenWorkers: Array.isArray(obj.hiddenWorkers) ? obj.hiddenWorkers.filter(w=> WORKERS.includes(w)) : [],
-    updatedAt: obj.updatedAt || ''
+    updatedAt: obj.updatedAt || '',
+    appVersion: obj.appVersion || SETTINGS.appVersion || ''
   };
   // 서버에서 받은 값이 내 것보다 오래됐으면 무시
   if(fromServer && SETTINGS.updatedAt && next.updatedAt && next.updatedAt < SETTINGS.updatedAt) return false;
   const changed = JSON.stringify(next.hiddenWorkers) !== JSON.stringify(hiddenWorkers());
   SETTINGS = next;
   saveLocalCache();
+  checkAppVersion();          // 더 새 버전이 배포됐는지 확인
   return changed;
+}
+/* ---------- 새 버전 배포 알림 ----------
+   누군가 새 파일로 접속하면 그 버전을 공유 설정에 기록한다.
+   옛 파일을 캐시로 쓰고 있는 사람에게는 실시간으로 '새로고침' 배너가 뜬다. */
+function versionIsNewer(a, b){        // a가 b보다 최신인가
+  return String(a || '').localeCompare(String(b || ''), undefined, {numeric:true}) > 0;
+}
+function hardReloadLatest(){
+  try{
+    const u = new URL(window.location.href);
+    u.searchParams.set('v', Date.now().toString(36));   // 캐시 우회
+    window.location.replace(u.toString());
+  }catch(e){ window.location.reload(); }
+}
+function showUpdateBanner(serverVersion){
+  if(document.getElementById('updateBanner')) return;
+  const el = document.createElement('div');
+  el.id = 'updateBanner';
+  el.className = 'update-banner';
+  el.innerHTML = `
+    <span>🔄 새 버전이 배포되었습니다 <b>${escapeHtml(serverVersion)}</b> · 현재 ${escapeHtml(APP_VERSION)}</span>
+    <button type="button" id="updateReloadBtn">지금 새로고침</button>
+    <button type="button" class="ghost" id="updateCloseBtn" title="나중에">✕</button>`;
+  document.body.appendChild(el);
+  el.querySelector('#updateReloadBtn').onclick = hardReloadLatest;
+  el.querySelector('#updateCloseBtn').onclick = ()=> el.remove();
+}
+function checkAppVersion(){
+  const sv = SETTINGS && SETTINGS.appVersion;
+  if(!sv) return;
+  if(versionIsNewer(sv, APP_VERSION)) showUpdateBanner(sv);
+}
+/* 내 버전이 서버 기록보다 최신이면 올려둔다 (다른 사람에게 알림이 가도록) */
+async function publishAppVersion(){
+  if(READ_ONLY) return;
+  if(SETTINGS.appVersion && !versionIsNewer(APP_VERSION, SETTINGS.appVersion)) return;
+  SETTINGS.appVersion = APP_VERSION;
+  await saveSettings();
 }
 async function loadSettings(){
   if(!Backend || typeof Backend.readSettings !== 'function') return;
@@ -3486,7 +3544,11 @@ async function saveSettings(){
   saveLocalCache();
   if(!Backend || typeof Backend.writeSettings !== 'function') return false;
   try{
-    const ok = await Backend.writeSettings({hiddenWorkers: hiddenWorkers(), updatedAt: SETTINGS.updatedAt});
+    const ok = await Backend.writeSettings({
+      hiddenWorkers: hiddenWorkers(),
+      updatedAt: SETTINGS.updatedAt,
+      appVersion: SETTINGS.appVersion || APP_VERSION
+    });
     return !!ok;
   }catch(e){ return false; }
 }
@@ -3875,7 +3937,8 @@ function savePanelHtml(){
     ['이 기기 기록', SAVE.lastLocalSaveAt ? fmtAgoFull(SAVE.lastLocalSaveAt) : (localStorageOk ? '없음' : '사용 불가')],
     ['미저장 변경', SAVE.pending ? `<b style="color:#B8790F;">${SAVE.pending}건 (자동 재시도 중)</b>` : '0건'],
     ['충돌 보관', CONFLICTS.length ? `<b style="color:#8A2020;">${CONFLICTS.length}건 (확인 필요)</b>` : '0건'],
-    ['티켓 수', `${TICKETS.length}건`]
+    ['티켓 수', `${TICKETS.length}건`],
+    ['버전', APP_VERSION]
   ];
   const err = SAVE.lastError ? `<div class="save-panel-err">최근 오류: ${escapeHtml(SAVE.lastError)}</div>` : '';
   const warn = SAVE.pending
@@ -4919,6 +4982,7 @@ function renderMobileApp(){
           <div class="mobile-menu-item ${mobileView==='upcoming'?'active':''}" data-view="upcoming">🕒 진행 예정인 티켓</div>
           <div class="mobile-menu-item ${mobileView==='search'?'active':''}" data-view="search">🔍 티켓 검색</div>
           <div class="mobile-menu-item ${mobileView==='absence'?'active':''}" data-view="absence">🌴 부재 관리</div>
+          <div class="mobile-menu-version">${APP_VERSION}</div>
           <div class="mobile-menu-actions">
             <button type="button" class="mobile-menu-action-btn secondary" id="mobileAddAbsenceBtn">+ 부재 등록</button>
             <button type="button" class="mobile-menu-action-btn" id="mobileAddTicketBtn">+ 티켓 등록</button>
@@ -7557,6 +7621,8 @@ const READ_FAIL_BANNER = err => `<span>⛔ <b>서버에서 데이터를 불러�
     // 3) 서버에서 읽어와 로컬 사본과 병합
     setSaveState('syncing');
     await loadSettings();
+    checkAppVersion();
+    publishAppVersion();
     const r = await loadFromServer();
     clearTimeout(hardTimer);
 
