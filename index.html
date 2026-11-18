@@ -1044,8 +1044,9 @@
   }
   .mobile-menu-btn:hover{background:var(--bg);}
   .mobile-board{
-    flex:1; min-height:0; display:flex; flex-direction:column; gap:6px; padding:9px 10px; overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
+    flex:1; min-height:0; display:flex; flex-direction:column; gap:6px; overflow-y:auto;
+    padding:9px 10px calc(72px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
   }
   .mobile-worker-row{
     flex:none; display:flex; flex-direction:column; margin-bottom:22px;
@@ -1143,13 +1144,13 @@
   .mw-cell.weekend{background:#F5F6F8;}
   .mw-cell.today{background:#EAF6F3;}
   .mw-bar{
-    display:flex; align-items:center; margin:1px 0; border-radius:4px; padding:0 4px;
-    font-size:9px; font-weight:800; color:#fff; overflow:hidden; cursor:pointer;
-    z-index:2; min-width:0; text-shadow:0 1px 1px rgba(0,0,0,.25);
+    display:flex; align-items:center; margin:1px 0; border-radius:4px; padding:0 5px;
+    font-size:9.5px; font-weight:800; color:#2A2E35; overflow:hidden; cursor:pointer;
+    z-index:2; min-width:0;
   }
   .mw-bar span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .mw-bar.absence{background:repeating-linear-gradient(45deg,#C7CCD6,#C7CCD6 4px,#B8BEC9 4px,#B8BEC9 8px) !important; color:#2A2E35; text-shadow:none;}
-  .mw-bar.done{opacity:.55;}
+  .mw-bar.absence{background:repeating-linear-gradient(45deg,#C7CCD6,#C7CCD6 4px,#B8BEC9 4px,#B8BEC9 8px) !important;}
+  .mw-bar.done{opacity:.62;}
   /* ---------- 모바일 메인: 섹션 구분 ---------- */
   .mobile-sec{margin-top:14px; padding-top:12px; border-top:2px solid var(--border);}
   .mobile-sec-head{font-size:12.5px; font-weight:900; margin-bottom:9px; padding:0 2px;}
@@ -1180,6 +1181,18 @@
   .mw-abs-title{font-size:11.5px; font-weight:800; flex:1; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .mw-abs-date{font-size:10px; font-weight:700; color:var(--text-faint); white-space:nowrap;}
+  .resource-sec{border-top-color:#F0BDBD;}
+  .mw-res-list{display:flex; flex-direction:column; gap:4px;}
+  .mw-res-chip{
+    display:flex; flex-direction:column; gap:3px; padding:7px 10px; border-radius:8px;
+    background:var(--danger-soft); border:1px solid #F0BDBD; cursor:pointer;
+  }
+  .mw-res-top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .mw-res-who{font-size:10px; font-weight:900; color:#8A2020; white-space:nowrap;}
+  .mw-res-top span:last-child{font-size:10px; font-weight:800; color:var(--text-dim); white-space:nowrap;}
+  .mw-res-late{color:var(--danger) !important; font-weight:900 !important;}
+  .mw-res-title{font-size:11.5px; font-weight:800; color:var(--text);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .mobile-month-week{
     flex:1; min-height:0; position:relative; display:grid;
     grid-template-columns:repeat(7,1fr); grid-template-rows:13px repeat(4,1fr);
@@ -4396,6 +4409,47 @@ function renderMobileAbsenceSection(){
         : `<div class="mobile-sec-empty">이번 주 부재 없음</div>`}
     </div>`;
 }
+/* 이번 주에 리소스 도착 확인이 필요한 티켓 */
+function renderMobileResourceSection(){
+  const monday = parseISO(mobileWeekStart || mobileMondayOf(todayISO()));
+  const start = toISO(monday), end = toISO(addDays(monday, 6));
+  const vis = visibleWorkers();
+  const DOW = ['일','월','화','수','목','금','토'];
+  const list = TICKETS.filter(t=>{
+    if(t.project === '부재' || !t.resourceCheckNeeded) return false;
+    const st = ticketStatus(t);
+    if(st === '완료') return false;
+    if(!(t.assignees||[]).some(a=> vis.includes(a))) return false;
+    const dl = t.resourceDeadline;
+    // 리소스 마감일이 이번 주이거나, 작업 기간이 이번 주에 걸쳐 있으면 표시
+    if(dl) return dl <= end;
+    return t.endDate >= start && t.startDate <= end;
+  }).sort((a,b)=> (a.resourceDeadline || a.startDate) < (b.resourceDeadline || b.startDate) ? -1 : 1);
+
+  const dlLabel = t=>{
+    if(!t.resourceDeadline) return '마감일 미지정';
+    const d = parseISO(t.resourceDeadline);
+    const today = todayISO();
+    const late = t.resourceDeadline < today;
+    return `<span class="${late?'mw-res-late':''}">리소스 ${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]})${late?' 지남':''}</span>`;
+  };
+  return `
+    <div class="mobile-sec resource-sec">
+      <div class="mobile-sec-head">❗ 금주 체크 필요 리소스</div>
+      ${list.length ? `
+        <div class="mw-res-list">
+          ${list.map(t=>`
+            <div class="mw-res-chip" data-id="${t.id}">
+              <div class="mw-res-top">
+                <span class="mw-res-who">${escapeHtml((t.assignees||[]).join(', '))}</span>
+                ${dlLabel(t)}
+              </div>
+              <div class="mw-res-title">${wtPrefixOf(t)}[${escapeHtml(t.project)}] ${escapeHtml(t.title)}</div>
+            </div>`).join('')}
+        </div>`
+        : `<div class="mobile-sec-empty">확인이 필요한 리소스 없음</div>`}
+    </div>`;
+}
 function renderMobileTodaySection(){
   const today = todayISO();
   const d = parseISO(today);
@@ -4673,7 +4727,7 @@ function renderMobileUpcomingCards(list){
 }
 
 function wireMobileTicketCardClicks(scope){
-  scope.querySelectorAll('.mobile-ticket-card[data-id], .mobile-ticket-chip[data-id], .mw-bar[data-id], .mw-weekend-chip[data-id], .mw-abs-chip[data-id]').forEach(el=>{
+  scope.querySelectorAll('.mobile-ticket-card[data-id], .mobile-ticket-chip[data-id], .mw-bar[data-id], .mw-weekend-chip[data-id], .mw-abs-chip[data-id], .mw-res-chip[data-id]').forEach(el=>{
     el.onclick = ()=> openModal(el.dataset.id);
   });
 }
@@ -4817,6 +4871,7 @@ function renderMobileMainArea(){
       ${renderMobileWeekBoard()}
       ${renderMobileWeekendSection()}
       ${renderMobileAbsenceSection()}
+      ${renderMobileResourceSection()}
       ${renderMobileTodaySection()}
     </div>`;
   }
