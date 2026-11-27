@@ -547,6 +547,21 @@
     border-top:2px solid var(--border);
   }
   .mm-actions{display:flex; gap:7px; margin-top:12px;}
+  .nx-wrap{overflow-x:auto;}
+  .nx-table{font-size:11.5px; min-width:640px;}
+  .nx-table th{white-space:nowrap;}
+  .nx-table td{vertical-align:middle;}
+  .nx-table .nx-work{min-width:280px; font-weight:700; line-height:1.5;}
+  .nx-table .nx-skill{min-width:140px; color:var(--text-dim);}
+  .nx-table .nx-type, .nx-table .nx-proj{white-space:nowrap; font-weight:800;}
+  .nx-table .nx-mm{text-align:right; font-variant-numeric:tabular-nums; font-weight:900; width:56px;}
+  .nx-copy{
+    margin-left:6px; padding:2px 8px; border-radius:11px; border:1px solid var(--border-strong);
+    background:#fff; font-size:10px; font-weight:800; cursor:pointer; color:var(--text-dim); font-family:inherit;
+  }
+  .nx-copy:hover{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .nx-hint{font-size:10.5px; font-weight:700; color:var(--text-faint); align-self:center;}
+  .nx-hint b{color:var(--text-dim);}
   .mm-markdown{
     display:none; width:100%; min-height:220px; margin-top:10px; padding:10px;
     font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; line-height:1.5;
@@ -1310,17 +1325,19 @@ const WORKERS = ['심승선','임기백','이유정','이수민'];
    - PC 2주 보드에서만 맨 위에 한 줄로 표시된다. (월 보드·모바일에는 표시하지 않음) */
 const RESERVE_WORKER = '예비';
 function isReserveTicket(t){ return !!(t && t.assignees && t.assignees.includes(RESERVE_WORKER)); }
-const PROJECTS = ['공통','부재','서든어택','TFD','오버워치','CSO','TF','ARC','낙원','SAZ'];
+const PROJECTS = ['공통','부재','SA','TFD','OW','CSO','TF','ARC','NW','SAZ'];
+/* 예전 한글 프로젝트명 → 알파벳 코드 (기존 데이터 자동 변환용) */
+const PROJECT_ALIASES = {'서든어택':'SA', '오버워치':'OW', '낙원':'NW'};
 const PROJECT_COLORS = {
   '공통':'#5B6472',
   '부재':'#B9A88F',
-  '서든어택':'#C0392B',
+  'SA':'#C0392B',
   'TFD':'#7C4DBF',
-  '오버워치':'#2E6FCC',
+  'OW':'#2E6FCC',
   'CSO':'#5C7A2E',
   'TF':'#C23A8B',
   'ARC':'#0E8FA0',
-  '낙원':'#1E8A4C',
+  'NW':'#1E8A4C',
   'SAZ':'#B8790F'
 };
 // 작업자별 파스텔톤 색상 (간트 바 색상, 작업자 동그라미 등에 공통 사용)
@@ -1917,7 +1934,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-1';
+const APP_VERSION = 'v2026.11.18-2';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2153,7 +2170,8 @@ function computeMonthlyMM(year, month0){
   const scheduled = {};    // 일정일 합계 (동시 진행이면 중복으로 더해짐)
   const workedDays = {};   // 실제로 일정이 하나라도 있던 날 (중복 없음)
   const byWorker = {};
-  WORKERS.forEach(w=>{ capacity[w]=0; scheduled[w]=0; workedDays[w]=0; byWorker[w]={}; });
+  const ticketDays = {};   // 작업자 -> 티켓id -> 투입일 (노션 MM 입력용)
+  WORKERS.forEach(w=>{ capacity[w]=0; scheduled[w]=0; workedDays[w]=0; byWorker[w]={}; ticketDays[w]={}; });
 
   let cur = parseISO(ms);
   const last = parseISO(me);
@@ -2170,6 +2188,8 @@ function computeMonthlyMM(year, month0){
       list.forEach(t=>{
         const pj = t.project || '(미지정)';
         scheduled[w] += avail;                            // 나누지 않고 일정 그대로
+        if(!ticketDays[w]) ticketDays[w] = {};
+        ticketDays[w][t.id] = (ticketDays[w][t.id] || 0) + avail;
         if(!byWorker[w][pj]) byWorker[w][pj] = {days:0, types:{}, tickets:new Set()};
         const slot = byWorker[w][pj];
         slot.days += avail;
@@ -2249,7 +2269,7 @@ function computeMonthlyMM(year, month0){
   projects.forEach(r=>{ r.ratio = totalMM > 0 ? r.mm / totalMM : 0; });
 
   return {
-    ms, me, workers, projects, totalMM, capacity, scheduled, workedDays,
+    ms, me, workers, projects, totalMM, capacity, scheduled, workedDays, ticketDays,
     workerCount: WORKERS.length,
     totalCapacityDays: totalCapacity,
     scheduledDays: totalScheduled,
@@ -2342,6 +2362,174 @@ function typeBarHtml(types){
        <b>${fmtRatio(x.ratio)}</b><em>${fmtDays(x.days)}일</em></span>`).join('');
   return `<div class="mm-typebar">${seg}</div><div class="mm-detail">${legend}</div>`;
 }
+/* =====================================================================
+   노션 MM 입력용 변환
+   우리 티켓 → 넥슨 MM 입력 양식(업무내역 / 스킬·툴 / 업무유형 / 프로젝트 / MM)
+   ===================================================================== */
+let mmExportWorker = null;
+/* 우리 업무 유형 → 넥슨 업무유형 */
+const NEXON_TYPE_MAP = {
+  '롱폼':'콘텐츠/마케팅', '숏폼':'콘텐츠/마케팅', '라이브':'콘텐츠/마케팅',
+  '오프라인 촬영':'콘텐츠/마케팅', 'etc':'콘텐츠/마케팅',
+  '이미지':'디자인', '언리얼':'디자인',
+  '기획':'기획', '회의':'PM'
+};
+/* 업무 유형별 기본 스킬·툴 */
+const NEXON_SKILL_MAP = {
+  '롱폼':['Premiere Pro','After Effects'],
+  '숏폼':['Premiere Pro','After Effects'],
+  '라이브':['vMix','OBS Studio'],
+  '오프라인 촬영':['촬영','조명'],
+  '이미지':['Photoshop','Illustrator'],
+  '언리얼':['Unreal Engine'],
+  '기획':['Notion','PowerPoint'],
+  '회의':['Notion'],
+  'etc':['Notion']
+};
+function nexonTypeOf(t){
+  const wts = ticketWorkTypes(t);
+  if(!wts.length) return '콘텐츠/마케팅';
+  // 유형이 여러 개면 수량이 가장 많은 유형을 대표로
+  let best = wts[0], bestQ = -1;
+  wts.forEach(x=>{ const q = wtQtyOf(t, x); if(q > bestQ){ bestQ = q; best = x; } });
+  return NEXON_TYPE_MAP[best] || '콘텐츠/마케팅';
+}
+function nexonSkillsOf(t){
+  const set = [];
+  ticketWorkTypes(t).forEach(x=> (NEXON_SKILL_MAP[x] || []).forEach(sk=>{ if(!set.includes(sk)) set.push(sk); }));
+  return set.join(', ');
+}
+/* 업무내역 문장 자동 조합: 프로젝트 + 제목 + 유형·수량 */
+function nexonWorkText(t){
+  const wts = ticketWorkTypes(t);
+  const detail = wts.map(x=>{
+    const q = wtQtyOf(t, x);
+    return q > 1 ? `${x} ${q}종` : x;
+  }).join(' · ');
+  const base = `${t.project} ${t.title}`.replace(/\s+/g, ' ').trim();
+  if(!detail) return base;
+  // 대표 유형에 맞는 서술어
+  let verb = '제작';
+  let rep = wts[0], repQ = -1;
+  wts.forEach(x=>{ const q = wtQtyOf(t, x); if(q > repQ){ repQ = q; rep = x; } });
+  if(rep === '회의') verb = '진행';
+  else if(rep === '기획') verb = '수립';
+  else if(rep === '라이브' || rep === '오프라인 촬영') verb = '운영';
+  return `${base} — ${detail} ${verb}`;
+}
+/* 선택한 작업자의 그 달 MM 입력 행 만들기 (MM 합계는 정확히 1.00) */
+function buildNexonRows(data, worker){
+  const map = (data.ticketDays && data.ticketDays[worker]) || {};
+  const total = data.scheduled[worker] || 0;
+  if(!total) return [];
+  let rows = Object.keys(map).map(id=>{
+    const t = TICKETS.find(x=> x.id === id);
+    if(!t) return null;
+    return {
+      id,
+      work: nexonWorkText(t),
+      skill: nexonSkillsOf(t),
+      type: nexonTypeOf(t),
+      project: t.project || '',
+      days: map[id],
+      raw: map[id] / total
+    };
+  }).filter(Boolean).sort((a,b)=> b.raw - a.raw);
+
+  // 소수점 2자리로 자르되 합이 1.00이 되도록 가장 큰 행에서 보정
+  rows.forEach(r=>{ r.mm = Math.max(0.01, Math.round(r.raw * 100) / 100); });
+  let sum = rows.reduce((a,r)=> a + r.mm, 0);
+  let diff = Math.round((1 - sum) * 100) / 100;
+  if(rows.length && diff !== 0){
+    rows[0].mm = Math.max(0.01, Math.round((rows[0].mm + diff) * 100) / 100);
+  }
+  return rows;
+}
+function renderMMExportSection(){
+  const data = computeMonthlyMM(mmYear, mmMonth);
+  const worker = (mmExportWorker && WORKERS.includes(mmExportWorker)) ? mmExportWorker : WORKERS[0];
+  const rows = buildNexonRows(data, worker);
+  const sum = rows.reduce((a,r)=> a + r.mm, 0);
+  return `
+    <div class="mm-rollup-title">노션 MM 입력용 정리</div>
+    <div class="pill-group" id="mmExportPills" style="margin-bottom:10px;">
+      ${WORKERS.map(w=>`<div class="pill ${worker===w?'selected':''}" data-worker="${w}">${workerDot(w)}${escapeHtml(w)}</div>`).join('')}
+    </div>
+    ${rows.length ? `
+    <div class="nx-wrap">
+      <table class="matrix-table nx-table" id="nxTable">
+        <thead>
+          <tr>
+            <th>업무내역 <button type="button" class="nx-copy" data-col="work">복사</button></th>
+            <th>스킬/툴 <button type="button" class="nx-copy" data-col="skill">복사</button></th>
+            <th>업무유형 <button type="button" class="nx-copy" data-col="type">복사</button></th>
+            <th>프로젝트 <button type="button" class="nx-copy" data-col="project">복사</button></th>
+            <th>MM <button type="button" class="nx-copy" data-col="mm">복사</button></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r=>`
+            <tr>
+              <td class="nx-work">${escapeHtml(r.work)}</td>
+              <td class="nx-skill">${escapeHtml(r.skill)}</td>
+              <td class="nx-type">${escapeHtml(r.type)}</td>
+              <td class="nx-proj">${escapeHtml(r.project)}</td>
+              <td class="nx-mm">${r.mm.toFixed(2)}</td>
+            </tr>`).join('')}
+          <tr class="mm-total">
+            <td colspan="4">${escapeHtml(worker)} · ${mmYear}년 ${mmMonth+1}월 합계</td>
+            <td class="nx-mm"><b>${sum.toFixed(2)}</b></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="mm-actions">
+      <button type="button" class="save-panel-btn primary" id="nxCopyAll" style="flex:0 0 auto;">📋 표 전체 복사 (붙여넣기용)</button>
+      <span class="nx-hint">열 제목의 <b>복사</b>를 누르면 그 칸만 세로로 복사됩니다. 노션 표에 그대로 붙여넣으세요.</span>
+    </div>
+    <textarea id="nxClipboard" class="mm-markdown" readonly></textarea>`
+    : `<div class="empty-note">${escapeHtml(worker)} 님은 이 달에 집계할 일정이 없습니다.</div>`}`;
+}
+function wireMMExport(){
+  const card = document.getElementById('mmCard');
+  if(!card) return;
+  card.querySelectorAll('#mmExportPills .pill').forEach(el=>{
+    el.onclick = ()=>{ mmExportWorker = el.dataset.worker; renderApp(); };
+  });
+  const table = card.querySelector('#nxTable');
+  if(!table) return;
+  const colText = col=>{
+    const cls = {work:'nx-work', skill:'nx-skill', type:'nx-type', project:'nx-proj', mm:'nx-mm'}[col];
+    return [...table.querySelectorAll('tbody tr:not(.mm-total) .' + cls)].map(td=> td.textContent.trim()).join('\n');
+  };
+  const doCopy = async (text, msg)=>{
+    try{
+      await navigator.clipboard.writeText(text);
+      showToast(msg, 3000);
+    }catch(e){
+      const ta = card.querySelector('#nxClipboard');
+      ta.style.display = 'block';
+      ta.value = text;
+      ta.select();
+      showToast('아래 칸의 내용을 복사해 사용하세요.');
+    }
+  };
+  table.querySelectorAll('.nx-copy').forEach(btn=>{
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      const col = btn.dataset.col;
+      const name = {work:'업무내역', skill:'스킬/툴', type:'업무유형', project:'프로젝트', mm:'MM'}[col];
+      doCopy(colText(col), `${name} 칸을 복사했습니다. 노션에 붙여넣으세요.`);
+    };
+  });
+  const all = card.querySelector('#nxCopyAll');
+  if(all) all.onclick = ()=>{
+    const lines = [...table.querySelectorAll('tbody tr:not(.mm-total)')].map(tr=>
+      [...tr.children].map(td=> td.textContent.trim()).join('\t'));
+    doCopy(lines.join('\n'), '표 전체를 복사했습니다. 노션 표에 붙여넣으세요.');
+  };
+}
+
 function renderMMView(){
   return renderMMCard();
 }
@@ -2536,6 +2724,7 @@ function renderMMCard(){
       <div class="mm-actions">
         <button type="button" class="save-panel-btn primary" id="mmCopyMd" style="flex:0 0 auto;">📋 마크다운 복사</button>
       </div>
+      ${renderMMExportSection()}
       <textarea id="mmMarkdown" class="mm-markdown" readonly>${escapeHtml(mmMarkdown(data))}</textarea>
     </div>`;
 }
@@ -2697,6 +2886,15 @@ function ticketStatus(t){
       - 서버에도 쓰지 않는다 (SYNCED 해시만 맞춰 '변경 없음'으로 취급)
       → 그래서 새로고침만 해도 "방금 저장함"으로 표시되거나 서버 쓰기가 발생하지 않는다.
       사람이 그 티켓을 실제로 저장하는 순간 전환된 상태가 함께 서버에 올라간다. */
+/* 예전 한글 프로젝트명을 알파벳 코드로 한 번 변환한다 */
+function migrateProjectNames(){
+  let n = 0;
+  TICKETS.forEach(t=>{
+    const m = PROJECT_ALIASES[t.project];
+    if(m){ t.project = m; n++; }
+  });
+  return n;
+}
 function autoAdvanceStatuses(){
   const today = todayISO();
   const touched = [];
@@ -2888,29 +3086,29 @@ function buildSeedTickets(){
     return '예정';
   }
 
-  // [프로젝트 태그] -> 우리 시스템의 프로젝트명 매핑: TFD=퍼스트디센던트, OW=오버워치, CSO=카스온라인, SAZ=SAZ, SA/서든어택=서든어택
+  // [프로젝트 태그] -> 프로젝트 코드 (TFD / OW / CSO / SAZ / SA / NW ...)
   const raw = [
     {title:'K-Culture(한국 전통 의상)', project:'TFD', type:'이미지', os:-8, oe:-3},
-    {title:'오버워치 미션 수행 예능 콘텐츠', project:'오버워치', type:'기획', os:-8, oe:-3},
-    {title:'파이널 스테이지 진출 쇼츠', project:'오버워치', type:'숏폼', os:-6, oe:3},
+    {title:'OW 미션 수행 예능 콘텐츠', project:'OW', type:'기획', os:-8, oe:-3},
+    {title:'파이널 스테이지 진출 쇼츠', project:'OW', type:'숏폼', os:-6, oe:3},
     {title:'신규 여자 일반 좀비 AI 영상', project:'CSO', type:'롱폼', os:-6, oe:-3, actualAdj:-1},
     {title:'드래곤로드 프로모션 영상', project:'SAZ', type:'롱폼', os:-5, oe:3, memo:'https://drive.google.com/drive/folders/example-saz-dragonroad'},
     {title:'드래곤로드 티저', project:'SAZ', type:'숏폼', os:-5, oe:3},
     {title:'빨간망토', project:'TFD', type:'이미지', os:-5, oe:12},
-    {title:'사내대회 조연출', project:'오버워치', type:'기획', os:-7, oe:-4, actualAdj:0},
-    {title:'챔피언십 오픈 영상', project:'서든어택', type:'롱폼', os:-4, oe:3},
+    {title:'사내대회 조연출', project:'OW', type:'기획', os:-7, oe:-4, actualAdj:0},
+    {title:'챔피언십 오픈 영상', project:'SA', type:'롱폼', os:-4, oe:3},
     {title:'맵 정보', project:'SAZ', type:'이미지', os:-3, oe:1},
-    {title:'시범 경기 라이브 스튜디오 테스트', project:'서든어택', type:'라이브', os:5, oe:6},
+    {title:'시범 경기 라이브 스튜디오 테스트', project:'SA', type:'라이브', os:5, oe:6},
     {title:'패치노트 - 좀비 시나리오 보상 리뉴얼, 에픽 주무기 베리에이션, 신규 초월 클래스', project:'CSO', type:'기획', os:4, oe:8},
-    {title:'챔피언십 시범 경기 쇼츠', project:'서든어택', type:'숏폼', os:8, oe:15},
+    {title:'챔피언십 시범 경기 쇼츠', project:'SA', type:'숏폼', os:8, oe:15},
     {title:'던전 앤 잉그리스(판타지)', project:'TFD', type:'이미지', os:8, oe:26, forceAssignees:['이유정','심승선'], memo:'https://drive.google.com/drive/folders/example-tfd-dungeon'},
     {title:'신규 초월 클래스 쇼츠', project:'CSO', type:'숏폼', os:9, oe:12, statusOverride:'보류'},
-    {title:'챔피언십 넥방 테스트', project:'서든어택', type:'언리얼', os:10, oe:11},
+    {title:'챔피언십 넥방 테스트', project:'SA', type:'언리얼', os:10, oe:11},
     {title:'에픽 주무기 베리에이션 활용 AI 영상 (나루토 영상 레퍼런스)', project:'CSO', type:'롱폼', os:14, oe:19, memo:'https://drive.google.com/drive/folders/example-kcso-reference'},
-    {title:'챔피언십 콘텐츠 스케줄 기획', project:'서든어택', type:'기획', os:21, oe:25},
-    {title:'예선전 라이브', project:'서든어택', type:'라이브', os:25, oe:26},
-    {title:'챔피언십 예선전 숏폼 5개', project:'서든어택', type:'숏폼', os:28, oe:33},
-    {title:'예선전 하이라이트 롱폼', project:'서든어택', type:'롱폼', os:28, oe:33},
+    {title:'챔피언십 콘텐츠 스케줄 기획', project:'SA', type:'기획', os:21, oe:25},
+    {title:'예선전 라이브', project:'SA', type:'라이브', os:25, oe:26},
+    {title:'챔피언십 예선전 숏폼 5개', project:'SA', type:'숏폼', os:28, oe:33},
+    {title:'예선전 하이라이트 롱폼', project:'SA', type:'롱폼', os:28, oe:33},
     {title:'천사와 악마', project:'TFD', type:'이미지', os:31, oe:37},
   ];
 
@@ -6076,6 +6274,7 @@ function attachContentHandlers(){
   });
   wireReportPanel();
   wireMMCard();
+  wireMMExport();
   wireMonthWorkerFilter();
   wireBoardTypeFilter();
   wireDashboardWorkerCardNav();
@@ -7652,10 +7851,14 @@ const READ_FAIL_BANNER = err => `<span>⛔ <b>서버에서 데이터를 불러�
       // ★ 새로고침은 '읽기 전용'이다.
       //   상태 자동 전환은 화면 표시용으로만 계산하고 서버에 쓰지 않는다.
       //   서버 쓰기는 오직 (이전 세션에서 못 올린) 로컬 변경이 클라우드와 다를 때만 발생한다.
+      const renamed = migrateProjectNames();   // 한글 프로젝트명 → 알파벳 코드 (1회)
       autoAdvanceStatuses();
       checkMissingHolidaySeeds();
       recomputePending();
-      if(SAVE.pending > 0) await flushNow();
+      if(renamed){
+        await persistTickets(true);
+        showToast(`프로젝트명 ${renamed}건을 코드로 변환했습니다.`);
+      } else if(SAVE.pending > 0) await flushNow();
       else setSaveState('saved');
     }
 
