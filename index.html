@@ -548,10 +548,12 @@
   }
   .mm-actions{display:flex; gap:7px; margin-top:12px;}
   .nx-wrap{overflow-x:auto;}
-  .nx-table{font-size:11.5px; min-width:780px;}
+  .nx-table{font-size:11.5px; min-width:900px;}
   .nx-table th{white-space:nowrap;}
   .nx-table td{vertical-align:middle;}
-  .nx-table .nx-work{min-width:280px; font-weight:700; line-height:1.5;}
+  .nx-table .nx-work{min-width:300px; font-weight:700; line-height:1.5;}
+  .nx-table .nx-type{min-width:130px;}
+  .nx-table .nx-proj{min-width:95px;}
   .nx-table .nx-skill{min-width:250px; color:var(--text-dim); white-space:normal; line-height:1.5;}
   .nx-table .nx-ck{width:30px; text-align:center; padding-left:6px; padding-right:2px;}
   .nx-table .nx-ck input{width:15px; height:15px; cursor:pointer;}
@@ -565,6 +567,24 @@
     width:100%; padding:5px 8px !important; font-size:11.5px; font-weight:700;
     border:1px solid #E0C766 !important; border-radius:6px; background:#fff; font-family:inherit;
   }
+  .nx-sub{font-size:9.5px; font-weight:700; color:var(--text-faint); margin-left:4px;}
+  .nx-in{
+    width:100%; padding:5px 8px !important; font-size:11.5px; font-weight:700;
+    border:1px solid var(--border-strong) !important; border-radius:6px; background:#fff; font-family:inherit;
+  }
+  .nx-merged .nx-in{border-color:#E0C766 !important;}
+  .nx-chips{display:flex; flex-wrap:wrap; gap:4px;}
+  .nx-chip{
+    display:inline-flex; align-items:center; gap:3px; padding:3px 8px; border-radius:11px;
+    border:1px dashed var(--border-strong); background:#fff; color:var(--c, var(--text-dim));
+    font-size:10.5px; font-weight:800; cursor:pointer; white-space:nowrap; opacity:.6;
+  }
+  .nx-chip:hover{opacity:1;}
+  .nx-chip.on{
+    border-style:solid; border-color:var(--c); background:color-mix(in srgb, var(--c) 12%, #fff); opacity:1;
+  }
+  .nx-chip i{font-style:normal; font-size:9px; opacity:.7;}
+  .nx-chip.add{color:var(--text-faint); border-color:var(--border);}
   .nx-tools{display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:9px;}
   .nx-tools .save-panel-btn:disabled{opacity:.45; cursor:default;}
   .nx-table .nx-type, .nx-table .nx-proj{white-space:nowrap; font-weight:800;}
@@ -1948,7 +1968,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-3';
+const APP_VERSION = 'v2026.11.18-4';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2388,6 +2408,33 @@ function mmMergesFor(worker){
   const list = all[mmMergeKey(worker)];
   return Array.isArray(list) ? list : [];
 }
+function mmOverridesFor(worker){
+  const all = (SETTINGS && SETTINGS.mmOverrides) || {};
+  const o = all[mmMergeKey(worker)];
+  return (o && typeof o === 'object') ? o : {};
+}
+async function saveMmOverride(worker, rowId, patch){
+  const key = mmMergeKey(worker);
+  const all = {...((SETTINGS && SETTINGS.mmOverrides) || {})};
+  const mine = {...(all[key] || {})};
+  mine[rowId] = {...(mine[rowId] || {}), ...patch};
+  all[key] = mine;
+  SETTINGS.mmOverrides = all;
+  const ok = await saveSettings();
+  renderApp();
+  if(!ok) showToast('⚠ 서버 저장에 실패했습니다. 이 기기에는 적용되었고 자동으로 다시 시도합니다.');
+}
+async function clearMmEdits(worker){
+  const key = mmMergeKey(worker);
+  const m = {...((SETTINGS && SETTINGS.mmMerges) || {})};
+  const o = {...((SETTINGS && SETTINGS.mmOverrides) || {})};
+  delete m[key]; delete o[key];
+  SETTINGS.mmMerges = m;
+  SETTINGS.mmOverrides = o;
+  await saveSettings();
+  renderApp();
+  showToast('수정 내용을 초기화했습니다.');
+}
 async function saveMmMerges(worker, list){
   SETTINGS.mmMerges = {...((SETTINGS && SETTINGS.mmMerges) || {})};
   if(list && list.length) SETTINGS.mmMerges[mmMergeKey(worker)] = list;
@@ -2397,6 +2444,14 @@ async function saveMmMerges(worker, list){
   showToast(ok ? '합친 내용을 저장했습니다. (팀 전체 공유)' : '⚠ 서버 저장에 실패했습니다. 이 기기에는 적용되었고 자동으로 다시 시도합니다.');
 }
 /* 우리 업무 유형 → 넥슨 업무유형 */
+const NEXON_TYPES = ['기술','개발','인프라','운영','기획','PM','QA/검수','현지화/번역','CS','분석/데이터','사업','디자인','콘텐츠/마케팅','조직운영','AX','R&D','보안','총괄/프로듀싱'];
+/* 스킬·툴마다 고유 색을 부여해 눈으로 구분되게 */
+function skillColor(name){
+  let h = 0;
+  const s = String(name || '');
+  for(let i=0;i<s.length;i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+  return `hsl(${h}, 62%, 38%)`;
+}
 const NEXON_TYPE_MAP = {
   '롱폼':'콘텐츠/마케팅', '숏폼':'콘텐츠/마케팅', '라이브':'콘텐츠/마케팅',
   '오프라인 촬영':'콘텐츠/마케팅', 'etc':'콘텐츠/마케팅',
@@ -2424,9 +2479,21 @@ function nexonTypeOf(t){
   return NEXON_TYPE_MAP[best] || '콘텐츠/마케팅';
 }
 function nexonSkillsOf(t){
+  // 기본 선택은 유형별 대표 2개만 (나머지는 제안으로 보여준다)
   const set = [];
-  ticketWorkTypes(t).forEach(x=> (NEXON_SKILL_MAP[x] || []).forEach(sk=>{ if(!set.includes(sk)) set.push(sk); }));
+  ticketWorkTypes(t).forEach(x=> (NEXON_SKILL_MAP[x] || []).slice(0,2).forEach(sk=>{ if(!set.includes(sk)) set.push(sk); }));
   return set.join(', ');
+}
+/* 그 행에 제안할 스킬·툴 전체 목록 */
+function nexonSkillSuggestions(row){
+  const ids = row.isMerged ? (row.ids || []) : [row.id];
+  const set = [];
+  ids.forEach(id=>{
+    const t = TICKETS.find(x=> x.id === id);
+    if(!t) return;
+    ticketWorkTypes(t).forEach(x=> (NEXON_SKILL_MAP[x] || []).forEach(sk=>{ if(!set.includes(sk)) set.push(sk); }));
+  });
+  return set;
 }
 /* 업무내역 문장 자동 조합: 프로젝트 + 제목 + 유형·수량 */
 function nexonWorkText(t){
@@ -2504,8 +2571,8 @@ function buildNexonRows(data, worker){
       const topType = Object.keys(typeCount).sort((a,b)=> typeCount[b]-typeCount[a])[0];
       const projs = [...new Set(members.map(m=> m.project))];
       mergedRows.push({
-        id: 'merge:' + gi,
-        mergeIndex: gi,
+        id: 'm:' + (g.mid || gi),
+        mid: g.mid || String(gi),
         isMerged: true,
         ids: members.map(m=> m.id),
         work: g.label || autoMergeLabel(tickets),
@@ -2518,6 +2585,17 @@ function buildNexonRows(data, worker){
     });
     rows = [...mergedRows, ...rows.filter(r=> !used.has(r.id))].sort((a,b)=> b.raw - a.raw);
   }
+
+  // 사용자가 고친 값(업무내역·스킬·유형·프로젝트) 덮어쓰기
+  const ov = mmOverridesFor(worker);
+  rows.forEach(r=>{
+    const o = ov[r.id];
+    if(!o) return;
+    if(typeof o.work === 'string' && o.work) r.work = o.work;
+    if(typeof o.skill === 'string') r.skill = o.skill;
+    if(o.type) r.type = o.type;
+    if(o.project) r.project = o.project;
+  });
 
   // 소수점 2자리로 자르되 합이 1.00이 되도록 가장 큰 행에서 보정
   rows.forEach(r=>{ r.mm = Math.max(0.01, Math.round(r.raw * 100) / 100); });
@@ -2534,41 +2612,61 @@ function renderMMExportSection(){
   const rows = buildNexonRows(data, worker);
   const sum = rows.reduce((a,r)=> a + r.mm, 0);
   return `
-    <div class="mm-rollup-title">노션 MM 입력용 정리</div>
+    <div class="mm-rollup-title">노션 MM 입력용 정리 · 여기서 바로 수정</div>
     <div class="pill-group" id="mmExportPills" style="margin-bottom:10px;">
       ${WORKERS.map(w=>`<div class="pill ${worker===w?'selected':''}" data-worker="${w}">${workerDot(w)}${escapeHtml(w)}</div>`).join('')}
     </div>
     ${rows.length ? `
+    <div class="nx-tools">
+      <button type="button" class="save-panel-btn" id="nxMergeBtn" style="flex:0 0 auto;">🔗 선택한 행 합치기</button>
+      <button type="button" class="save-panel-btn" id="nxResetBtn" style="flex:0 0 auto;">↩ 수정 내용 초기화</button>
+      <span class="nx-hint" id="nxMergeHint">비슷한 업무를 체크해 합치면 MM이 더해집니다. 모든 수정 내용은 자동 저장됩니다.</span>
+    </div>
     <div class="nx-wrap">
-      <div class="nx-tools">
-        <button type="button" class="save-panel-btn" id="nxMergeBtn" style="flex:0 0 auto;">🔗 선택한 행 합치기</button>
-        <span class="nx-hint" id="nxMergeHint">비슷한 업무를 체크해서 하나로 합치면 MM도 더해집니다. 합친 내용은 저장되어 다음에도 유지됩니다.</span>
-      </div>
       <table class="matrix-table nx-table" id="nxTable">
         <thead>
           <tr>
             <th class="nx-ck"></th>
-            <th>업무내역 <button type="button" class="nx-copy" data-col="work">복사</button></th>
-            <th>스킬/툴 <button type="button" class="nx-copy" data-col="skill">복사</button></th>
-            <th>업무유형 <button type="button" class="nx-copy" data-col="type">복사</button></th>
-            <th>프로젝트 <button type="button" class="nx-copy" data-col="project">복사</button></th>
-            <th>MM <button type="button" class="nx-copy" data-col="mm">복사</button></th>
+            <th>업무내역</th>
+            <th>스킬/툴 <span class="nx-sub">클릭해서 넣고 빼기</span></th>
+            <th>업무유형</th>
+            <th>프로젝트</th>
+            <th>MM</th>
           </tr>
         </thead>
         <tbody>
-          ${rows.map(r=>`
-            <tr class="${r.isMerged?'nx-merged':''}">
+          ${rows.map(r=>{
+            const picked = r.skill ? r.skill.split(',').map(x=> x.trim()).filter(Boolean) : [];
+            const suggest = nexonSkillSuggestions(r).filter(x=> !picked.includes(x));
+            return `
+            <tr class="${r.isMerged?'nx-merged':''}" data-row="${escapeHtml(r.id)}">
               <td class="nx-ck">${r.isMerged
-                ? `<button type="button" class="nx-unmerge" data-merge="${r.mergeIndex}" title="합치기 해제">✕</button>`
+                ? `<button type="button" class="nx-unmerge" data-mid="${escapeHtml(r.mid)}" title="합치기 해제">✕</button>`
                 : `<input type="checkbox" class="nx-pick" data-id="${escapeHtml(r.id)}">`}</td>
-              <td class="nx-work">${r.isMerged
-                ? `<input type="text" class="nx-work-input" data-merge="${r.mergeIndex}" value="${escapeHtml(r.work)}">`
-                : escapeHtml(r.work)}</td>
-              <td class="nx-skill">${escapeHtml(r.skill)}</td>
-              <td class="nx-type">${escapeHtml(r.type)}</td>
-              <td class="nx-proj">${escapeHtml(r.project)}</td>
+              <td class="nx-work">
+                <input type="text" class="nx-in nx-work-input" data-row="${escapeHtml(r.id)}" value="${escapeHtml(r.work)}">
+              </td>
+              <td class="nx-skill">
+                <div class="nx-chips">
+                  ${picked.map(sk=>`<span class="nx-chip on" style="--c:${skillColor(sk)}" data-row="${escapeHtml(r.id)}" data-skill="${escapeHtml(sk)}">${escapeHtml(sk)} <i>✕</i></span>`).join('')}
+                  ${suggest.map(sk=>`<span class="nx-chip" style="--c:${skillColor(sk)}" data-row="${escapeHtml(r.id)}" data-skill="${escapeHtml(sk)}">${escapeHtml(sk)} <i>＋</i></span>`).join('')}
+                  <span class="nx-chip add" data-row="${escapeHtml(r.id)}" data-add="1">＋ 직접 추가</span>
+                </div>
+              </td>
+              <td class="nx-type">
+                <select class="nx-in nx-type-select" data-row="${escapeHtml(r.id)}">
+                  ${NEXON_TYPES.map(t=>`<option value="${escapeHtml(t)}" ${r.type===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}
+                </select>
+              </td>
+              <td class="nx-proj">
+                <select class="nx-in nx-proj-select" data-row="${escapeHtml(r.id)}">
+                  ${PROJECTS.filter(x=> x!=='부재').map(x=>`<option value="${escapeHtml(x)}" ${r.project===x?'selected':''}>${escapeHtml(x)}</option>`).join('')}
+                  ${PROJECTS.includes(r.project) ? '' : `<option value="${escapeHtml(r.project)}" selected>${escapeHtml(r.project)}</option>`}
+                </select>
+              </td>
               <td class="nx-mm">${r.mm.toFixed(2)}</td>
-            </tr>`).join('')}
+            </tr>`;
+          }).join('')}
           <tr class="mm-total">
             <td colspan="5">${escapeHtml(worker)} · ${mmYear}년 ${mmMonth+1}월 합계</td>
             <td class="nx-mm"><b>${sum.toFixed(2)}</b></td>
@@ -2577,12 +2675,30 @@ function renderMMExportSection(){
       </table>
     </div>
     <div class="mm-actions">
-      <button type="button" class="save-panel-btn primary" id="nxCopyAll" style="flex:0 0 auto;">📋 표 전체 복사 (붙여넣기용)</button>
-      <span class="nx-hint">열 제목의 <b>복사</b>를 누르면 그 칸만 세로로 복사됩니다. 노션 표에 그대로 붙여넣으세요.</span>
+      <button type="button" class="save-panel-btn primary" id="nxDownloadMd" style="flex:0 0 auto;">⬇ 마크다운 내려받기 (노션 자동입력용)</button>
+      <button type="button" class="save-panel-btn" id="nxCopyAll" style="flex:0 0 auto;">📋 마크다운 복사</button>
     </div>
     <textarea id="nxClipboard" class="mm-markdown" readonly></textarea>`
     : `<div class="empty-note">${escapeHtml(worker)} 님은 이 달에 집계할 일정이 없습니다.</div>`}`;
 }
+
+/* 현재 표를 노션 자동입력용 마크다운으로 */
+function nexonMarkdown(worker, rows, sum){
+  const L = [];
+  L.push(`# ${mmYear}년 ${mmMonth+1}월 MM 입력 · ${worker}`);
+  L.push('');
+  L.push('아래 표의 각 행을 노션 "MM 입력" 데이터베이스에 한 행씩 추가해주세요.');
+  L.push('속성 매핑: 업무내역 / 스킬·툴(다중 선택) / 업무유형 / 프로젝트 / MM(숫자)');
+  L.push('');
+  L.push('| 업무내역 | 스킬/툴 | 업무유형 | 프로젝트 | MM |');
+  L.push('|---|---|---|---|---:|');
+  rows.forEach(r=>{
+    L.push(`| ${r.work} | ${r.skill} | ${r.type} | ${r.project} | ${r.mm.toFixed(2)} |`);
+  });
+  L.push(`| **합계** | | | | **${sum.toFixed(2)}** |`);
+  return L.join('\n');
+}
+
 function wireMMExport(){
   const card = document.getElementById('mmCard');
   if(!card) return;
@@ -2591,34 +2707,9 @@ function wireMMExport(){
   });
   const table = card.querySelector('#nxTable');
   if(!table) return;
-  const colText = col=>{
-    const cls = {work:'nx-work', skill:'nx-skill', type:'nx-type', project:'nx-proj', mm:'nx-mm'}[col];
-    return [...table.querySelectorAll('tbody tr:not(.mm-total) .' + cls)].map(td=>{
-      const inp = td.querySelector('input[type="text"]');
-      return (inp ? inp.value : td.textContent).trim();
-    }).join('\n');
-  };
-  const doCopy = async (text, msg)=>{
-    try{
-      await navigator.clipboard.writeText(text);
-      showToast(msg, 3000);
-    }catch(e){
-      const ta = card.querySelector('#nxClipboard');
-      ta.style.display = 'block';
-      ta.value = text;
-      ta.select();
-      showToast('아래 칸의 내용을 복사해 사용하세요.');
-    }
-  };
-  table.querySelectorAll('.nx-copy').forEach(btn=>{
-    btn.onclick = (e)=>{
-      e.stopPropagation();
-      const col = btn.dataset.col;
-      const name = {work:'업무내역', skill:'스킬/툴', type:'업무유형', project:'프로젝트', mm:'MM'}[col];
-      doCopy(colText(col), `${name} 칸을 복사했습니다. 노션에 붙여넣으세요.`);
-    };
-  });
   const worker = (mmExportWorker && WORKERS.includes(mmExportWorker)) ? mmExportWorker : WORKERS[0];
+
+  /* ----- 합치기 ----- */
   const picks = ()=> [...card.querySelectorAll('.nx-pick:checked')].map(c=> c.dataset.id);
   const mergeBtn = card.querySelector('#nxMergeBtn');
   const hint = card.querySelector('#nxMergeHint');
@@ -2627,47 +2718,98 @@ function wireMMExport(){
     if(mergeBtn) mergeBtn.disabled = n < 2;
     if(hint) hint.textContent = n >= 2
       ? `${n}개 선택됨 · 합치면 MM이 더해집니다.`
-      : '비슷한 업무를 체크해서 하나로 합치면 MM도 더해집니다. 합친 내용은 저장되어 다음에도 유지됩니다.';
+      : '비슷한 업무를 체크해 합치면 MM이 더해집니다. 모든 수정 내용은 자동 저장됩니다.';
   };
   card.querySelectorAll('.nx-pick').forEach(c=> c.onchange = syncMergeBtn);
   syncMergeBtn();
   if(mergeBtn) mergeBtn.onclick = ()=>{
     const ids = picks();
     if(ids.length < 2) return;
-    const list = mmMergesFor(worker).slice();
-    // 이미 합쳐진 묶음에 들어 있던 항목은 빼고 새 묶음으로
-    const next = list.map(g=> ({...g, ids: (g.ids||[]).filter(x=> !ids.includes(x))}))
-                     .filter(g=> (g.ids||[]).length >= 2);
-    next.push({ids, label:''});
+    const next = mmMergesFor(worker)
+      .map(g=> ({...g, ids: (g.ids||[]).filter(x=> !ids.includes(x))}))
+      .filter(g=> (g.ids||[]).length >= 2);
+    next.push({mid: uid(), ids, label: ''});
     saveMmMerges(worker, next);
   };
   card.querySelectorAll('.nx-unmerge').forEach(btn=>{
     btn.onclick = ()=>{
-      const gi = parseInt(btn.dataset.merge, 10);
-      const list = mmMergesFor(worker).filter((g,i)=> i !== gi);
-      saveMmMerges(worker, list);
+      const mid = btn.dataset.mid;
+      saveMmMerges(worker, mmMergesFor(worker).filter(g=> g.mid !== mid));
     };
   });
+  const resetBtn = card.querySelector('#nxResetBtn');
+  if(resetBtn) resetBtn.onclick = ()=>{
+    if(!confirm(`${worker} 님의 ${mmYear}년 ${mmMonth+1}월 수정 내용(합치기·문구·스킬·유형·프로젝트)을 모두 초기화할까요?`)) return;
+    clearMmEdits(worker);
+  };
+
+  /* ----- 셀 편집 ----- */
   card.querySelectorAll('.nx-work-input').forEach(inp=>{
-    inp.onchange = ()=>{
-      const gi = parseInt(inp.dataset.merge, 10);
-      const list = mmMergesFor(worker).map((g,i)=> i === gi ? {...g, label: inp.value.trim()} : g);
-      saveMmMerges(worker, list);
+    inp.onchange = ()=> saveMmOverride(worker, inp.dataset.row, {work: inp.value.trim()});
+  });
+  card.querySelectorAll('.nx-type-select').forEach(sel=>{
+    sel.onchange = ()=> saveMmOverride(worker, sel.dataset.row, {type: sel.value});
+  });
+  card.querySelectorAll('.nx-proj-select').forEach(sel=>{
+    sel.onchange = ()=> saveMmOverride(worker, sel.dataset.row, {project: sel.value});
+  });
+  card.querySelectorAll('.nx-chip').forEach(chip=>{
+    chip.onclick = ()=>{
+      const rowId = chip.dataset.row;
+      const tr = table.querySelector(`tr[data-row="${CSS.escape(rowId)}"]`);
+      const current = [...tr.querySelectorAll('.nx-chip.on')].map(c=> c.dataset.skill);
+      if(chip.dataset.add){
+        const v = window.prompt('추가할 스킬/툴을 입력하세요', '');
+        if(!v || !v.trim()) return;
+        saveMmOverride(worker, rowId, {skill: [...current, v.trim()].join(', ')});
+        return;
+      }
+      const sk = chip.dataset.skill;
+      const next = current.includes(sk) ? current.filter(x=> x !== sk) : [...current, sk];
+      saveMmOverride(worker, rowId, {skill: next.join(', ')});
     };
-    inp.onclick = e=> e.stopPropagation();
   });
 
-  const all = card.querySelector('#nxCopyAll');
-  if(all) all.onclick = ()=>{
-    const cell = (tr, cls)=>{
-      const td = tr.querySelector('.' + cls);
-      if(!td) return '';
-      const inp = td.querySelector('input[type="text"]');
-      return (inp ? inp.value : td.textContent).trim();
-    };
-    const lines = [...table.querySelectorAll('tbody tr:not(.mm-total)')].map(tr=>
-      ['nx-work','nx-skill','nx-type','nx-proj','nx-mm'].map(c=> cell(tr, c)).join('\t'));
-    doCopy(lines.join('\n'), '표 전체를 복사했습니다. 노션 표에 붙여넣으세요.');
+  /* ----- 내려받기 / 복사 ----- */
+  const rowsData = ()=>{
+    return [...table.querySelectorAll('tbody tr:not(.mm-total)')].map(tr=>({
+      work: tr.querySelector('.nx-work-input').value.trim(),
+      skill: [...tr.querySelectorAll('.nx-chip.on')].map(c=> c.dataset.skill).join(', '),
+      type: tr.querySelector('.nx-type-select').value,
+      project: tr.querySelector('.nx-proj-select').value,
+      mm: parseFloat(tr.querySelector('.nx-mm').textContent) || 0
+    }));
+  };
+  const buildMd = ()=>{
+    const rs = rowsData();
+    return nexonMarkdown(worker, rs, rs.reduce((a,r)=> a + r.mm, 0));
+  };
+  const dl = card.querySelector('#nxDownloadMd');
+  if(dl) dl.onclick = ()=>{
+    const blob = new Blob([buildMd()], {type:'text/markdown;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MM_${mmYear}-${String(mmMonth+1).padStart(2,'0')}_${worker}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=> URL.revokeObjectURL(url), 1000);
+    showToast('마크다운 파일을 내려받았습니다. 예약 Claude에 넣어 노션 자동 입력에 사용하세요.', 4000);
+  };
+  const copy = card.querySelector('#nxCopyAll');
+  if(copy) copy.onclick = async ()=>{
+    const md = buildMd();
+    try{
+      await navigator.clipboard.writeText(md);
+      showToast('마크다운을 복사했습니다.', 3000);
+    }catch(e){
+      const ta = card.querySelector('#nxClipboard');
+      ta.style.display = 'block';
+      ta.value = md;
+      ta.select();
+      showToast('아래 칸의 내용을 복사해 사용하세요.');
+    }
   };
 }
 
@@ -3823,7 +3965,8 @@ function applySettings(obj, fromServer){
     hiddenWorkers: Array.isArray(obj.hiddenWorkers) ? obj.hiddenWorkers.filter(w=> WORKERS.includes(w)) : [],
     updatedAt: obj.updatedAt || '',
     appVersion: obj.appVersion || SETTINGS.appVersion || '',
-    mmMerges: (obj.mmMerges && typeof obj.mmMerges === 'object') ? obj.mmMerges : (SETTINGS.mmMerges || {})
+    mmMerges: (obj.mmMerges && typeof obj.mmMerges === 'object') ? obj.mmMerges : (SETTINGS.mmMerges || {}),
+    mmOverrides: (obj.mmOverrides && typeof obj.mmOverrides === 'object') ? obj.mmOverrides : (SETTINGS.mmOverrides || {})
   };
   // 서버에서 받은 값이 내 것보다 오래됐으면 무시
   if(fromServer && SETTINGS.updatedAt && next.updatedAt && next.updatedAt < SETTINGS.updatedAt) return false;
@@ -3888,7 +4031,8 @@ async function saveSettings(){
       hiddenWorkers: hiddenWorkers(),
       updatedAt: SETTINGS.updatedAt,
       appVersion: SETTINGS.appVersion || APP_VERSION,
-      mmMerges: SETTINGS.mmMerges || {}
+      mmMerges: SETTINGS.mmMerges || {},
+      mmOverrides: SETTINGS.mmOverrides || {}
     });
     return !!ok;
   }catch(e){ return false; }
