@@ -1985,7 +1985,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-14';
+const APP_VERSION = 'v2026.11.18-16';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2573,17 +2573,67 @@ const NEXON_SKILL_CATALOG = [
 "캐릭터 디자인","커뮤니티 기획 (플랫폼 선정, 운영 계획 수립)","커뮤니티 운영 및 유저 소통전략 수립 - Discord","커뮤니티 운영 및 유저 소통전략 수립 - Instagram","커뮤니티 운영 및 유저 소통전략 수립 - X","커뮤니티 운영 및 유저 소통전략 수립 - Youtube","컨셉설정원화 - 배경","컨셉설정원화 - 아이콘/아이템","컨셉설정원화 - 캐릭터","컷신연출 - 레이아웃(비주얼디자인)","컷신연출 - 배우관리","컷신연출 - 콘티(스토리텔링)","컷신연출 - 편집",
 "타겟 세그먼트 및 분석","타이포그래피","툴 사용 정책 수립 및 관리자 권한 수행(Confluence)","툴 사용 정책 수립 및 관리자 권한 수행(Jira)","툴 사용 정책 수립 및 관리자 권한 수행(Slack)","툴 사용 정책 수립 및 관리자 권한 수행(Trello)",
 "폴리(Foley)","프로모션 웹디자인","프로세스 자동화","프로젝트별 사업목표 설정/관리","프로크리에이트","프롬프트 엔지니어링",
-"Claude Video Editor (CVE)","Live Broadcasting (LVB)"
+"Cloud Video Editor (CVE)","Live Video Broadcasting (LVB)"
 ];
+/* 예전에 쓰던 잘못된 표기 → 목록의 공식 명칭 (자동 교정) */
+const NEXON_SKILL_ALIASES = {
+  'Premiere Pro':'Adobe Premiere Pro',
+  'After Effects':'Adobe After Effects',
+  'Photoshop':'Adobe Photoshop',
+  'Illustrator':'Adobe Illustrator',
+  '영상 편집':'영상제작 - 편집',
+  '영상 제작':'영상제작 - 기획',
+  '모션그래픽':'Motion Graphic (After effect)',
+  'AI image generate':'AI Image Generate',
+  'Unreal Engine':'Unreal Engine 5',
+  'Claude Video Editor (CVE)':'',
+  'Live Broadcasting (LVB)':'라이브 방송 기획/연출 및 진행',
+  '라이브 송출':'라이브 방송 기획/연출 및 진행',
+  '중계 운영':'라이브 방송 기획/연출 및 진행',
+  '촬영':'영상 촬영',
+  '조명':'영상 촬영',
+  '그래픽 디자인':'',
+  '키비주얼 디자인':'',
+  '콘텐츠 기획':'게임마케팅 콘텐츠 기획/제작/운영',
+  '스토리보드':'스토리 보드 작성',
+  '구성안 작성':'영상제작 - 기획',
+  'PowerPoint':'MS PowerPoint',
+  '문서 작성':'MS PowerPoint',
+  '협업/커뮤니케이션':'Slack',
+  '일정 조율':'Notion',
+  '숏폼 콘텐츠 기획':'게임마케팅 콘텐츠 기획/제작/운영',
+  '색보정':'DaVinci Resolve',
+  '3D 제작':'Blender',
+  '시네마틱':'컷신연출 - 레이아웃(비주얼디자인)',
+  '스위칭':'라이브 방송 기획/연출 및 진행',
+  '오디오 믹싱':'음악 믹스 마스터링',
+  '카메라 운용':'영상 촬영',
+  '현장 연출':'영상 촬영',
+  '음향':'사운드 디자인',
+  'vMix':'',
+  'OBS Studio':''
+};
+/* 목록에 없는 값을 공식 명칭으로 바꾸고, 바꿀 수 없으면 버린다 */
+function normalizeSkillList(str){
+  const out = [];
+  String(str || '').split(',').map(x=> x.trim()).filter(Boolean).forEach(sk=>{
+    let v = sk;
+    if(!NEXON_SKILL_CATALOG.includes(v) && NEXON_SKILL_ALIASES.hasOwnProperty(v)) v = NEXON_SKILL_ALIASES[v];
+    if(!v) return;                       // 대체할 공식 명칭이 없으면 제외
+    if(!out.includes(v)) out.push(v);    // 중복 제거
+  });
+  return out;
+}
+function isOfficialSkill(sk){ return NEXON_SKILL_CATALOG.includes(sk); }
 /* 업무 유형별 추천 스킬 (가까운 순서대로 나열 — 선택은 사용자가 직접) */
 const NEXON_SKILL_MAP = {
   '롱폼':['영상제작 - 편집','Adobe Premiere Pro','Adobe After Effects','영상제작 - 기획','영상제작 - 레이아웃',
          'Motion Graphic (After effect)','Adobe Photoshop','DaVinci Resolve','AI Image Generate','Claude',
-         'Claude Video Editor (CVE)','컷신연출 - 콘티(스토리텔링)','컷신연출 - 편집'],
+         '컷신연출 - 콘티(스토리텔링)','컷신연출 - 편집'],
   '숏폼':['영상제작 - 편집','Adobe Premiere Pro','Adobe After Effects','영상제작 - 기획',
          'Motion Graphic (After effect)','Adobe Photoshop','AI Image Generate','Claude',
-         'Claude Video Editor (CVE)','게임마케팅 콘텐츠 기획/제작/운영','게임마케팅 크리에이티브'],
-  '라이브':['라이브 방송 기획/연출 및 진행','Live Broadcasting (LVB)','영상 촬영','게임마케팅 영상 프로듀싱',
+         '게임마케팅 콘텐츠 기획/제작/운영','게임마케팅 크리에이티브'],
+  '라이브':['라이브 방송 기획/연출 및 진행','영상 촬영','게임마케팅 영상 프로듀싱',
           'Adobe Premiere Pro','오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)'],
   '오프라인 촬영':['영상 촬영','라이브 방송 기획/연출 및 진행','오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)',
                 'Lightroom','Adobe Premiere Pro'],
@@ -2603,7 +2653,7 @@ const NEXON_SKILL_KEYWORDS = [
   {re:/행사|쇼케이스|지스타|게임쇼|부스|페스티벌|오프라인|컨퍼런스|시연/, skills:['오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)','사내 이벤트/행사 기획 및 운영','글로벌 게임쇼\/컨퍼런스','게임마케팅 콘텐츠 기획/제작/운영']},
   {re:/브랜드|브랜딩|BI|CI|로고|아이덴티티|키비주얼/i, skills:['BI/CI디자인','브랜드디자인 컨셉 빌딩','브랜드 영상 디자인','타이포그래피','디자인 디렉팅']},
   {re:/예능|웹예능|시리즈|코너|콘텐츠 기획|기획안|구성|콘티|스토리/, skills:['게임마케팅 콘텐츠 기획/제작/운영','영상제작 - 기획','컷신연출 - 콘티(스토리텔링)','게임마케팅 크리에이티브']},
-  {re:/라이브|생방|방송|중계|송출|스트리밍/, skills:['라이브 방송 기획/연출 및 진행','Live Broadcasting (LVB)','게임마케팅 영상 프로듀싱']},
+  {re:/라이브|생방|방송|중계|송출|스트리밍/, skills:['라이브 방송 기획/연출 및 진행','게임마케팅 영상 프로듀싱']},
   {re:/툴|자동화|대시보드|보드|시스템|스크립트|개발|봇|연동|API/i, skills:['프로세스 자동화','요구사항 분석 및 정의 능력','사용자 흐름(플로우) 설계 능력','웹 서비스 기획','Claude','Notion','SQL','Power Automate']},
   {re:/인플루언서|크리에이터|스트리머|BJ/i, skills:['인플루언서 마케팅 운영','게임마케팅 콘텐츠 기획/제작/운영']},
   {re:/SNS|소셜|채널|유튜브|인스타|틱톡|쇼츠|릴스|포스팅|카드뉴스/i, skills:['게임마케팅 콘텐츠 기획/제작/운영','소셜 미디어 광고/채널 관리','커뮤니티 운영 및 유저 소통전략 수립 - Instagram','게임마케팅 크리에이티브']},
@@ -2656,44 +2706,63 @@ function nexonSkillSuggestions(row){
   return Object.keys(score).sort((a,b)=> (score[b] - score[a]) || a.localeCompare(b, 'ko'));
 }
 /* 업무내역 문장 자동 조합: 프로젝트 + 제목 + 유형·수량 */
+/* 업무 유형별 서술 문구 — 노션 안내문대로 '무엇을 어떻게 했는지' 구체적으로 적는다 */
+const NEXON_WORK_PHRASE = {
+  '롱폼':          n=> `롱폼 영상 ${n}건 편집 및 모션그래픽 제작`,
+  '숏폼':          n=> `숏폼 ${n}건 기획 및 편집 제작`,
+  '라이브':        n=> `라이브 방송 ${n > 1 ? n + '회 ' : ''}연출 및 송출 운영`,
+  '오프라인 촬영':  n=> `현장 촬영 ${n > 1 ? n + '회 ' : ''}진행 및 영상 소스 제작`,
+  '이미지':        n=> `이미지 ${n}종 디자인 제작`,
+  '언리얼':        n=> `언리얼 엔진 시네마틱 ${n}건 제작`,
+  '기획':          n=> `콘텐츠 기획 및 구성안 작성`,
+  '회의':          n=> `업무 회의 진행 및 일정 조율`,
+  'etc':           n=> ''            // 포괄적 표현은 쓰지 않는다 (제목으로 설명)
+};
+function nexonPhrase(qty){
+  return Object.keys(qty)
+    .map(x=> (NEXON_WORK_PHRASE[x] ? NEXON_WORK_PHRASE[x](qty[x]) : `${x} ${qty[x]}건 제작`))
+    .filter(Boolean)
+    .join(' / ');
+}
+/* 제목 앞에 붙은 프로젝트 코드·이름이 중복되지 않게 떼어낸다 */
+function stripProjectPrefix(title, code){
+  let t = String(title || '').trim();
+  const names = [code, nexonProjectName(code)].filter(Boolean);
+  names.forEach(n=>{
+    const re = new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s:·\\-–—]*', 'i');
+    t = t.replace(re, '');
+  });
+  return t.trim();
+}
 function nexonWorkText(t){
   const wts = ticketWorkTypes(t);
-  const detail = wts.map(x=>{
-    const q = wtQtyOf(t, x);
-    return q > 1 ? `${x} ${q}종` : x;
-  }).join(' · ');
-  const base = `${nexonProjectName(t.project)} ${t.title}`.replace(/\s+/g, ' ').trim();
-  if(!detail) return base;
-  // 대표 유형에 맞는 서술어
-  let verb = '제작';
-  let rep = wts[0], repQ = -1;
-  wts.forEach(x=>{ const q = wtQtyOf(t, x); if(q > repQ){ repQ = q; rep = x; } });
-  if(rep === '회의') verb = '진행';
-  else if(rep === '기획') verb = '수립';
-  else if(rep === '라이브' || rep === '오프라인 촬영') verb = '운영';
-  return `${base} — ${detail} ${verb}`;
+  const qty = {};
+  wts.forEach(x=>{ qty[x] = wtQtyOf(t, x); });
+  const title = stripProjectPrefix(t.title, t.project);
+  const base = `${nexonProjectName(t.project)} ${title}`.replace(/\s+/g, ' ').trim();
+  const phrase = nexonPhrase(qty);
+  return (phrase ? `${base} ${phrase}` : base).replace(/\s+/g, ' ').trim();
 }
-/* 선택한 작업자의 그 달 MM 입력 행 만들기 (MM 합계는 정확히 1.00) */
 /* 합친 행의 기본 업무내역 문구 자동 생성 */
 function autoMergeLabel(tickets){
   if(!tickets.length) return '';
   const projs = [...new Set(tickets.map(t=> t.project))];
   const projPart = projs.length === 1 ? nexonProjectName(projs[0]) : projs.map(nexonProjectName).join('/');
   // 제목 공통 앞부분 찾기
-  const titles = tickets.map(t=> (t.title || '').trim());
+  const titles = tickets.map(t=> stripProjectPrefix(t.title, t.project));
   let common = titles[0];
   titles.slice(1).forEach(x=>{
     let i = 0;
     while(i < common.length && i < x.length && common[i] === x[i]) i++;
     common = common.slice(0, i);
   });
-  common = common.replace(/[\s#\-–—_]+$/,'').trim();
+  common = common.replace(/[\s#\-–—_0-9]+$/,'').trim();
   const head = common.length >= 2 ? common : titles[0];
   // 유형·수량 합산
   const qty = {};
   tickets.forEach(t=> ticketWorkTypes(t).forEach(x=>{ qty[x] = (qty[x] || 0) + wtQtyOf(t, x); }));
-  const detail = Object.keys(qty).map(x=> qty[x] > 1 ? `${x} ${qty[x]}종` : x).join(' · ');
-  return `${projPart} ${head} ${tickets.length}건 — ${detail} 제작`.replace(/\s+/g,' ').trim();
+  const phrase = nexonPhrase(qty);
+  return `${projPart} ${head} ${phrase || tickets.length + '건 진행'}`.replace(/\s+/g,' ').trim();
 }
 function buildNexonRows(data, worker){
   const map = (data.ticketDays && data.ticketDays[worker]) || {};
@@ -2724,8 +2793,7 @@ function buildNexonRows(data, worker){
       if(members.length < 2) return;
       members.forEach(m=> used.add(m.id));
       const tickets = members.map(m=> TICKETS.find(x=> x.id === m.id)).filter(Boolean);
-      const skills = [];
-      members.forEach(m=> m.skill.split(', ').forEach(sk=>{ if(sk && !skills.includes(sk)) skills.push(sk); }));
+      const skills = normalizeSkillList(members.map(m=> m.skill).join(', '));
       const typeCount = {};
       members.forEach(m=>{ typeCount[m.type] = (typeCount[m.type] || 0) + m.raw; });
       const topType = Object.keys(typeCount).sort((a,b)=> typeCount[b]-typeCount[a])[0];
@@ -2752,7 +2820,7 @@ function buildNexonRows(data, worker){
     const o = ov[r.id];
     if(!o) return;
     if(typeof o.work === 'string' && o.work) r.work = o.work;
-    if(typeof o.skill === 'string') r.skill = o.skill;
+    if(typeof o.skill === 'string') r.skill = normalizeSkillList(o.skill).join(', ');
     if(o.type) r.type = o.type;
     if(o.project) r.project = o.project;
   });
@@ -2764,7 +2832,7 @@ function buildNexonRows(data, worker){
   // 직접 추가한 행 (MM 은 사용자가 입력)
   const extras = mmExtraFor(worker).map(e=>({
     id: e.id, isExtra: true,
-    work: e.work || '', skill: e.skill || '', type: e.type || '콘텐츠/마케팅',
+    work: e.work || '', skill: normalizeSkillList(e.skill).join(', '), type: e.type || '콘텐츠/마케팅',
     project: e.project || NEXON_PROJECT_LIST[0],
     days: 0, raw: 0,
     mm: Math.max(0, Math.round((parseFloat(e.mm) || 0) * 100) / 100)
@@ -2821,7 +2889,7 @@ function renderMMExportSection(){
         </thead>
         <tbody>
           ${rows.map(r=>{
-            const picked = r.skill ? r.skill.split(',').map(x=> x.trim()).filter(Boolean) : [];
+            const picked = normalizeSkillList(r.skill);
             const suggest = nexonSkillSuggestions(r).filter(x=> !picked.includes(x));
             return `
             <tr class="${r.isMerged?'nx-merged':''}" data-row="${escapeHtml(r.id)}">
