@@ -1968,7 +1968,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-5';
+const APP_VERSION = 'v2026.11.18-6';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2460,15 +2460,15 @@ const NEXON_TYPE_MAP = {
 };
 /* 업무 유형별 기본 스킬·툴 */
 const NEXON_SKILL_MAP = {
-  '롱폼':['Premiere Pro','After Effects','Photoshop','DaVinci Resolve','영상 편집','영상 제작','모션그래픽','색보정'],
-  '숏폼':['Premiere Pro','After Effects','Photoshop','영상 편집','영상 제작','숏폼 콘텐츠 기획','모션그래픽'],
-  '라이브':['vMix','OBS Studio','라이브 송출','중계 운영','스위칭','오디오 믹싱'],
+  '롱폼':['Premiere Pro','After Effects','Claude Video Editor (CVE)','AI image generate','Photoshop','DaVinci Resolve','영상 편집','영상 제작','모션그래픽','색보정'],
+  '숏폼':['Premiere Pro','After Effects','Claude Video Editor (CVE)','AI image generate','Photoshop','영상 편집','영상 제작','숏폼 콘텐츠 기획','모션그래픽'],
+  '라이브':['vMix','OBS Studio','Live Broadcasting (LVB)','라이브 송출','중계 운영','스위칭','오디오 믹싱'],
   '오프라인 촬영':['촬영','조명','카메라 운용','현장 연출','음향'],
-  '이미지':['Photoshop','Illustrator','Figma','그래픽 디자인','키비주얼 디자인'],
+  '이미지':['Photoshop','Illustrator','Claude','AI image generate','Figma','그래픽 디자인','키비주얼 디자인'],
   '언리얼':['Unreal Engine','3D 제작','시네마틱','Blender'],
-  '기획':['Notion','PowerPoint','콘텐츠 기획','스토리보드','구성안 작성'],
+  '기획':['Notion','PowerPoint','Claude','콘텐츠 기획','스토리보드','구성안 작성'],
   '회의':['Notion','Slack','협업/커뮤니케이션','일정 조율'],
-  'etc':['Notion','PowerPoint','문서 작성']
+  'etc':['Notion','PowerPoint','Claude','문서 작성']
 };
 function nexonTypeOf(t){
   const wts = ticketWorkTypes(t);
