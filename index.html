@@ -602,9 +602,9 @@
     width:58px; padding:5px 6px !important; font-size:11.5px; font-weight:900; text-align:right;
     border:1px solid var(--border-strong) !important; border-radius:6px; background:#fff; font-family:inherit;
   }
-  .nx-table .nx-del-col{width:30px; text-align:center; padding-left:2px; padding-right:6px;}
-  .nx-del{border:none; background:none; cursor:pointer; font-size:12px; opacity:.35; padding:0 2px;}
-  .nx-del:hover{opacity:1;}
+  .nx-table .nx-ck{white-space:nowrap;}
+  .save-panel-btn.danger{color:var(--danger); border-color:#F0BDBD;}
+  .save-panel-btn.danger:hover:not(:disabled){background:var(--danger-soft);}
   .nx-extra-mark{color:var(--accent-dark); font-weight:900; font-size:13px;}
   .nx-copy{
     margin-left:6px; padding:2px 8px; border-radius:11px; border:1px solid var(--border-strong);
@@ -1985,7 +1985,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-12';
+const APP_VERSION = 'v2026.11.18-14';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2425,6 +2425,36 @@ function mmMergesFor(worker){
   const list = all[mmMergeKey(worker)];
   return Array.isArray(list) ? list : [];
 }
+/* 방금 한 작업을 3번까지 되돌리기 (Ctrl+Z) */
+const MM_UNDO_LIMIT = 3;
+let MM_UNDO = [];
+let mmUndoRunning = false;
+function snapshotMmEdits(){
+  return JSON.stringify({
+    mmMerges: SETTINGS.mmMerges || {},
+    mmOverrides: SETTINGS.mmOverrides || {},
+    mmHidden: SETTINGS.mmHidden || {},
+    mmExtra: SETTINGS.mmExtra || {}
+  });
+}
+function pushMmUndo(){
+  if(mmUndoRunning) return;
+  MM_UNDO.push(snapshotMmEdits());
+  if(MM_UNDO.length > MM_UNDO_LIMIT) MM_UNDO.shift();
+}
+async function undoMmEdit(){
+  if(!MM_UNDO.length){ showToast('되돌릴 작업이 없습니다.'); return; }
+  const snap = JSON.parse(MM_UNDO.pop());
+  mmUndoRunning = true;
+  SETTINGS.mmMerges = snap.mmMerges;
+  SETTINGS.mmOverrides = snap.mmOverrides;
+  SETTINGS.mmHidden = snap.mmHidden;
+  SETTINGS.mmExtra = snap.mmExtra;
+  await saveSettings();
+  mmUndoRunning = false;
+  renderApp();
+  showToast(`되돌렸습니다. (${MM_UNDO.length}번 더 가능)`, 2500);
+}
 function mmHiddenFor(worker){
   const all = (SETTINGS && SETTINGS.mmHidden) || {};
   const l = all[mmMergeKey(worker)];
@@ -2436,6 +2466,7 @@ function mmExtraFor(worker){
   return Array.isArray(l) ? l : [];
 }
 async function saveMmHidden(worker, list){
+  pushMmUndo();
   const all = {...((SETTINGS && SETTINGS.mmHidden) || {})};
   if(list && list.length) all[mmMergeKey(worker)] = list; else delete all[mmMergeKey(worker)];
   SETTINGS.mmHidden = all;
@@ -2443,6 +2474,7 @@ async function saveMmHidden(worker, list){
   renderApp();
 }
 async function saveMmExtra(worker, list){
+  pushMmUndo();
   const all = {...((SETTINGS && SETTINGS.mmExtra) || {})};
   if(list && list.length) all[mmMergeKey(worker)] = list; else delete all[mmMergeKey(worker)];
   SETTINGS.mmExtra = all;
@@ -2461,6 +2493,7 @@ async function saveMmOverride(worker, rowId, patch){
     await saveMmExtra(worker, list);
     return;
   }
+  pushMmUndo();
   const key = mmMergeKey(worker);
   const all = {...((SETTINGS && SETTINGS.mmOverrides) || {})};
   const mine = {...(all[key] || {})};
@@ -2487,6 +2520,7 @@ async function clearMmEdits(worker){
   showToast('수정 내용을 초기화했습니다.');
 }
 async function saveMmMerges(worker, list){
+  pushMmUndo();
   SETTINGS.mmMerges = {...((SETTINGS && SETTINGS.mmMerges) || {})};
   if(list && list.length) SETTINGS.mmMerges[mmMergeKey(worker)] = list;
   else delete SETTINGS.mmMerges[mmMergeKey(worker)];
@@ -2495,6 +2529,21 @@ async function saveMmMerges(worker, list){
   showToast(ok ? '합친 내용을 저장했습니다. (팀 전체 공유)' : '⚠ 서버 저장에 실패했습니다. 이 기기에는 적용되었고 자동으로 다시 시도합니다.');
 }
 /* 우리 업무 유형 → 넥슨 업무유형 */
+/* 노션 'MM 입력' 에서 쓰는 공식 프로젝트 명칭.
+   사이트 안에서는 암호화된 코드(SA/OW/NW...)를 쓰고, 노션에 넣을 때만 이 이름으로 바꾼다. */
+const NEXON_PROJECT_NAMES = {
+  'SA':'서든어택',
+  'TFD':'퍼스트디센던트',
+  'OW':'오버워치',
+  'CSO':'CS온라인',
+  'TF':'더파이널스',
+  'ARC':'아크레이더스',
+  'NW':'프로젝트 낙원',
+  '공통':'슈터본부공통'
+};
+/* 노션 프로젝트 선택 목록 전체 */
+const NEXON_PROJECT_LIST = ['퍼스트디센던트','프로젝트 오로라','더파이널스','오버워치','프로젝트 낙원','서든어택','CS온라인','아크레이더스','슈터본부공통','프로젝트 SC','프로젝트 발키리'];
+function nexonProjectName(code){ return NEXON_PROJECT_NAMES[code] || code; }
 const NEXON_TYPES = ['기술','개발','인프라','운영','기획','PM','QA/검수','현지화/번역','CS','분석/데이터','사업','디자인','콘텐츠/마케팅','조직운영','AX','R&D','보안','총괄/프로듀싱'];
 /* 스킬·툴마다 고유 색을 부여해 눈으로 구분되게 */
 function skillColor(name){
@@ -2613,7 +2662,7 @@ function nexonWorkText(t){
     const q = wtQtyOf(t, x);
     return q > 1 ? `${x} ${q}종` : x;
   }).join(' · ');
-  const base = `${t.project} ${t.title}`.replace(/\s+/g, ' ').trim();
+  const base = `${nexonProjectName(t.project)} ${t.title}`.replace(/\s+/g, ' ').trim();
   if(!detail) return base;
   // 대표 유형에 맞는 서술어
   let verb = '제작';
@@ -2629,7 +2678,7 @@ function nexonWorkText(t){
 function autoMergeLabel(tickets){
   if(!tickets.length) return '';
   const projs = [...new Set(tickets.map(t=> t.project))];
-  const projPart = projs.length === 1 ? projs[0] : projs.join('/');
+  const projPart = projs.length === 1 ? nexonProjectName(projs[0]) : projs.map(nexonProjectName).join('/');
   // 제목 공통 앞부분 찾기
   const titles = tickets.map(t=> (t.title || '').trim());
   let common = titles[0];
@@ -2658,7 +2707,7 @@ function buildNexonRows(data, worker){
       work: nexonWorkText(t),
       skill: nexonSkillsOf(t),
       type: nexonTypeOf(t),
-      project: t.project || '',
+      project: nexonProjectName(t.project || ''),
       days: map[id],
       raw: map[id] / total
     };
@@ -2680,7 +2729,7 @@ function buildNexonRows(data, worker){
       const typeCount = {};
       members.forEach(m=>{ typeCount[m.type] = (typeCount[m.type] || 0) + m.raw; });
       const topType = Object.keys(typeCount).sort((a,b)=> typeCount[b]-typeCount[a])[0];
-      const projs = [...new Set(members.map(m=> m.project))];
+      const projs = [...new Set(members.map(m=> m.project))];   // 이미 공식 명칭
       mergedRows.push({
         id: 'm:' + (g.mid || gi),
         mid: g.mid || String(gi),
@@ -2716,7 +2765,7 @@ function buildNexonRows(data, worker){
   const extras = mmExtraFor(worker).map(e=>({
     id: e.id, isExtra: true,
     work: e.work || '', skill: e.skill || '', type: e.type || '콘텐츠/마케팅',
-    project: e.project || (PROJECTS[0] || ''),
+    project: e.project || NEXON_PROJECT_LIST[0],
     days: 0, raw: 0,
     mm: Math.max(0, Math.round((parseFloat(e.mm) || 0) * 100) / 100)
   }));
@@ -2753,6 +2802,8 @@ function renderMMExportSection(){
     <div class="nx-tools">
       <button type="button" class="save-panel-btn" id="nxMergeBtn" style="flex:0 0 auto;">🔗 선택한 행 합치기</button>
       <button type="button" class="save-panel-btn" id="nxAddRowBtn" style="flex:0 0 auto;">＋ 행 추가</button>
+      <button type="button" class="save-panel-btn danger" id="nxDeleteBtn" style="flex:0 0 auto;">🗑 선택한 행 삭제</button>
+      <button type="button" class="save-panel-btn" id="nxUndoBtn" style="flex:0 0 auto;" title="Ctrl+Z">↶ 되돌리기</button>
       <button type="button" class="save-panel-btn" id="nxResetBtn" style="flex:0 0 auto;">↩ 수정 내용 초기화</button>
       <span class="nx-hint" id="nxMergeHint">비슷한 업무를 체크해 합치면 MM이 더해집니다. 모든 수정 내용은 자동 저장됩니다.</span>
     </div>
@@ -2766,7 +2817,6 @@ function renderMMExportSection(){
             <th>업무유형</th>
             <th>프로젝트</th>
             <th>MM</th>
-            <th class="nx-del-col"></th>
           </tr>
         </thead>
         <tbody>
@@ -2775,10 +2825,11 @@ function renderMMExportSection(){
             const suggest = nexonSkillSuggestions(r).filter(x=> !picked.includes(x));
             return `
             <tr class="${r.isMerged?'nx-merged':''}" data-row="${escapeHtml(r.id)}">
-              <td class="nx-ck">${r.isMerged
-                ? `<button type="button" class="nx-unmerge" data-mid="${escapeHtml(r.mid)}" title="합치기 해제">⇲</button>`
-                : (r.isExtra ? '<span class="nx-extra-mark" title="직접 추가한 행">＋</span>'
-                             : `<input type="checkbox" class="nx-pick" data-id="${escapeHtml(r.id)}">`)}</td>
+              <td class="nx-ck">
+                <input type="checkbox" class="nx-pick" data-id="${escapeHtml(r.id)}" data-kind="${r.isMerged?'merged':(r.isExtra?'extra':'auto')}">
+                ${r.isMerged ? `<button type="button" class="nx-unmerge" data-mid="${escapeHtml(r.mid)}" title="합치기 해제">⇲</button>` : ''}
+                ${r.isExtra ? '<span class="nx-extra-mark" title="직접 추가한 행">＋</span>' : ''}
+              </td>
               <td class="nx-work">
                 <input type="text" class="nx-in nx-work-input" data-row="${escapeHtml(r.id)}" value="${escapeHtml(r.work)}">
               </td>
@@ -2796,20 +2847,18 @@ function renderMMExportSection(){
               </td>
               <td class="nx-proj">
                 <select class="nx-in nx-proj-select" data-row="${escapeHtml(r.id)}">
-                  ${PROJECTS.filter(x=> x!=='부재').map(x=>`<option value="${escapeHtml(x)}" ${r.project===x?'selected':''}>${escapeHtml(x)}</option>`).join('')}
-                  ${PROJECTS.includes(r.project) ? '' : `<option value="${escapeHtml(r.project)}" selected>${escapeHtml(r.project)}</option>`}
+                  ${NEXON_PROJECT_LIST.map(x=>`<option value="${escapeHtml(x)}" ${r.project===x?'selected':''}>${escapeHtml(x)}</option>`).join('')}
+                  ${NEXON_PROJECT_LIST.includes(r.project) ? '' : `<option value="${escapeHtml(r.project)}" selected>${escapeHtml(r.project)}</option>`}
                 </select>
               </td>
               <td class="nx-mm">${r.isExtra
                 ? `<input type="number" class="nx-mm-input" data-row="${escapeHtml(r.id)}" value="${r.mm.toFixed(2)}" step="0.01" min="0" max="1">`
                 : r.mm.toFixed(2)}</td>
-              <td class="nx-del-col"><button type="button" class="nx-del" data-row="${escapeHtml(r.id)}" title="이 행 지우기">🗑</button></td>
             </tr>`;
           }).join('')}
           <tr class="mm-total">
             <td colspan="5">${escapeHtml(worker)} · ${mmYear}년 ${mmMonth+1}월 합계</td>
             <td class="nx-mm"><b class="${Math.abs(sum-1) > 0.005 ? 'mm-over' : ''}">${sum.toFixed(2)}</b></td>
-            <td class="nx-del-col"></td>
           </tr>
         </tbody>
       </table>
@@ -2891,7 +2940,22 @@ function openSkillPicker(current, onDone){
   ov.querySelector('#skOk').onclick = ()=>{ close(); onDone(picked); };
   ov.onclick = e=>{ if(e.target === ov) close(); };
 }
+/* Ctrl+Z (맥은 Cmd+Z) 로 되돌리기 - 입력칸에 글자를 쓰는 중이면 그대로 둔다 */
+let mmUndoKeyBound = false;
+function bindMmUndoKey(){
+  if(mmUndoKeyBound) return;
+  mmUndoKeyBound = true;
+  document.addEventListener('keydown', e=>{
+    if(!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z' || e.shiftKey) return;
+    if(currentView !== 'mmexport') return;
+    const el = document.activeElement;
+    if(el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+    e.preventDefault();
+    undoMmEdit();
+  });
+}
 function wireMMExport(){
+  bindMmUndoKey();
   const card = document.getElementById('mmExportCard');
   if(!card) return;
   card.querySelectorAll('#mmYearPills .pill').forEach(el=>{
@@ -2916,16 +2980,19 @@ function wireMMExport(){
   const mergeBtn = card.querySelector('#nxMergeBtn');
   const hint = card.querySelector('#nxMergeHint');
   const syncMergeBtn = ()=>{
-    const n = picks().length;
-    if(mergeBtn) mergeBtn.disabled = n < 2;
-    if(hint) hint.textContent = n >= 2
-      ? `${n}개 선택됨 · 합치면 MM이 더해집니다.`
-      : '비슷한 업무를 체크해 합치면 MM이 더해집니다. 모든 수정 내용은 자동 저장됩니다.';
+    const all = picks();
+    const mergeable = [...card.querySelectorAll('.nx-pick:checked')].filter(c=> c.dataset.kind === 'auto').length;
+    if(mergeBtn) mergeBtn.disabled = mergeable < 2;
+    const dl = card.querySelector('#nxDeleteBtn');
+    if(dl) dl.disabled = all.length < 1;
+    if(hint) hint.textContent = all.length
+      ? `${all.length}개 선택됨${mergeable >= 2 ? ' · 합치기 가능' : ''} · 삭제는 Ctrl+Z 로 되돌릴 수 있습니다.`
+      : '행을 체크해 합치거나 삭제할 수 있습니다. 모든 수정 내용은 자동 저장됩니다.';
   };
   card.querySelectorAll('.nx-pick').forEach(c=> c.onchange = syncMergeBtn);
   syncMergeBtn();
   if(mergeBtn) mergeBtn.onclick = ()=>{
-    const ids = picks();
+    const ids = [...card.querySelectorAll('.nx-pick:checked')].filter(c=> c.dataset.kind === 'auto').map(c=> c.dataset.id);
     if(ids.length < 2) return;
     const next = mmMergesFor(worker)
       .map(g=> ({...g, ids: (g.ids||[]).filter(x=> !ids.includes(x))}))
@@ -2945,23 +3012,37 @@ function wireMMExport(){
     list.push({id:'x:' + uid(), work:'', skill:'', type:'콘텐츠/마케팅', project:(PROJECTS.find(x=> x!=='부재') || ''), mm:0.05});
     saveMmExtra(worker, list);
   };
-  card.querySelectorAll('.nx-del').forEach(btn=>{
-    btn.onclick = ()=>{
-      const rowId = btn.dataset.row;
-      if(String(rowId).startsWith('x:')){
-        saveMmExtra(worker, mmExtraFor(worker).filter(e=> e.id !== rowId));
-        return;
-      }
+  const delBtn = card.querySelector('#nxDeleteBtn');
+  if(delBtn) delBtn.onclick = ()=>{
+    const ids = picks();
+    if(!ids.length) return;
+    const extraIds = ids.filter(x=> String(x).startsWith('x:'));
+    const hideIds = [];
+    ids.forEach(rowId=>{
+      if(String(rowId).startsWith('x:')) return;
+      hideIds.push(rowId);
       if(String(rowId).startsWith('m:')){
-        const mid = rowId.slice(2);
-        const g = mmMergesFor(worker).find(x=> String(x.mid) === mid);
-        const ids = g ? (g.ids || []) : [];
-        saveMmHidden(worker, [...new Set([...mmHiddenFor(worker), rowId, ...ids])]);
-        return;
+        // 합친 행을 지우면 안에 묶인 티켓도 함께 숨긴다
+        const g = mmMergesFor(worker).find(x=> 'm:' + x.mid === rowId);
+        (g && g.ids ? g.ids : []).forEach(x=> hideIds.push(x));
       }
-      saveMmHidden(worker, [...new Set([...mmHiddenFor(worker), rowId])]);
-    };
-  });
+    });
+    pushMmUndo();
+    mmUndoRunning = true;
+    (async ()=>{
+      if(extraIds.length) await saveMmExtra(worker, mmExtraFor(worker).filter(e=> !extraIds.includes(e.id)));
+      if(hideIds.length) await saveMmHidden(worker, [...new Set([...mmHiddenFor(worker), ...hideIds])]);
+      mmUndoRunning = false;
+      renderApp();
+      showToast(`${ids.length}개 행을 삭제했습니다. Ctrl+Z 로 되돌릴 수 있습니다.`, 3500);
+    })();
+  };
+  const undoBtn = card.querySelector('#nxUndoBtn');
+  if(undoBtn){
+    undoBtn.disabled = !MM_UNDO.length;
+    undoBtn.textContent = MM_UNDO.length ? `↶ 되돌리기 (${MM_UNDO.length})` : '↶ 되돌리기';
+    undoBtn.onclick = ()=> undoMmEdit();
+  }
   card.querySelectorAll('.nx-mm-input').forEach(inp=>{
     inp.onchange = ()=> saveMmOverride(worker, inp.dataset.row, {mm: parseFloat(inp.value) || 0});
   });
