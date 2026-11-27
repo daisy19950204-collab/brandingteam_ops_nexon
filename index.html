@@ -1985,7 +1985,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-11';
+const APP_VERSION = 'v2026.11.18-12';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2744,7 +2744,8 @@ function renderMMExportSection(){
   const rows = buildNexonRows(data, worker);
   const sum = rows.reduce((a,r)=> a + r.mm, 0);
   return `
-    <div class="mm-rollup-title">노션 MM 입력용 정리 · 여기서 바로 수정</div>
+    <p class="card-title">노션 MM 입력용 정리 · 여기서 바로 수정</p>
+    <p class="card-sub">작업자를 고르면 그 달 티켓이 노션 'MM 입력' 양식으로 변환됩니다. 합치기 · 문구 · 스킬 · 유형 · 프로젝트 · 행 추가/삭제 모두 자동 저장됩니다.</p>
     <div class="pill-group" id="mmExportPills" style="margin-bottom:10px;">
       ${WORKERS.map(w=>`<div class="pill ${worker===w?'selected':''}" data-worker="${w}">${workerDot(w)}${escapeHtml(w)}</div>`).join('')}
     </div>
@@ -2891,8 +2892,18 @@ function openSkillPicker(current, onDone){
   ov.onclick = e=>{ if(e.target === ov) close(); };
 }
 function wireMMExport(){
-  const card = document.getElementById('mmCard');
+  const card = document.getElementById('mmExportCard');
   if(!card) return;
+  card.querySelectorAll('#mmYearPills .pill').forEach(el=>{
+    el.onclick = ()=>{
+      const [y, m] = mmClamp(parseInt(el.dataset.year, 10), mmMonth);
+      mmYear = y; mmMonth = m;
+      renderApp();
+    };
+  });
+  card.querySelectorAll('#mmMonthPills .pill').forEach(el=>{
+    el.onclick = ()=>{ mmMonth = parseInt(el.dataset.month, 10); renderApp(); };
+  });
   card.querySelectorAll('#mmExportPills .pill').forEach(el=>{
     el.onclick = ()=>{ mmExportWorker = el.dataset.worker; renderApp(); };
   });
@@ -3029,6 +3040,21 @@ function wireMMExport(){
   };
 }
 
+function renderMMExportView(){
+  const months = Array.from({length:12}, (_,i)=> i);
+  return `
+    <div class="card" id="mmExportCard">
+      <div class="pill-group" id="mmYearPills" style="margin-bottom:8px;">
+        ${[mmYear-1, mmYear, mmYear+1].filter(y=> y >= MM_MIN_YEAR)
+          .map(y=>`<div class="pill ${mmYear===y?'selected':''}" data-year="${y}">${y}년</div>`).join('')}
+      </div>
+      <div class="pill-group" id="mmMonthPills" style="margin-bottom:14px;">
+        ${months.filter(m=> !(mmYear === MM_MIN_YEAR && m < MM_MIN_MONTH))
+          .map(m=>`<div class="pill ${mmMonth===m?'selected':''}" data-month="${m}">${m+1}월</div>`).join('')}
+      </div>
+      ${renderMMExportSection()}
+    </div>`;
+}
 function renderMMView(){
   return renderMMCard();
 }
@@ -3223,7 +3249,6 @@ function renderMMCard(){
       <div class="mm-actions">
         <button type="button" class="save-panel-btn primary" id="mmCopyMd" style="flex:0 0 auto;">📋 마크다운 복사</button>
       </div>
-      ${renderMMExportSection()}
       <textarea id="mmMarkdown" class="mm-markdown" readonly>${escapeHtml(mmMarkdown(data))}</textarea>
     </div>`;
 }
@@ -4911,6 +4936,7 @@ function renderPCApp(){
         ${navItem('board','🗂','일정 보드')}
         ${navItem('dashboard','📊','대시보드')}
         ${navItem('mm','🧮','월별 MM')}
+        ${navItem('mmexport','📝','월별 MM 입력')}
         ${navItem('search','🔍','티켓 검색')}
         ${navItem('absence','🌴','부재 관리')}
       </div>
@@ -5873,7 +5899,7 @@ function navItem(view,icon,label){
   return `<div class="nav-item ${currentView===view?'active':''}" data-view="${view}"><span class="nav-icon">${icon}</span>${label}</div>`;
 }
 function viewTitle(){
-  return {mm:'월별 MM', board:'일정 보드', dashboard:'대시보드', search:'티켓 검색', absence:'부재 관리'}[currentView];
+  return {mm:'월별 MM', mmexport:'월별 MM 입력', board:'일정 보드', dashboard:'대시보드', search:'티켓 검색', absence:'부재 관리'}[currentView];
 }
 function todayLabelText(){
   const d = new Date();
@@ -5905,6 +5931,7 @@ function monthNavHtml(){
 function renderContent(){
   const el = document.getElementById('content');
   if(currentView==='mm') el.innerHTML = renderMMView();
+  else if(currentView==='mmexport') el.innerHTML = renderMMExportView();
   else if(currentView==='board') el.innerHTML = renderBoard();
   else if(currentView==='dashboard') el.innerHTML = renderDashboard();
   else if(currentView==='search') el.innerHTML = renderSearchView();
