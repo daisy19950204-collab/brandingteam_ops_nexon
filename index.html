@@ -548,11 +548,25 @@
   }
   .mm-actions{display:flex; gap:7px; margin-top:12px;}
   .nx-wrap{overflow-x:auto;}
-  .nx-table{font-size:11.5px; min-width:640px;}
+  .nx-table{font-size:11.5px; min-width:780px;}
   .nx-table th{white-space:nowrap;}
   .nx-table td{vertical-align:middle;}
   .nx-table .nx-work{min-width:280px; font-weight:700; line-height:1.5;}
-  .nx-table .nx-skill{min-width:140px; color:var(--text-dim);}
+  .nx-table .nx-skill{min-width:250px; color:var(--text-dim); white-space:normal; line-height:1.5;}
+  .nx-table .nx-ck{width:30px; text-align:center; padding-left:6px; padding-right:2px;}
+  .nx-table .nx-ck input{width:15px; height:15px; cursor:pointer;}
+  .nx-unmerge{
+    border:none; background:none; color:var(--text-faint); font-size:13px; cursor:pointer; padding:0 2px;
+  }
+  .nx-unmerge:hover{color:var(--danger);}
+  .nx-merged{background:#FFFBEC;}
+  .nx-merged .nx-work{padding-right:6px;}
+  .nx-work-input{
+    width:100%; padding:5px 8px !important; font-size:11.5px; font-weight:700;
+    border:1px solid #E0C766 !important; border-radius:6px; background:#fff; font-family:inherit;
+  }
+  .nx-tools{display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:9px;}
+  .nx-tools .save-panel-btn:disabled{opacity:.45; cursor:default;}
   .nx-table .nx-type, .nx-table .nx-proj{white-space:nowrap; font-weight:800;}
   .nx-table .nx-mm{text-align:right; font-variant-numeric:tabular-nums; font-weight:900; width:56px;}
   .nx-copy{
@@ -1934,7 +1948,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-2';
+const APP_VERSION = 'v2026.11.18-3';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2367,6 +2381,21 @@ function typeBarHtml(types){
    우리 티켓 → 넥슨 MM 입력 양식(업무내역 / 스킬·툴 / 업무유형 / 프로젝트 / MM)
    ===================================================================== */
 let mmExportWorker = null;
+/* 노션 입력표에서 사용자가 합쳐 둔 행 묶음. 클라우드 공유 설정에 저장된다. */
+function mmMergeKey(worker){ return `${mmYear}-${mmMonth}-${worker}`; }
+function mmMergesFor(worker){
+  const all = (SETTINGS && SETTINGS.mmMerges) || {};
+  const list = all[mmMergeKey(worker)];
+  return Array.isArray(list) ? list : [];
+}
+async function saveMmMerges(worker, list){
+  SETTINGS.mmMerges = {...((SETTINGS && SETTINGS.mmMerges) || {})};
+  if(list && list.length) SETTINGS.mmMerges[mmMergeKey(worker)] = list;
+  else delete SETTINGS.mmMerges[mmMergeKey(worker)];
+  const ok = await saveSettings();
+  renderApp();
+  showToast(ok ? '합친 내용을 저장했습니다. (팀 전체 공유)' : '⚠ 서버 저장에 실패했습니다. 이 기기에는 적용되었고 자동으로 다시 시도합니다.');
+}
 /* 우리 업무 유형 → 넥슨 업무유형 */
 const NEXON_TYPE_MAP = {
   '롱폼':'콘텐츠/마케팅', '숏폼':'콘텐츠/마케팅', '라이브':'콘텐츠/마케팅',
@@ -2376,15 +2405,15 @@ const NEXON_TYPE_MAP = {
 };
 /* 업무 유형별 기본 스킬·툴 */
 const NEXON_SKILL_MAP = {
-  '롱폼':['Premiere Pro','After Effects'],
-  '숏폼':['Premiere Pro','After Effects'],
-  '라이브':['vMix','OBS Studio'],
-  '오프라인 촬영':['촬영','조명'],
-  '이미지':['Photoshop','Illustrator'],
-  '언리얼':['Unreal Engine'],
-  '기획':['Notion','PowerPoint'],
-  '회의':['Notion'],
-  'etc':['Notion']
+  '롱폼':['Premiere Pro','After Effects','Photoshop','DaVinci Resolve','영상 편집','영상 제작','모션그래픽','색보정'],
+  '숏폼':['Premiere Pro','After Effects','Photoshop','영상 편집','영상 제작','숏폼 콘텐츠 기획','모션그래픽'],
+  '라이브':['vMix','OBS Studio','라이브 송출','중계 운영','스위칭','오디오 믹싱'],
+  '오프라인 촬영':['촬영','조명','카메라 운용','현장 연출','음향'],
+  '이미지':['Photoshop','Illustrator','Figma','그래픽 디자인','키비주얼 디자인'],
+  '언리얼':['Unreal Engine','3D 제작','시네마틱','Blender'],
+  '기획':['Notion','PowerPoint','콘텐츠 기획','스토리보드','구성안 작성'],
+  '회의':['Notion','Slack','협업/커뮤니케이션','일정 조율'],
+  'etc':['Notion','PowerPoint','문서 작성']
 };
 function nexonTypeOf(t){
   const wts = ticketWorkTypes(t);
@@ -2418,6 +2447,27 @@ function nexonWorkText(t){
   return `${base} — ${detail} ${verb}`;
 }
 /* 선택한 작업자의 그 달 MM 입력 행 만들기 (MM 합계는 정확히 1.00) */
+/* 합친 행의 기본 업무내역 문구 자동 생성 */
+function autoMergeLabel(tickets){
+  if(!tickets.length) return '';
+  const projs = [...new Set(tickets.map(t=> t.project))];
+  const projPart = projs.length === 1 ? projs[0] : projs.join('/');
+  // 제목 공통 앞부분 찾기
+  const titles = tickets.map(t=> (t.title || '').trim());
+  let common = titles[0];
+  titles.slice(1).forEach(x=>{
+    let i = 0;
+    while(i < common.length && i < x.length && common[i] === x[i]) i++;
+    common = common.slice(0, i);
+  });
+  common = common.replace(/[\s#\-–—_]+$/,'').trim();
+  const head = common.length >= 2 ? common : titles[0];
+  // 유형·수량 합산
+  const qty = {};
+  tickets.forEach(t=> ticketWorkTypes(t).forEach(x=>{ qty[x] = (qty[x] || 0) + wtQtyOf(t, x); }));
+  const detail = Object.keys(qty).map(x=> qty[x] > 1 ? `${x} ${qty[x]}종` : x).join(' · ');
+  return `${projPart} ${head} ${tickets.length}건 — ${detail} 제작`.replace(/\s+/g,' ').trim();
+}
 function buildNexonRows(data, worker){
   const map = (data.ticketDays && data.ticketDays[worker]) || {};
   const total = data.scheduled[worker] || 0;
@@ -2435,6 +2485,39 @@ function buildNexonRows(data, worker){
       raw: map[id] / total
     };
   }).filter(Boolean).sort((a,b)=> b.raw - a.raw);
+
+  // 사용자가 합쳐 둔 묶음 적용
+  const merges = mmMergesFor(worker);
+  if(merges.length){
+    const used = new Set();
+    const mergedRows = [];
+    merges.forEach((g, gi)=>{
+      const ids = Array.isArray(g.ids) ? g.ids : [];
+      const members = rows.filter(r=> ids.includes(r.id));
+      if(members.length < 2) return;
+      members.forEach(m=> used.add(m.id));
+      const tickets = members.map(m=> TICKETS.find(x=> x.id === m.id)).filter(Boolean);
+      const skills = [];
+      members.forEach(m=> m.skill.split(', ').forEach(sk=>{ if(sk && !skills.includes(sk)) skills.push(sk); }));
+      const typeCount = {};
+      members.forEach(m=>{ typeCount[m.type] = (typeCount[m.type] || 0) + m.raw; });
+      const topType = Object.keys(typeCount).sort((a,b)=> typeCount[b]-typeCount[a])[0];
+      const projs = [...new Set(members.map(m=> m.project))];
+      mergedRows.push({
+        id: 'merge:' + gi,
+        mergeIndex: gi,
+        isMerged: true,
+        ids: members.map(m=> m.id),
+        work: g.label || autoMergeLabel(tickets),
+        skill: skills.join(', '),
+        type: topType,
+        project: projs.join(', '),
+        days: members.reduce((a,m)=> a + m.days, 0),
+        raw: members.reduce((a,m)=> a + m.raw, 0)
+      });
+    });
+    rows = [...mergedRows, ...rows.filter(r=> !used.has(r.id))].sort((a,b)=> b.raw - a.raw);
+  }
 
   // 소수점 2자리로 자르되 합이 1.00이 되도록 가장 큰 행에서 보정
   rows.forEach(r=>{ r.mm = Math.max(0.01, Math.round(r.raw * 100) / 100); });
@@ -2457,9 +2540,14 @@ function renderMMExportSection(){
     </div>
     ${rows.length ? `
     <div class="nx-wrap">
+      <div class="nx-tools">
+        <button type="button" class="save-panel-btn" id="nxMergeBtn" style="flex:0 0 auto;">🔗 선택한 행 합치기</button>
+        <span class="nx-hint" id="nxMergeHint">비슷한 업무를 체크해서 하나로 합치면 MM도 더해집니다. 합친 내용은 저장되어 다음에도 유지됩니다.</span>
+      </div>
       <table class="matrix-table nx-table" id="nxTable">
         <thead>
           <tr>
+            <th class="nx-ck"></th>
             <th>업무내역 <button type="button" class="nx-copy" data-col="work">복사</button></th>
             <th>스킬/툴 <button type="button" class="nx-copy" data-col="skill">복사</button></th>
             <th>업무유형 <button type="button" class="nx-copy" data-col="type">복사</button></th>
@@ -2469,15 +2557,20 @@ function renderMMExportSection(){
         </thead>
         <tbody>
           ${rows.map(r=>`
-            <tr>
-              <td class="nx-work">${escapeHtml(r.work)}</td>
+            <tr class="${r.isMerged?'nx-merged':''}">
+              <td class="nx-ck">${r.isMerged
+                ? `<button type="button" class="nx-unmerge" data-merge="${r.mergeIndex}" title="합치기 해제">✕</button>`
+                : `<input type="checkbox" class="nx-pick" data-id="${escapeHtml(r.id)}">`}</td>
+              <td class="nx-work">${r.isMerged
+                ? `<input type="text" class="nx-work-input" data-merge="${r.mergeIndex}" value="${escapeHtml(r.work)}">`
+                : escapeHtml(r.work)}</td>
               <td class="nx-skill">${escapeHtml(r.skill)}</td>
               <td class="nx-type">${escapeHtml(r.type)}</td>
               <td class="nx-proj">${escapeHtml(r.project)}</td>
               <td class="nx-mm">${r.mm.toFixed(2)}</td>
             </tr>`).join('')}
           <tr class="mm-total">
-            <td colspan="4">${escapeHtml(worker)} · ${mmYear}년 ${mmMonth+1}월 합계</td>
+            <td colspan="5">${escapeHtml(worker)} · ${mmYear}년 ${mmMonth+1}월 합계</td>
             <td class="nx-mm"><b>${sum.toFixed(2)}</b></td>
           </tr>
         </tbody>
@@ -2500,7 +2593,10 @@ function wireMMExport(){
   if(!table) return;
   const colText = col=>{
     const cls = {work:'nx-work', skill:'nx-skill', type:'nx-type', project:'nx-proj', mm:'nx-mm'}[col];
-    return [...table.querySelectorAll('tbody tr:not(.mm-total) .' + cls)].map(td=> td.textContent.trim()).join('\n');
+    return [...table.querySelectorAll('tbody tr:not(.mm-total) .' + cls)].map(td=>{
+      const inp = td.querySelector('input[type="text"]');
+      return (inp ? inp.value : td.textContent).trim();
+    }).join('\n');
   };
   const doCopy = async (text, msg)=>{
     try{
@@ -2522,10 +2618,55 @@ function wireMMExport(){
       doCopy(colText(col), `${name} 칸을 복사했습니다. 노션에 붙여넣으세요.`);
     };
   });
+  const worker = (mmExportWorker && WORKERS.includes(mmExportWorker)) ? mmExportWorker : WORKERS[0];
+  const picks = ()=> [...card.querySelectorAll('.nx-pick:checked')].map(c=> c.dataset.id);
+  const mergeBtn = card.querySelector('#nxMergeBtn');
+  const hint = card.querySelector('#nxMergeHint');
+  const syncMergeBtn = ()=>{
+    const n = picks().length;
+    if(mergeBtn) mergeBtn.disabled = n < 2;
+    if(hint) hint.textContent = n >= 2
+      ? `${n}개 선택됨 · 합치면 MM이 더해집니다.`
+      : '비슷한 업무를 체크해서 하나로 합치면 MM도 더해집니다. 합친 내용은 저장되어 다음에도 유지됩니다.';
+  };
+  card.querySelectorAll('.nx-pick').forEach(c=> c.onchange = syncMergeBtn);
+  syncMergeBtn();
+  if(mergeBtn) mergeBtn.onclick = ()=>{
+    const ids = picks();
+    if(ids.length < 2) return;
+    const list = mmMergesFor(worker).slice();
+    // 이미 합쳐진 묶음에 들어 있던 항목은 빼고 새 묶음으로
+    const next = list.map(g=> ({...g, ids: (g.ids||[]).filter(x=> !ids.includes(x))}))
+                     .filter(g=> (g.ids||[]).length >= 2);
+    next.push({ids, label:''});
+    saveMmMerges(worker, next);
+  };
+  card.querySelectorAll('.nx-unmerge').forEach(btn=>{
+    btn.onclick = ()=>{
+      const gi = parseInt(btn.dataset.merge, 10);
+      const list = mmMergesFor(worker).filter((g,i)=> i !== gi);
+      saveMmMerges(worker, list);
+    };
+  });
+  card.querySelectorAll('.nx-work-input').forEach(inp=>{
+    inp.onchange = ()=>{
+      const gi = parseInt(inp.dataset.merge, 10);
+      const list = mmMergesFor(worker).map((g,i)=> i === gi ? {...g, label: inp.value.trim()} : g);
+      saveMmMerges(worker, list);
+    };
+    inp.onclick = e=> e.stopPropagation();
+  });
+
   const all = card.querySelector('#nxCopyAll');
   if(all) all.onclick = ()=>{
+    const cell = (tr, cls)=>{
+      const td = tr.querySelector('.' + cls);
+      if(!td) return '';
+      const inp = td.querySelector('input[type="text"]');
+      return (inp ? inp.value : td.textContent).trim();
+    };
     const lines = [...table.querySelectorAll('tbody tr:not(.mm-total)')].map(tr=>
-      [...tr.children].map(td=> td.textContent.trim()).join('\t'));
+      ['nx-work','nx-skill','nx-type','nx-proj','nx-mm'].map(c=> cell(tr, c)).join('\t'));
     doCopy(lines.join('\n'), '표 전체를 복사했습니다. 노션 표에 붙여넣으세요.');
   };
 }
@@ -3681,7 +3822,8 @@ function applySettings(obj, fromServer){
   const next = {
     hiddenWorkers: Array.isArray(obj.hiddenWorkers) ? obj.hiddenWorkers.filter(w=> WORKERS.includes(w)) : [],
     updatedAt: obj.updatedAt || '',
-    appVersion: obj.appVersion || SETTINGS.appVersion || ''
+    appVersion: obj.appVersion || SETTINGS.appVersion || '',
+    mmMerges: (obj.mmMerges && typeof obj.mmMerges === 'object') ? obj.mmMerges : (SETTINGS.mmMerges || {})
   };
   // 서버에서 받은 값이 내 것보다 오래됐으면 무시
   if(fromServer && SETTINGS.updatedAt && next.updatedAt && next.updatedAt < SETTINGS.updatedAt) return false;
@@ -3745,7 +3887,8 @@ async function saveSettings(){
     const ok = await Backend.writeSettings({
       hiddenWorkers: hiddenWorkers(),
       updatedAt: SETTINGS.updatedAt,
-      appVersion: SETTINGS.appVersion || APP_VERSION
+      appVersion: SETTINGS.appVersion || APP_VERSION,
+      mmMerges: SETTINGS.mmMerges || {}
     });
     return !!ok;
   }catch(e){ return false; }
