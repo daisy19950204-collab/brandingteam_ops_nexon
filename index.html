@@ -584,11 +584,28 @@
     border-style:solid; border-color:var(--c); background:color-mix(in srgb, var(--c) 12%, #fff); opacity:1;
   }
   .nx-chip i{font-style:normal; font-size:9px; opacity:.7;}
-  .nx-chip.add{color:var(--text-faint); border-color:var(--border);}
+  .nx-chip.add{color:var(--accent-dark); border-color:var(--accent); opacity:1;}
+  .skill-picker .skill-modal{max-width:620px; width:92vw;}
+  .skill-picker .modal-body{max-height:62vh; overflow-y:auto;}
+  .sk-picked{
+    display:flex; flex-wrap:wrap; gap:5px; margin:11px 0; padding:9px; min-height:42px;
+    border:1px solid var(--border-strong); border-radius:8px; background:var(--bg);
+  }
+  .sk-list{display:flex; flex-wrap:wrap; gap:5px; padding-top:4px;}
+  .sk-empty{font-size:11px; font-weight:700; color:var(--text-faint); padding:3px 2px;}
+  .sk-note{margin-top:11px; font-size:10.5px; font-weight:700; color:var(--text-faint);}
   .nx-tools{display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:9px;}
   .nx-tools .save-panel-btn:disabled{opacity:.45; cursor:default;}
   .nx-table .nx-type, .nx-table .nx-proj{white-space:nowrap; font-weight:800;}
-  .nx-table .nx-mm{text-align:right; font-variant-numeric:tabular-nums; font-weight:900; width:56px;}
+  .nx-table .nx-mm{text-align:right; font-variant-numeric:tabular-nums; font-weight:900; width:66px;}
+  .nx-mm-input{
+    width:58px; padding:5px 6px !important; font-size:11.5px; font-weight:900; text-align:right;
+    border:1px solid var(--border-strong) !important; border-radius:6px; background:#fff; font-family:inherit;
+  }
+  .nx-table .nx-del-col{width:30px; text-align:center; padding-left:2px; padding-right:6px;}
+  .nx-del{border:none; background:none; cursor:pointer; font-size:12px; opacity:.35; padding:0 2px;}
+  .nx-del:hover{opacity:1;}
+  .nx-extra-mark{color:var(--accent-dark); font-weight:900; font-size:13px;}
   .nx-copy{
     margin-left:6px; padding:2px 8px; border-radius:11px; border:1px solid var(--border-strong);
     background:#fff; font-size:10px; font-weight:800; cursor:pointer; color:var(--text-dim); font-family:inherit;
@@ -1968,7 +1985,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-8';
+const APP_VERSION = 'v2026.11.18-11';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2408,12 +2425,42 @@ function mmMergesFor(worker){
   const list = all[mmMergeKey(worker)];
   return Array.isArray(list) ? list : [];
 }
+function mmHiddenFor(worker){
+  const all = (SETTINGS && SETTINGS.mmHidden) || {};
+  const l = all[mmMergeKey(worker)];
+  return Array.isArray(l) ? l : [];
+}
+function mmExtraFor(worker){
+  const all = (SETTINGS && SETTINGS.mmExtra) || {};
+  const l = all[mmMergeKey(worker)];
+  return Array.isArray(l) ? l : [];
+}
+async function saveMmHidden(worker, list){
+  const all = {...((SETTINGS && SETTINGS.mmHidden) || {})};
+  if(list && list.length) all[mmMergeKey(worker)] = list; else delete all[mmMergeKey(worker)];
+  SETTINGS.mmHidden = all;
+  await saveSettings();
+  renderApp();
+}
+async function saveMmExtra(worker, list){
+  const all = {...((SETTINGS && SETTINGS.mmExtra) || {})};
+  if(list && list.length) all[mmMergeKey(worker)] = list; else delete all[mmMergeKey(worker)];
+  SETTINGS.mmExtra = all;
+  await saveSettings();
+  renderApp();
+}
 function mmOverridesFor(worker){
   const all = (SETTINGS && SETTINGS.mmOverrides) || {};
   const o = all[mmMergeKey(worker)];
   return (o && typeof o === 'object') ? o : {};
 }
 async function saveMmOverride(worker, rowId, patch){
+  if(String(rowId).startsWith('x:')){
+    // 직접 추가한 행은 별도 저장소에 보관한다
+    const list = mmExtraFor(worker).map(e=> e.id === rowId ? {...e, ...patch} : e);
+    await saveMmExtra(worker, list);
+    return;
+  }
   const key = mmMergeKey(worker);
   const all = {...((SETTINGS && SETTINGS.mmOverrides) || {})};
   const mine = {...(all[key] || {})};
@@ -2428,9 +2475,13 @@ async function clearMmEdits(worker){
   const key = mmMergeKey(worker);
   const m = {...((SETTINGS && SETTINGS.mmMerges) || {})};
   const o = {...((SETTINGS && SETTINGS.mmOverrides) || {})};
-  delete m[key]; delete o[key];
+  const h = {...((SETTINGS && SETTINGS.mmHidden) || {})};
+  const x = {...((SETTINGS && SETTINGS.mmExtra) || {})};
+  delete m[key]; delete o[key]; delete h[key]; delete x[key];
   SETTINGS.mmMerges = m;
   SETTINGS.mmOverrides = o;
+  SETTINGS.mmHidden = h;
+  SETTINGS.mmExtra = x;
   await saveSettings();
   renderApp();
   showToast('수정 내용을 초기화했습니다.');
@@ -2459,8 +2510,23 @@ const NEXON_TYPE_MAP = {
   '기획':'기획', '회의':'PM'
 };
 /* 업무 유형별 기본 스킬·툴 */
-/* 넥슨 인사시스템 '스킬 목록' DB의 공식 명칭을 그대로 사용한다.
-   (앞의 2개는 기본 선택, 나머지는 제안으로 표시) */
+/* 넥슨 인사시스템 '스킬 목록' DB에서 가져온 공식 스킬 명칭 (검색·선택용) */
+const NEXON_SKILL_CATALOG = [
+"3D Coat","3D Max 스크립팅","Adobe Acrobat","Adobe After Effects","Adobe After Effects - Expression","Adobe Animate","Adobe CC","Adobe firefly","Adobe Flash","Adobe Flex","Adobe Illustrator","Adobe InDesign","Adobe Photoshop","Adobe Premiere Pro","Adobe Substance 3D Painter","Adobe Substance Designer","Adobe XD","AI Image Generate","Asana","Aseprite","AutoCAD","Autodesk 3ds Max","Autodesk Maya","Autodesk MotionBuilder","Autoflow","Axure RP","BI(Business intelligence) 기획","BI/CI디자인","Blender","BodyPaint 3D","Calligraphy","Cascadeur","ChatGPT","Cinema 4D","Claude","Clip Studio Paint","CLOVA Dubbing","Confluence","Confluence 어드민","Coolorus 2 for Photoshop","Crazybump","CSS","D5 Render","DaVinci Resolve","Discord","Dolby Atmos Mixing","EmberGen","FiberShop","Figma","Firebase","Flash(Animate)","Framer","FTP(Filezilla)","FumeFX","Gaea","Git","GitHub","Github Copilot","GitLab","Google Ads","Google Analytics","Google Docs","Google Tag Manager","GUI (Game User Interface)","Houdini","HTML","InVision","Jira","Jira 어드민","Jupyter","KeyShot","Lazy Nezumi Pro","Lightroom","Live2D","LLM (GPT, Gemini, Claude)","Lottie","Marmoset Toolbag","Marvelous Designer","Megascans","Meshy AI","Midjourney","Miro","Mobile Measurement Partner","Modo","Motion Graphic (After effect)","MS Access","MS Excel","MS Planner","MS PowerPoint","MS Project","MS Word","Notion","Nuke","Odin Inspector","Ornatrix","Power Automate","Power BI","Protopie","PureRef","Quixel Suite","Redmine","Rhinoceros","Rive","RizomUV","ROI 및 퍼널 분석","Sketch","SketchUp","Slack","Slack Bot","Spine","Spline","SQL","Studio Logic","Substance 3D Modeler","Substance 3D Sampler","Superset","SVN","Tableau","TC design","Teams Workflow","Toonboom Harmony","Topaz Clean","TopoGun","Trello","Twinmotion","UA(User Acquisition)","UI 디자인","UI 애니메이션","Unity","Unity UI","Unreal Engine 4","Unreal Engine 5","Unreal Engine 5 - Blueprint","Unreal Engine 5 - Lighting","Unreal Engine 5 - Niagara","Unreal Engine 5 - PostProcess","Unreal Engine 5 - Sequence","Unreal Engine 5 - UMG","UX 기획","UX 기획 (Mobile)","UX 기획 (PC)","UX 리서치","UX기획/설계","World Creator","World Machine","Writing 기법 - 공지/이벤트 등 글쓰기","ZBrush","Zeplin",
+"게임 굿즈 제작 및 관리","게임 시스템/구조 분석","게임 아트 리소스 SB 작성","게임 유저모객 마케팅 (UA, 퍼포먼스 마케팅)","게임 지표 분석 및 대안제시","게임마케팅 기획 및 중장기 전략수립","게임마케팅 영상 프로듀싱","게임마케팅 콘텐츠 기획/제작/운영","게임마케팅 크리에이티브","게임산업 트렌드 리서치 및 분석","게임산업 트렌드 지식","개발 프로세스 수립 및 관리","고객 경험 관리 (Customer Experience 관리)","광고 디자인","굿즈 디자인","교육기획","교육운영","글로벌 게임쇼/컨퍼런스","기업 홍보 콘텐츠 기획 및 제작 (영상)","기업 홍보 콘텐츠 기획 및 제작 (이미지)",
+"다국어 번역 관리","대시보드 페이지 기획","데이터 분석 및 인사이트 도출","디자인 디렉팅","디자인 리소스 SB 작성","디자인씽킹",
+"라이브 방송 기획/연출 및 진행","라이브PM (데이터분석)","라이브PM (빌드)","라이브PM (이벤트)","라이브PM (커뮤니티)","라이브PM (플랫폼/웹)","런칭전략설계 및 플래닝","레코딩(성우 녹음/보컬 녹음/악기 녹음)","로컬라이제이션 관리","리서치 오퍼레이션","리소스 최적화(2D)","리소스 최적화(3D)",
+"모바일 그래픽 최적화","미들웨어(Wwise/FMOD)","미디어 플래닝","미디어 플래닝 (광고, 캠페인, 기사)","미디어믹스/프로모션",
+"배너 디자인(웹/모바일)","보이스 디렉팅","보컬 음악 프로듀싱","브랜드 영상 디자인","브랜드 페이지 관리 및 유지 보수","브랜드 페이지 기획","브랜드디자인 컨셉 빌딩","빌드 프로세스 수립 및 관리",
+"사내 이벤트/행사 기획 및 운영","사용자 흐름(플로우) 설계 능력","사운드 기획","사운드 디자인","사운드 제작 프로그램 DAW 운용(Cubase/Pro Tools)","사운드 코디네이팅","사운드 포지 (사운드)","상황별/유형별 공지 작성","서비스 기획 (목표 수립, 시점 선정, 플로우 기획 등)","서비스 정책 및 상세 설계 능력","소셜 미디어 광고/채널 관리","스토리 보드 작성","시장 조사 및 서비스 트렌드 분석 능력","시장조사 (패키지/F2P 등)","신규PM (이벤트)","신규PM (커뮤니티)",
+"악기 연주(피아노/어쿠스틱 기타/일렉트릭 기타/드럼)","앱 UI/UX디자인","앱 서비스 기획","에이블톤 (사운드)","영상 촬영","영상제작 - 기획","영상제작 - 레이아웃","영상제작 - 편집","오프라인 공간용 인쇄물 디자인","오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)","요구사항 분석 및 정의 능력","웹 UI/UX디자인","웹 및 앱 트렌드","웹 서비스 기획","웹 이벤트 기획","위젯 디자인","음악 믹스 마스터링","음악 제작 포스트 프로덕션(보컬 튠/믹싱/마스터링)","음악 제작(오케스트레이션/캐주얼)","이스포츠 기획 (규정, 방식, 전략 등)","인플루언서 마케팅 운영",
+"작곡/편곡","정보구조 설계(IA)","제품 디자인(굿즈,기념품 등의 실물 상품 도안 및 외형 디자인)","제휴 - 브랜드 콜라보레이션","제휴 - 해외브랜드 콜라보레이션",
+"캐릭터 디자인","커뮤니티 기획 (플랫폼 선정, 운영 계획 수립)","커뮤니티 운영 및 유저 소통전략 수립 - Discord","커뮤니티 운영 및 유저 소통전략 수립 - Instagram","커뮤니티 운영 및 유저 소통전략 수립 - X","커뮤니티 운영 및 유저 소통전략 수립 - Youtube","컨셉설정원화 - 배경","컨셉설정원화 - 아이콘/아이템","컨셉설정원화 - 캐릭터","컷신연출 - 레이아웃(비주얼디자인)","컷신연출 - 배우관리","컷신연출 - 콘티(스토리텔링)","컷신연출 - 편집",
+"타겟 세그먼트 및 분석","타이포그래피","툴 사용 정책 수립 및 관리자 권한 수행(Confluence)","툴 사용 정책 수립 및 관리자 권한 수행(Jira)","툴 사용 정책 수립 및 관리자 권한 수행(Slack)","툴 사용 정책 수립 및 관리자 권한 수행(Trello)",
+"폴리(Foley)","프로모션 웹디자인","프로세스 자동화","프로젝트별 사업목표 설정/관리","프로크리에이트","프롬프트 엔지니어링",
+"Claude Video Editor (CVE)","Live Broadcasting (LVB)"
+];
+/* 업무 유형별 추천 스킬 (가까운 순서대로 나열 — 선택은 사용자가 직접) */
 const NEXON_SKILL_MAP = {
   '롱폼':['영상제작 - 편집','Adobe Premiere Pro','Adobe After Effects','영상제작 - 기획','영상제작 - 레이아웃',
          'Motion Graphic (After effect)','Adobe Photoshop','DaVinci Resolve','AI Image Generate','Claude',
@@ -2472,8 +2538,9 @@ const NEXON_SKILL_MAP = {
           'Adobe Premiere Pro','오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)'],
   '오프라인 촬영':['영상 촬영','라이브 방송 기획/연출 및 진행','오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)',
                 'Lightroom','Adobe Premiere Pro'],
-  '이미지':['Adobe Photoshop','Adobe Illustrator','배너 디자인(웹/모바일)','광고 디자인','AI Image Generate',
-          'Claude','Figma','타이포그래피','디자인 리소스 SB 작성','브랜드 영상 디자인','캐릭터 디자인'],
+  '이미지':['Adobe Photoshop','게임마케팅 콘텐츠 기획/제작/운영','Adobe Illustrator','배너 디자인(웹/모바일)',
+          '광고 디자인','AI Image Generate','Claude','Figma','타이포그래피','디자인 리소스 SB 작성',
+          '게임마케팅 크리에이티브','소셜 미디어 광고/채널 관리','브랜드 영상 디자인','캐릭터 디자인'],
   '언리얼':['Unreal Engine 5','컷신연출 - 레이아웃(비주얼디자인)','Blender','영상제작 - 레이아웃','Cinema 4D'],
   '기획':['영상제작 - 기획','게임마케팅 콘텐츠 기획/제작/운영','컷신연출 - 콘티(스토리텔링)','Notion',
          'MS PowerPoint','Claude','게임마케팅 크리에이티브','미디어 플래닝'],
@@ -2490,7 +2557,8 @@ const NEXON_SKILL_KEYWORDS = [
   {re:/라이브|생방|방송|중계|송출|스트리밍/, skills:['라이브 방송 기획/연출 및 진행','Live Broadcasting (LVB)','게임마케팅 영상 프로듀싱']},
   {re:/툴|자동화|대시보드|보드|시스템|스크립트|개발|봇|연동|API/i, skills:['프로세스 자동화','요구사항 분석 및 정의 능력','사용자 흐름(플로우) 설계 능력','웹 서비스 기획','Claude','Notion','SQL','Power Automate']},
   {re:/인플루언서|크리에이터|스트리머|BJ/i, skills:['인플루언서 마케팅 운영','게임마케팅 콘텐츠 기획/제작/운영']},
-  {re:/SNS|소셜|채널|유튜브|인스타|틱톡|쇼츠|릴스/i, skills:['소셜 미디어 광고/채널 관리','커뮤니티 운영 및 유저 소통전략 수립 - Instagram','게임마케팅 콘텐츠 기획/제작/운영']},
+  {re:/SNS|소셜|채널|유튜브|인스타|틱톡|쇼츠|릴스|포스팅|카드뉴스/i, skills:['게임마케팅 콘텐츠 기획/제작/운영','소셜 미디어 광고/채널 관리','커뮤니티 운영 및 유저 소통전략 수립 - Instagram','게임마케팅 크리에이티브']},
+  {re:/이벤트|안내|공지|업데이트|점검|시즌|출시|사전예약|쿠폰|리워드|상세\s*페이지/, skills:['게임마케팅 콘텐츠 기획/제작/운영','배너 디자인(웹/모바일)','광고 디자인','게임마케팅 크리에이티브','소셜 미디어 광고/채널 관리']},
   {re:/광고|캠페인|프로모션|매체|미디어|홍보/, skills:['광고 디자인','미디어 플래닝 (광고, 캠페인, 기사)','미디어믹스/프로모션','기업 홍보 콘텐츠 기획 및 제작 (영상)']},
   {re:/굿즈|상품|제품|기념품/, skills:['굿즈 디자인','게임 굿즈 제작 및 관리','제품 디자인(굿즈,기념품 등의 실물 상품 도안 및 외형 디자인)']},
   {re:/웹|홈페이지|랜딩|페이지|배너|썸네일|포스터/, skills:['프로모션 웹디자인','배너 디자인(웹/모바일)','웹 서비스 기획','Adobe Photoshop']},
@@ -2518,23 +2586,25 @@ function nexonTypeOf(t){
   return NEXON_TYPE_MAP[best] || '콘텐츠/마케팅';
 }
 function nexonSkillsOf(t){
-  // 기본 선택은 유형별 대표 2개만 (나머지는 제안으로 보여준다)
-  const set = [];
-  ticketWorkTypes(t).forEach(x=> (NEXON_SKILL_MAP[x] || []).slice(0,2).forEach(sk=>{ if(!set.includes(sk)) set.push(sk); }));
-  return set.join(', ');
+  return '';   // 기본 선택 없음 - 제안 중에서 직접 고른다
 }
 /* 그 행에 제안할 스킬·툴 전체 목록 */
+/* 가까운 순서로 정렬해 제안한다.
+   점수 = 업무 유형 매칭(앞쪽일수록 높음) + 제목·내용 단어 매칭 가산점 */
 function nexonSkillSuggestions(row){
   const ids = row.isMerged ? (row.ids || []) : [row.id];
-  const set = [];
-  const add = sk=>{ if(sk && !set.includes(sk)) set.push(sk); };
+  const score = {};
+  const bump = (sk, pts)=>{ if(sk) score[sk] = (score[sk] || 0) + pts; };
   ids.forEach(id=>{
     const t = TICKETS.find(x=> x.id === id);
     if(!t) return;
-    ticketWorkTypes(t).forEach(x=> (NEXON_SKILL_MAP[x] || []).forEach(add));   // 업무 유형 기반
-    nexonKeywordSkills(t).forEach(add);                                        // 제목·내용 단어 기반
+    ticketWorkTypes(t).forEach(x=>{
+      const list = NEXON_SKILL_MAP[x] || [];
+      list.forEach((sk, i)=> bump(sk, 100 - i * 3));        // 유형 추천: 앞쪽이 더 가깝다
+    });
+    nexonKeywordSkills(t).forEach((sk, i)=> bump(sk, 70 - i));  // 단어 매칭 가산점
   });
-  return set;
+  return Object.keys(score).sort((a,b)=> (score[b] - score[a]) || a.localeCompare(b, 'ko'));
 }
 /* 업무내역 문장 자동 조합: 프로젝트 + 제목 + 유형·수량 */
 function nexonWorkText(t){
@@ -2638,16 +2708,32 @@ function buildNexonRows(data, worker){
     if(o.project) r.project = o.project;
   });
 
-  // 소수점 2자리로 자르되 합이 1.00이 되도록 가장 큰 행에서 보정
-  rows.forEach(r=>{ r.mm = Math.max(0.01, Math.round(r.raw * 100) / 100); });
+  // 지운 행은 제외하고, 남은 행끼리 다시 1.00 기준으로 나눈다
+  const hidden = mmHiddenFor(worker);
+  if(hidden.length) rows = rows.filter(r=> !hidden.includes(r.id));
+
+  // 직접 추가한 행 (MM 은 사용자가 입력)
+  const extras = mmExtraFor(worker).map(e=>({
+    id: e.id, isExtra: true,
+    work: e.work || '', skill: e.skill || '', type: e.type || '콘텐츠/마케팅',
+    project: e.project || (PROJECTS[0] || ''),
+    days: 0, raw: 0,
+    mm: Math.max(0, Math.round((parseFloat(e.mm) || 0) * 100) / 100)
+  }));
+  const extraTotal = extras.reduce((a,r)=> a + r.mm, 0);
+  const remain = Math.max(0, Math.round((1 - extraTotal) * 100) / 100);
+
+  const rawTotal = rows.reduce((a,r)=> a + r.raw, 0) || 1;
+  rows.forEach(r=>{ r.mm = Math.max(0.01, Math.round(r.raw / rawTotal * remain * 100) / 100); });
   let sum = rows.reduce((a,r)=> a + r.mm, 0);
-  let diff = Math.round((1 - sum) * 100) / 100;
+  let diff = Math.round((remain - sum) * 100) / 100;
   if(rows.length && diff !== 0){
     // 반올림 오차는 투입이 가장 큰 행에서 흡수시킨다
     let top = rows[0];
     rows.forEach(r=>{ if(r.raw > top.raw) top = r; });
     top.mm = Math.max(0.01, Math.round((top.mm + diff) * 100) / 100);
   }
+  rows = [...rows, ...extras];
   // 표는 업무내역 글자순으로 정렬
   rows.sort((a,b)=> String(a.work).localeCompare(String(b.work), 'ko'));
   return rows;
@@ -2665,6 +2751,7 @@ function renderMMExportSection(){
     ${rows.length ? `
     <div class="nx-tools">
       <button type="button" class="save-panel-btn" id="nxMergeBtn" style="flex:0 0 auto;">🔗 선택한 행 합치기</button>
+      <button type="button" class="save-panel-btn" id="nxAddRowBtn" style="flex:0 0 auto;">＋ 행 추가</button>
       <button type="button" class="save-panel-btn" id="nxResetBtn" style="flex:0 0 auto;">↩ 수정 내용 초기화</button>
       <span class="nx-hint" id="nxMergeHint">비슷한 업무를 체크해 합치면 MM이 더해집니다. 모든 수정 내용은 자동 저장됩니다.</span>
     </div>
@@ -2678,6 +2765,7 @@ function renderMMExportSection(){
             <th>업무유형</th>
             <th>프로젝트</th>
             <th>MM</th>
+            <th class="nx-del-col"></th>
           </tr>
         </thead>
         <tbody>
@@ -2687,8 +2775,9 @@ function renderMMExportSection(){
             return `
             <tr class="${r.isMerged?'nx-merged':''}" data-row="${escapeHtml(r.id)}">
               <td class="nx-ck">${r.isMerged
-                ? `<button type="button" class="nx-unmerge" data-mid="${escapeHtml(r.mid)}" title="합치기 해제">✕</button>`
-                : `<input type="checkbox" class="nx-pick" data-id="${escapeHtml(r.id)}">`}</td>
+                ? `<button type="button" class="nx-unmerge" data-mid="${escapeHtml(r.mid)}" title="합치기 해제">⇲</button>`
+                : (r.isExtra ? '<span class="nx-extra-mark" title="직접 추가한 행">＋</span>'
+                             : `<input type="checkbox" class="nx-pick" data-id="${escapeHtml(r.id)}">`)}</td>
               <td class="nx-work">
                 <input type="text" class="nx-in nx-work-input" data-row="${escapeHtml(r.id)}" value="${escapeHtml(r.work)}">
               </td>
@@ -2696,7 +2785,7 @@ function renderMMExportSection(){
                 <div class="nx-chips">
                   ${picked.map(sk=>`<span class="nx-chip on" style="--c:${skillColor(sk)}" data-row="${escapeHtml(r.id)}" data-skill="${escapeHtml(sk)}">${escapeHtml(sk)} <i>✕</i></span>`).join('')}
                   ${suggest.map(sk=>`<span class="nx-chip" style="--c:${skillColor(sk)}" data-row="${escapeHtml(r.id)}" data-skill="${escapeHtml(sk)}">${escapeHtml(sk)} <i>＋</i></span>`).join('')}
-                  <span class="nx-chip add" data-row="${escapeHtml(r.id)}" data-add="1">＋ 직접 추가</span>
+                  <span class="nx-chip add" data-row="${escapeHtml(r.id)}" data-add="1">🔍 목록에서 찾기</span>
                 </div>
               </td>
               <td class="nx-type">
@@ -2710,12 +2799,16 @@ function renderMMExportSection(){
                   ${PROJECTS.includes(r.project) ? '' : `<option value="${escapeHtml(r.project)}" selected>${escapeHtml(r.project)}</option>`}
                 </select>
               </td>
-              <td class="nx-mm">${r.mm.toFixed(2)}</td>
+              <td class="nx-mm">${r.isExtra
+                ? `<input type="number" class="nx-mm-input" data-row="${escapeHtml(r.id)}" value="${r.mm.toFixed(2)}" step="0.01" min="0" max="1">`
+                : r.mm.toFixed(2)}</td>
+              <td class="nx-del-col"><button type="button" class="nx-del" data-row="${escapeHtml(r.id)}" title="이 행 지우기">🗑</button></td>
             </tr>`;
           }).join('')}
           <tr class="mm-total">
             <td colspan="5">${escapeHtml(worker)} · ${mmYear}년 ${mmMonth+1}월 합계</td>
-            <td class="nx-mm"><b>${sum.toFixed(2)}</b></td>
+            <td class="nx-mm"><b class="${Math.abs(sum-1) > 0.005 ? 'mm-over' : ''}">${sum.toFixed(2)}</b></td>
+            <td class="nx-del-col"></td>
           </tr>
         </tbody>
       </table>
@@ -2745,6 +2838,58 @@ function nexonMarkdown(worker, rows, sum){
   return L.join('\n');
 }
 
+/* 넥슨 스킬 목록에서 검색해 고르는 창 */
+function openSkillPicker(current, onDone){
+  const picked = [...current];
+  const ov = document.createElement('div');
+  ov.className = 'overlay open skill-picker';
+  ov.innerHTML = `
+    <div class="modal skill-modal">
+      <div class="modal-head"><h3>스킬·툴 선택</h3></div>
+      <div class="modal-body">
+        <input type="text" id="skQuery" class="nx-in" placeholder="스킬 이름을 입력해 찾기 (예: premiere, 영상, 라이브)" autocomplete="off">
+        <div class="sk-picked" id="skPicked"></div>
+        <div class="sk-list" id="skList"></div>
+        <div class="sk-note">넥슨 인사시스템 '스킬 목록'에 등재된 명칭만 고를 수 있습니다.</div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" id="skCancel">취소</button>
+        <button type="button" class="btn-primary" id="skOk">선택 완료</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  const q = ov.querySelector('#skQuery');
+  const list = ov.querySelector('#skList');
+  const pickedBox = ov.querySelector('#skPicked');
+  const renderPicked = ()=>{
+    pickedBox.innerHTML = picked.length
+      ? picked.map(sk=>`<span class="nx-chip on" style="--c:${skillColor(sk)}" data-sk="${escapeHtml(sk)}">${escapeHtml(sk)} <i>✕</i></span>`).join('')
+      : '<span class="sk-empty">아직 고른 스킬이 없습니다.</span>';
+    pickedBox.querySelectorAll('[data-sk]').forEach(c=>{
+      c.onclick = ()=>{ const i = picked.indexOf(c.dataset.sk); if(i >= 0) picked.splice(i, 1); renderPicked(); renderList(); };
+    });
+  };
+  const renderList = ()=>{
+    const kw = q.value.trim().toLowerCase();
+    const hits = NEXON_SKILL_CATALOG
+      .filter(sk=> !picked.includes(sk))
+      .filter(sk=> !kw || sk.toLowerCase().includes(kw))
+      .slice(0, 60);
+    list.innerHTML = hits.length
+      ? hits.map(sk=>`<span class="nx-chip" style="--c:${skillColor(sk)}" data-sk="${escapeHtml(sk)}">${escapeHtml(sk)} <i>＋</i></span>`).join('')
+      : '<span class="sk-empty">검색 결과가 없습니다.</span>';
+    list.querySelectorAll('[data-sk]').forEach(c=>{
+      c.onclick = ()=>{ picked.push(c.dataset.sk); renderPicked(); renderList(); };
+    });
+  };
+  q.oninput = renderList;
+  renderPicked(); renderList();
+  setTimeout(()=> q.focus(), 50);
+  const close = ()=> ov.remove();
+  ov.querySelector('#skCancel').onclick = close;
+  ov.querySelector('#skOk').onclick = ()=>{ close(); onDone(picked); };
+  ov.onclick = e=>{ if(e.target === ov) close(); };
+}
 function wireMMExport(){
   const card = document.getElementById('mmCard');
   if(!card) return;
@@ -2783,6 +2928,33 @@ function wireMMExport(){
       saveMmMerges(worker, mmMergesFor(worker).filter(g=> g.mid !== mid));
     };
   });
+  const addRowBtn = card.querySelector('#nxAddRowBtn');
+  if(addRowBtn) addRowBtn.onclick = ()=>{
+    const list = mmExtraFor(worker).slice();
+    list.push({id:'x:' + uid(), work:'', skill:'', type:'콘텐츠/마케팅', project:(PROJECTS.find(x=> x!=='부재') || ''), mm:0.05});
+    saveMmExtra(worker, list);
+  };
+  card.querySelectorAll('.nx-del').forEach(btn=>{
+    btn.onclick = ()=>{
+      const rowId = btn.dataset.row;
+      if(String(rowId).startsWith('x:')){
+        saveMmExtra(worker, mmExtraFor(worker).filter(e=> e.id !== rowId));
+        return;
+      }
+      if(String(rowId).startsWith('m:')){
+        const mid = rowId.slice(2);
+        const g = mmMergesFor(worker).find(x=> String(x.mid) === mid);
+        const ids = g ? (g.ids || []) : [];
+        saveMmHidden(worker, [...new Set([...mmHiddenFor(worker), rowId, ...ids])]);
+        return;
+      }
+      saveMmHidden(worker, [...new Set([...mmHiddenFor(worker), rowId])]);
+    };
+  });
+  card.querySelectorAll('.nx-mm-input').forEach(inp=>{
+    inp.onchange = ()=> saveMmOverride(worker, inp.dataset.row, {mm: parseFloat(inp.value) || 0});
+  });
+
   const resetBtn = card.querySelector('#nxResetBtn');
   if(resetBtn) resetBtn.onclick = ()=>{
     if(!confirm(`${worker} 님의 ${mmYear}년 ${mmMonth+1}월 수정 내용(합치기·문구·스킬·유형·프로젝트)을 모두 초기화할까요?`)) return;
@@ -2805,9 +2977,7 @@ function wireMMExport(){
       const tr = table.querySelector(`tr[data-row="${CSS.escape(rowId)}"]`);
       const current = [...tr.querySelectorAll('.nx-chip.on')].map(c=> c.dataset.skill);
       if(chip.dataset.add){
-        const v = window.prompt('추가할 스킬/툴을 입력하세요', '');
-        if(!v || !v.trim()) return;
-        saveMmOverride(worker, rowId, {skill: [...current, v.trim()].join(', ')});
+        openSkillPicker(current, next=> saveMmOverride(worker, rowId, {skill: next.join(', ')}));
         return;
       }
       const sk = chip.dataset.skill;
@@ -2823,7 +2993,7 @@ function wireMMExport(){
       skill: [...tr.querySelectorAll('.nx-chip.on')].map(c=> c.dataset.skill).join(', '),
       type: tr.querySelector('.nx-type-select').value,
       project: tr.querySelector('.nx-proj-select').value,
-      mm: parseFloat(tr.querySelector('.nx-mm').textContent) || 0
+      mm: (()=>{ const i = tr.querySelector('.nx-mm-input'); return parseFloat(i ? i.value : tr.querySelector('.nx-mm').textContent) || 0; })()
     }));
   };
   const buildMd = ()=>{
@@ -4012,7 +4182,9 @@ function applySettings(obj, fromServer){
     updatedAt: obj.updatedAt || '',
     appVersion: obj.appVersion || SETTINGS.appVersion || '',
     mmMerges: (obj.mmMerges && typeof obj.mmMerges === 'object') ? obj.mmMerges : (SETTINGS.mmMerges || {}),
-    mmOverrides: (obj.mmOverrides && typeof obj.mmOverrides === 'object') ? obj.mmOverrides : (SETTINGS.mmOverrides || {})
+    mmOverrides: (obj.mmOverrides && typeof obj.mmOverrides === 'object') ? obj.mmOverrides : (SETTINGS.mmOverrides || {}),
+    mmHidden: (obj.mmHidden && typeof obj.mmHidden === 'object') ? obj.mmHidden : (SETTINGS.mmHidden || {}),
+    mmExtra: (obj.mmExtra && typeof obj.mmExtra === 'object') ? obj.mmExtra : (SETTINGS.mmExtra || {})
   };
   // 서버에서 받은 값이 내 것보다 오래됐으면 무시
   if(fromServer && SETTINGS.updatedAt && next.updatedAt && next.updatedAt < SETTINGS.updatedAt) return false;
@@ -4078,7 +4250,9 @@ async function saveSettings(){
       updatedAt: SETTINGS.updatedAt,
       appVersion: SETTINGS.appVersion || APP_VERSION,
       mmMerges: SETTINGS.mmMerges || {},
-      mmOverrides: SETTINGS.mmOverrides || {}
+      mmOverrides: SETTINGS.mmOverrides || {},
+      mmHidden: SETTINGS.mmHidden || {},
+      mmExtra: SETTINGS.mmExtra || {}
     });
     return !!ok;
   }catch(e){ return false; }
