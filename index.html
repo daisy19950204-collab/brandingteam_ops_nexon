@@ -1968,7 +1968,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-6';
+const APP_VERSION = 'v2026.11.18-8';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2459,17 +2459,56 @@ const NEXON_TYPE_MAP = {
   '기획':'기획', '회의':'PM'
 };
 /* 업무 유형별 기본 스킬·툴 */
+/* 넥슨 인사시스템 '스킬 목록' DB의 공식 명칭을 그대로 사용한다.
+   (앞의 2개는 기본 선택, 나머지는 제안으로 표시) */
 const NEXON_SKILL_MAP = {
-  '롱폼':['Premiere Pro','After Effects','Claude Video Editor (CVE)','AI image generate','Photoshop','DaVinci Resolve','영상 편집','영상 제작','모션그래픽','색보정'],
-  '숏폼':['Premiere Pro','After Effects','Claude Video Editor (CVE)','AI image generate','Photoshop','영상 편집','영상 제작','숏폼 콘텐츠 기획','모션그래픽'],
-  '라이브':['vMix','OBS Studio','Live Broadcasting (LVB)','라이브 송출','중계 운영','스위칭','오디오 믹싱'],
-  '오프라인 촬영':['촬영','조명','카메라 운용','현장 연출','음향'],
-  '이미지':['Photoshop','Illustrator','Claude','AI image generate','Figma','그래픽 디자인','키비주얼 디자인'],
-  '언리얼':['Unreal Engine','3D 제작','시네마틱','Blender'],
-  '기획':['Notion','PowerPoint','Claude','콘텐츠 기획','스토리보드','구성안 작성'],
-  '회의':['Notion','Slack','협업/커뮤니케이션','일정 조율'],
-  'etc':['Notion','PowerPoint','Claude','문서 작성']
+  '롱폼':['영상제작 - 편집','Adobe Premiere Pro','Adobe After Effects','영상제작 - 기획','영상제작 - 레이아웃',
+         'Motion Graphic (After effect)','Adobe Photoshop','DaVinci Resolve','AI Image Generate','Claude',
+         'Claude Video Editor (CVE)','컷신연출 - 콘티(스토리텔링)','컷신연출 - 편집'],
+  '숏폼':['영상제작 - 편집','Adobe Premiere Pro','Adobe After Effects','영상제작 - 기획',
+         'Motion Graphic (After effect)','Adobe Photoshop','AI Image Generate','Claude',
+         'Claude Video Editor (CVE)','게임마케팅 콘텐츠 기획/제작/운영','게임마케팅 크리에이티브'],
+  '라이브':['라이브 방송 기획/연출 및 진행','Live Broadcasting (LVB)','영상 촬영','게임마케팅 영상 프로듀싱',
+          'Adobe Premiere Pro','오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)'],
+  '오프라인 촬영':['영상 촬영','라이브 방송 기획/연출 및 진행','오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)',
+                'Lightroom','Adobe Premiere Pro'],
+  '이미지':['Adobe Photoshop','Adobe Illustrator','배너 디자인(웹/모바일)','광고 디자인','AI Image Generate',
+          'Claude','Figma','타이포그래피','디자인 리소스 SB 작성','브랜드 영상 디자인','캐릭터 디자인'],
+  '언리얼':['Unreal Engine 5','컷신연출 - 레이아웃(비주얼디자인)','Blender','영상제작 - 레이아웃','Cinema 4D'],
+  '기획':['영상제작 - 기획','게임마케팅 콘텐츠 기획/제작/운영','컷신연출 - 콘티(스토리텔링)','Notion',
+         'MS PowerPoint','Claude','게임마케팅 크리에이티브','미디어 플래닝'],
+  '회의':['Notion','Slack','MS PowerPoint','MS Excel'],
+  'etc':['Notion','MS Excel','MS PowerPoint','Claude','AI Image Generate']
 };
+/* 업무 유형만으로는 부족하므로, 티켓 제목·내용의 단어를 보고 알맞은 스킬을 더 제안한다.
+   (모두 넥슨 '스킬 목록' DB의 공식 명칭) */
+const NEXON_SKILL_KEYWORDS = [
+  {re:/촬영|스튜디오|로케|현장|카메라/, skills:['영상 촬영','라이브 방송 기획/연출 및 진행','Lightroom']},
+  {re:/행사|쇼케이스|지스타|게임쇼|부스|페스티벌|오프라인|컨퍼런스|시연/, skills:['오프라인 행사 기획/운영 (쇼케이스, 지스타, 게임쇼 등)','사내 이벤트/행사 기획 및 운영','글로벌 게임쇼\/컨퍼런스','게임마케팅 콘텐츠 기획/제작/운영']},
+  {re:/브랜드|브랜딩|BI|CI|로고|아이덴티티|키비주얼/i, skills:['BI/CI디자인','브랜드디자인 컨셉 빌딩','브랜드 영상 디자인','타이포그래피','디자인 디렉팅']},
+  {re:/예능|웹예능|시리즈|코너|콘텐츠 기획|기획안|구성|콘티|스토리/, skills:['게임마케팅 콘텐츠 기획/제작/운영','영상제작 - 기획','컷신연출 - 콘티(스토리텔링)','게임마케팅 크리에이티브']},
+  {re:/라이브|생방|방송|중계|송출|스트리밍/, skills:['라이브 방송 기획/연출 및 진행','Live Broadcasting (LVB)','게임마케팅 영상 프로듀싱']},
+  {re:/툴|자동화|대시보드|보드|시스템|스크립트|개발|봇|연동|API/i, skills:['프로세스 자동화','요구사항 분석 및 정의 능력','사용자 흐름(플로우) 설계 능력','웹 서비스 기획','Claude','Notion','SQL','Power Automate']},
+  {re:/인플루언서|크리에이터|스트리머|BJ/i, skills:['인플루언서 마케팅 운영','게임마케팅 콘텐츠 기획/제작/운영']},
+  {re:/SNS|소셜|채널|유튜브|인스타|틱톡|쇼츠|릴스/i, skills:['소셜 미디어 광고/채널 관리','커뮤니티 운영 및 유저 소통전략 수립 - Instagram','게임마케팅 콘텐츠 기획/제작/운영']},
+  {re:/광고|캠페인|프로모션|매체|미디어|홍보/, skills:['광고 디자인','미디어 플래닝 (광고, 캠페인, 기사)','미디어믹스/프로모션','기업 홍보 콘텐츠 기획 및 제작 (영상)']},
+  {re:/굿즈|상품|제품|기념품/, skills:['굿즈 디자인','게임 굿즈 제작 및 관리','제품 디자인(굿즈,기념품 등의 실물 상품 도안 및 외형 디자인)']},
+  {re:/웹|홈페이지|랜딩|페이지|배너|썸네일|포스터/, skills:['프로모션 웹디자인','배너 디자인(웹/모바일)','웹 서비스 기획','Adobe Photoshop']},
+  {re:/사운드|음악|BGM|더빙|음향|성우/i, skills:['사운드 제작 프로그램 DAW 운용(Cubase/Pro Tools)','CLOVA Dubbing','폴리(Foley)','미들웨어(Wwise/FMOD)']},
+  {re:/자막|번역|현지화|로컬/, skills:['CLOVA Dubbing']},
+  {re:/보고|리포트|정산|데이터|분석|통계|집계/, skills:['데이터 분석 및 인사이트 도출','MS Excel','Power BI','Claude']},
+  {re:/회의|일정|스케줄|운영|관리|조율/, skills:['Notion','Slack','개발 프로세스 수립 및 관리','MS Excel']},
+  {re:/3D|모델링|캐릭터|배경|아트/i, skills:['Blender','Cinema 4D','캐릭터 디자인','컨셉설정원화 - 캐릭터','Adobe Photoshop']},
+  {re:/AI|생성형|프롬프트|GPT/i, skills:['AI Image Generate','Claude','ChatGPT','Midjourney','LLM (GPT, Gemini, Claude)']}
+];
+function nexonKeywordSkills(t){
+  const hay = `${t.title || ''} ${t.body || ''} ${t.sb || ''} ${t.spec || ''}`;
+  const out = [];
+  NEXON_SKILL_KEYWORDS.forEach(k=>{
+    if(k.re.test(hay)) k.skills.forEach(sk=>{ if(!out.includes(sk)) out.push(sk); });
+  });
+  return out;
+}
 function nexonTypeOf(t){
   const wts = ticketWorkTypes(t);
   if(!wts.length) return '콘텐츠/마케팅';
@@ -2488,10 +2527,12 @@ function nexonSkillsOf(t){
 function nexonSkillSuggestions(row){
   const ids = row.isMerged ? (row.ids || []) : [row.id];
   const set = [];
+  const add = sk=>{ if(sk && !set.includes(sk)) set.push(sk); };
   ids.forEach(id=>{
     const t = TICKETS.find(x=> x.id === id);
     if(!t) return;
-    ticketWorkTypes(t).forEach(x=> (NEXON_SKILL_MAP[x] || []).forEach(sk=>{ if(!set.includes(sk)) set.push(sk); }));
+    ticketWorkTypes(t).forEach(x=> (NEXON_SKILL_MAP[x] || []).forEach(add));   // 업무 유형 기반
+    nexonKeywordSkills(t).forEach(add);                                        // 제목·내용 단어 기반
   });
   return set;
 }
