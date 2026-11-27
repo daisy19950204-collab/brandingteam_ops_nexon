@@ -603,6 +603,23 @@
     border:1px solid var(--border-strong) !important; border-radius:6px; background:#fff; font-family:inherit;
   }
   .nx-table .nx-ck{white-space:nowrap;}
+  /* 프로젝트별 묶음 */
+  .nx-table .nx-group td{
+    background:color-mix(in srgb, var(--pc) 10%, #fff);
+    border-top:2px solid var(--pc) !important; border-bottom:none !important;
+    padding:7px 10px !important; font-size:12px; font-weight:900; color:var(--text);
+  }
+  .nx-group-dot{
+    display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--pc); margin-right:7px;
+  }
+  .nx-table .nx-group em{
+    font-style:normal; margin-left:9px; font-size:10.5px; font-weight:700; color:var(--text-dim);
+  }
+  .nx-table .nx-row td:first-child{
+    border-left:3px solid var(--pc) !important;
+  }
+  .nx-table .nx-row td{border-bottom:1px dashed var(--border) !important;}
+  .nx-table .nx-group-end td{border-bottom:1px solid var(--border-strong) !important;}
   .save-panel-btn.danger{color:var(--danger); border-color:#F0BDBD;}
   .save-panel-btn.danger:hover:not(:disabled){background:var(--danger-soft);}
   .nx-extra-mark{color:var(--accent-dark); font-weight:900; font-size:13px;}
@@ -1985,7 +2002,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-16';
+const APP_VERSION = 'v2026.11.18-17';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2544,6 +2561,20 @@ const NEXON_PROJECT_NAMES = {
 /* 노션 프로젝트 선택 목록 전체 */
 const NEXON_PROJECT_LIST = ['퍼스트디센던트','프로젝트 오로라','더파이널스','오버워치','프로젝트 낙원','서든어택','CS온라인','아크레이더스','슈터본부공통','프로젝트 SC','프로젝트 발키리'];
 function nexonProjectName(code){ return NEXON_PROJECT_NAMES[code] || code; }
+const NEXON_PROJECT_CODES = (()=>{
+  const m = {};
+  Object.keys(NEXON_PROJECT_NAMES).forEach(code=>{ m[NEXON_PROJECT_NAMES[code]] = code; });
+  return m;
+})();
+/* 노션 프로젝트 이름에 맞는 색 (사이트 프로젝트 색과 동일) */
+function nexonProjectColor(name){
+  const code = NEXON_PROJECT_CODES[name];
+  if(code && PROJECT_COLORS[code]) return PROJECT_COLORS[code];
+  let h = 0;
+  const t = String(name || '');
+  for(let i=0;i<t.length;i++) h = (h * 37 + t.charCodeAt(i)) % 360;
+  return `hsl(${h}, 48%, 42%)`;
+}
 const NEXON_TYPES = ['기술','개발','인프라','운영','기획','PM','QA/검수','현지화/번역','CS','분석/데이터','사업','디자인','콘텐츠/마케팅','조직운영','AX','R&D','보안','총괄/프로듀싱'];
 /* 스킬·툴마다 고유 색을 부여해 눈으로 구분되게 */
 function skillColor(name){
@@ -2851,8 +2882,10 @@ function buildNexonRows(data, worker){
     top.mm = Math.max(0.01, Math.round((top.mm + diff) * 100) / 100);
   }
   rows = [...rows, ...extras];
-  // 표는 업무내역 글자순으로 정렬
-  rows.sort((a,b)=> String(a.work).localeCompare(String(b.work), 'ko'));
+  // 프로젝트끼리 묶고, 그 안에서는 업무내역 글자순
+  rows.sort((a,b)=>
+    String(a.project).localeCompare(String(b.project), 'ko') ||
+    String(a.work).localeCompare(String(b.work), 'ko'));
   return rows;
 }
 function renderMMExportSection(){
@@ -2888,11 +2921,22 @@ function renderMMExportSection(){
           </tr>
         </thead>
         <tbody>
-          ${rows.map(r=>{
+          ${rows.map((r, i)=>{
             const picked = normalizeSkillList(r.skill);
             const suggest = nexonSkillSuggestions(r).filter(x=> !picked.includes(x));
-            return `
-            <tr class="${r.isMerged?'nx-merged':''}" data-row="${escapeHtml(r.id)}">
+            const pc = nexonProjectColor(r.project);
+            const isNewGroup = i === 0 || rows[i-1].project !== r.project;
+            const groupRows = rows.filter(x=> x.project === r.project);
+            const groupHead = isNewGroup ? `
+            <tr class="nx-group" style="--pc:${pc}">
+              <td colspan="6">
+                <span class="nx-group-dot"></span>${escapeHtml(r.project)}
+                <em>${groupRows.length}건 · ${groupRows.reduce((a,x)=> a + x.mm, 0).toFixed(2)}MM</em>
+              </td>
+            </tr>` : '';
+            const isLast = i === rows.length - 1 || rows[i+1].project !== r.project;
+            return groupHead + `
+            <tr class="nx-row ${r.isMerged?'nx-merged':''} ${isLast?'nx-group-end':''}" style="--pc:${pc}" data-row="${escapeHtml(r.id)}">
               <td class="nx-ck">
                 <input type="checkbox" class="nx-pick" data-id="${escapeHtml(r.id)}" data-kind="${r.isMerged?'merged':(r.isExtra?'extra':'auto')}">
                 ${r.isMerged ? `<button type="button" class="nx-unmerge" data-mid="${escapeHtml(r.mid)}" title="합치기 해제">⇲</button>` : ''}
@@ -3148,7 +3192,7 @@ function wireMMExport(){
 
   /* ----- 내려받기 / 복사 ----- */
   const rowsData = ()=>{
-    return [...table.querySelectorAll('tbody tr:not(.mm-total)')].map(tr=>({
+    return [...table.querySelectorAll('tbody tr.nx-row')].map(tr=>({
       work: tr.querySelector('.nx-work-input').value.trim(),
       skill: [...tr.querySelectorAll('.nx-chip.on')].map(c=> c.dataset.skill).join(', '),
       type: tr.querySelector('.nx-type-select').value,
