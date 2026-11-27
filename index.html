@@ -548,10 +548,10 @@
   }
   .mm-actions{display:flex; gap:7px; margin-top:12px;}
   .nx-wrap{overflow-x:auto;}
-  .nx-table{font-size:11.5px; min-width:900px;}
+  .nx-table{font-size:11.5px; min-width:1000px;}
   .nx-table th{white-space:nowrap;}
   .nx-table td{vertical-align:middle;}
-  .nx-table .nx-work{min-width:300px; font-weight:700; line-height:1.5;}
+  .nx-table .nx-work{min-width:400px; width:40%; font-weight:700; line-height:1.5;}
   .nx-table .nx-type{min-width:130px;}
   .nx-table .nx-proj{min-width:95px;}
   .nx-table .nx-skill{min-width:250px; color:var(--text-dim); white-space:normal; line-height:1.5;}
@@ -620,8 +620,14 @@
   }
   .nx-table .nx-row td{border-bottom:1px dashed var(--border) !important;}
   .nx-table .nx-group-end td{border-bottom:1px solid var(--border-strong) !important;}
-  .save-panel-btn.danger{color:var(--danger); border-color:#F0BDBD;}
-  .save-panel-btn.danger:hover:not(:disabled){background:var(--danger-soft);}
+  .nx-tools .save-panel-btn.danger{
+    flex:0 0 auto; background:#fff; color:var(--danger); border-color:#F0BDBD;
+  }
+  .nx-tools .save-panel-btn.danger:hover:not(:disabled){background:var(--danger-soft);}
+  .mm-actions .save-panel-btn.primary{
+    background:var(--accent); border-color:var(--accent); color:#fff; font-size:12.5px; padding:10px 18px;
+  }
+  .mm-actions .save-panel-btn.primary:hover{background:var(--accent-dark);}
   .nx-extra-mark{color:var(--accent-dark); font-weight:900; font-size:13px;}
   .nx-copy{
     margin-left:6px; padding:2px 8px; border-radius:11px; border:1px solid var(--border-strong);
@@ -2002,7 +2008,7 @@ let reportEnd = null;
 
 /* ============================= 모바일 버전 상태 ============================= */
 /* 배포 버전 - 브라우저가 옛 파일을 캐시하고 있는지 확인용 */
-const APP_VERSION = 'v2026.11.18-17';
+const APP_VERSION = 'v2026.11.18-21';
 let deviceMode = 'pc'; // 'pc' | 'mobile'
 let mobileMenuOpen = false;
 let mobileImmersive = false; // 모바일 전체화면(몰입) 모드: PC/모바일 전환 버튼을 숨기고 여백 없이 화면에 꽉 채움
@@ -2556,14 +2562,23 @@ const NEXON_PROJECT_NAMES = {
   'TF':'더파이널스',
   'ARC':'아크레이더스',
   'NW':'프로젝트 낙원',
+  'SAZ':'서든어택',          // 집계는 서든어택으로 묶인다
   '공통':'슈터본부공통'
 };
+/* 업무내역 문장 앞에 붙일 이름 (집계용 프로젝트명과 다를 수 있다) */
+const NEXON_WORK_PREFIX = {
+  'SAZ':'서든어택 제로 포인트'
+};
+function nexonWorkPrefix(code){ return NEXON_WORK_PREFIX[code] || nexonProjectName(code); }
 /* 노션 프로젝트 선택 목록 전체 */
 const NEXON_PROJECT_LIST = ['퍼스트디센던트','프로젝트 오로라','더파이널스','오버워치','프로젝트 낙원','서든어택','CS온라인','아크레이더스','슈터본부공통','프로젝트 SC','프로젝트 발키리'];
 function nexonProjectName(code){ return NEXON_PROJECT_NAMES[code] || code; }
 const NEXON_PROJECT_CODES = (()=>{
   const m = {};
-  Object.keys(NEXON_PROJECT_NAMES).forEach(code=>{ m[NEXON_PROJECT_NAMES[code]] = code; });
+  Object.keys(NEXON_PROJECT_NAMES).forEach(code=>{
+    const n = NEXON_PROJECT_NAMES[code];
+    if(!m[n]) m[n] = code;        // 먼저 정의된 코드를 대표 색으로 쓴다
+  });
   return m;
 })();
 /* 노션 프로젝트 이름에 맞는 색 (사이트 프로젝트 색과 동일) */
@@ -2758,7 +2773,7 @@ function nexonPhrase(qty){
 /* 제목 앞에 붙은 프로젝트 코드·이름이 중복되지 않게 떼어낸다 */
 function stripProjectPrefix(title, code){
   let t = String(title || '').trim();
-  const names = [code, nexonProjectName(code)].filter(Boolean);
+  const names = [nexonWorkPrefix(code), nexonProjectName(code), code].filter(Boolean);
   names.forEach(n=>{
     const re = new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s:·\\-–—]*', 'i');
     t = t.replace(re, '');
@@ -2770,7 +2785,7 @@ function nexonWorkText(t){
   const qty = {};
   wts.forEach(x=>{ qty[x] = wtQtyOf(t, x); });
   const title = stripProjectPrefix(t.title, t.project);
-  const base = `${nexonProjectName(t.project)} ${title}`.replace(/\s+/g, ' ').trim();
+  const base = `${nexonWorkPrefix(t.project)} ${title}`.replace(/\s+/g, ' ').trim();
   const phrase = nexonPhrase(qty);
   return (phrase ? `${base} ${phrase}` : base).replace(/\s+/g, ' ').trim();
 }
@@ -2778,7 +2793,7 @@ function nexonWorkText(t){
 function autoMergeLabel(tickets){
   if(!tickets.length) return '';
   const projs = [...new Set(tickets.map(t=> t.project))];
-  const projPart = projs.length === 1 ? nexonProjectName(projs[0]) : projs.map(nexonProjectName).join('/');
+  const projPart = projs.length === 1 ? nexonWorkPrefix(projs[0]) : projs.map(nexonWorkPrefix).join('/');
   // 제목 공통 앞부분 찾기
   const titles = tickets.map(t=> stripProjectPrefix(t.title, t.project));
   let common = titles[0];
@@ -2901,7 +2916,7 @@ function renderMMExportSection(){
     </div>
     ${rows.length ? `
     <div class="nx-tools">
-      <button type="button" class="save-panel-btn" id="nxMergeBtn" style="flex:0 0 auto;">🔗 선택한 행 합치기</button>
+      <button type="button" class="save-panel-btn" id="nxMergeBtn" style="flex:0 0 auto;">🔗 유사행 합치기</button>
       <button type="button" class="save-panel-btn" id="nxAddRowBtn" style="flex:0 0 auto;">＋ 행 추가</button>
       <button type="button" class="save-panel-btn danger" id="nxDeleteBtn" style="flex:0 0 auto;">🗑 선택한 행 삭제</button>
       <button type="button" class="save-panel-btn" id="nxUndoBtn" style="flex:0 0 auto;" title="Ctrl+Z">↶ 되돌리기</button>
@@ -2976,8 +2991,7 @@ function renderMMExportSection(){
       </table>
     </div>
     <div class="mm-actions">
-      <button type="button" class="save-panel-btn primary" id="nxDownloadMd" style="flex:0 0 auto;">⬇ 마크다운 내려받기 (노션 자동입력용)</button>
-      <button type="button" class="save-panel-btn" id="nxCopyAll" style="flex:0 0 auto;">📋 마크다운 복사</button>
+      <button type="button" class="save-panel-btn primary" id="nxCopyAll" style="flex:0 0 auto;">📋 마크다운 복사 (노션 자동입력용)</button>
     </div>
     <textarea id="nxClipboard" class="mm-markdown" readonly></textarea>`
     : `<div class="empty-note">${escapeHtml(worker)} 님은 이 달에 집계할 일정이 없습니다.</div>`}`;
@@ -3203,19 +3217,6 @@ function wireMMExport(){
   const buildMd = ()=>{
     const rs = rowsData();
     return nexonMarkdown(worker, rs, rs.reduce((a,r)=> a + r.mm, 0));
-  };
-  const dl = card.querySelector('#nxDownloadMd');
-  if(dl) dl.onclick = ()=>{
-    const blob = new Blob([buildMd()], {type:'text/markdown;charset=utf-8'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `MM_${mmYear}-${String(mmMonth+1).padStart(2,'0')}_${worker}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(()=> URL.revokeObjectURL(url), 1000);
-    showToast('마크다운 파일을 내려받았습니다. 예약 Claude에 넣어 노션 자동 입력에 사용하세요.', 4000);
   };
   const copy = card.querySelector('#nxCopyAll');
   if(copy) copy.onclick = async ()=>{
